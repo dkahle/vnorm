@@ -80,12 +80,12 @@
 <span>  output <span class="op">=</span> <span class="st">"tibble"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samps1</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">samps1</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="reference/geom_variety.html">geom_variety</a></span><span class="op">(</span>poly <span class="op">=</span> <span class="va">p1</span>, inherit.aes <span class="op">=</span> <span class="cn">FALSE</span>, show.legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-3-1.png" width="72%" style="display: block; margin: auto;"></p>
+<span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-3-1.png" width="72%" style="display:block; margin: 0 auto;"></p>
 </div>
 <div class="section level2">
 <h2 id="main-functions">Main Functions<a class="anchor" aria-label="anchor" href="#main-functions"></a>
@@ -136,10 +136,10 @@
 <code class="sourceCode R"><span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span><span class="op">)</span></span>
 <span><span class="va">samps2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rvnorm.html">rvnorm</a></span><span class="op">(</span><span class="fl">2000</span>, poly <span class="op">=</span> <span class="va">p2</span>, sd <span class="op">=</span> <span class="fl">0.1</span>, output <span class="op">=</span> <span class="st">"tibble"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samps2</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">0.5</span>, alpha <span class="op">=</span> <span class="fl">0.35</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">samps2</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">0.5</span>, alpha <span class="op">=</span> <span class="fl">0.35</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="reference/geom_variety.html">geom_variety</a></span><span class="op">(</span>poly <span class="op">=</span> <span class="va">p2</span>, inherit.aes <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Additional common <code><a href="reference/rvnorm.html">rvnorm()</a></code> usage patterns:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Use a packaged pre-compiled Stan model when available (small degree/variable cases)</span></span>
@@ -169,11 +169,11 @@
 <span>  output <span class="op">=</span> <span class="st">"tibble"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samps3</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">0.5</span>, alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">samps3</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">0.5</span>, alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="reference/geom_variety.html">geom_variety</a></span><span class="op">(</span>poly <span class="op">=</span> <span class="va">p3</span>, xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, inherit.aes <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="pdvnorm-pseudo-density-evaluation">
@@ -195,65 +195,93 @@
 <h3 id="geom_variety-ggplot2-compatible-variety-plots">
 <code>geom_variety()</code>: ggplot2-compatible variety plots<a class="anchor" aria-label="anchor" href="#geom_variety-ggplot2-compatible-variety-plots"></a>
 </h3>
-<p><code><a href="reference/geom_variety.html">geom_variety()</a></code> supports both single-polynomial (<code>mpoly</code>) and multi-polynomial (<code>mpolyList</code>) inputs and works with standard ggplot2 themes/scales.</p>
+<p><code><a href="reference/geom_variety.html">geom_variety()</a></code> supports both single-polynomial (<code>mpoly</code>) and multi-polynomial (<code>mpolyList</code>) inputs and works with standard ggplot2 themes/scales. It now defaults to a <code>201 x 201</code> contouring grid and <code>projection = "auto"</code>, which projects extracted contours back onto <code>poly = 0</code> whenever a shift is used, when the plotting grid has no strict sign change, or when the raw contour drifts noticeably off the zero set. Use <code>projection = "off"</code> to inspect the raw shifted level set directly, or <code>projection = "on"</code> to always project.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p5</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"(x^2 + y^2)^2 - 2 (x^2 - y^2)"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="reference/geom_variety.html">geom_variety</a></span><span class="op">(</span>poly <span class="op">=</span> <span class="va">p5</span>, xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, show.legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-9-1.png" width="72%" style="display: block; margin: auto;"></p>
+<span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-9-1.png" width="72%" style="display:block; margin: 0 auto;"></p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p6</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span>, <span class="st">"x y - 0.25"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="reference/geom_variety.html">geom_variety</a></span><span class="op">(</span></span>
 <span>    poly <span class="op">=</span> <span class="va">p6</span>,</span>
 <span>    xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>    ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>    vary_colour <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_colour_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-10-1.png" width="72%" style="display: block; margin: auto;"></p>
-<p>If a squared polynomial (for example, <code>p^2</code>) produces no contour at <code>shift = 0</code>, <code><a href="reference/geom_variety.html">geom_variety()</a></code> prints a suggested negative <code>shift</code>. Using that <code>shift</code> can help recover the plotted zero set in no-sign-change cases.</p>
+<span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_colour_manual</span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-10-1.png" width="72%" style="display:block; margin: 0 auto;"></p>
+<p>If a squared polynomial (for example, <code>p^2</code>) produces no contour at <code>shift = 0</code>, <code><a href="reference/geom_variety.html">geom_variety()</a></code> prints a suggested negative <code>shift</code>. Using that <code>shift</code> can help recover the plotted zero set in no-sign-change cases. With the default <code>projection = "auto"</code>, the shifted contour is then projected back onto the actual zero set; this usually improves repeated-factor plots, although hard singular cases can still miss branches.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p7</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"y^2 - x^2"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="reference/geom_variety.html">geom_variety</a></span><span class="op">(</span>poly <span class="op">=</span> <span class="va">p7</span><span class="op">^</span><span class="fl">2</span>, xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; All values are positive on the plotting grid; try shift = -0.000959513.</span></span>
+<span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; All values are positive on the plotting grid; try shift = -0.000562449.</span></span>
 <span><span class="co">#&gt; Zero contours were generated</span></span></code></pre></div>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p7</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"y^2 - x^2"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="reference/geom_variety.html">geom_variety</a></span><span class="op">(</span></span>
 <span>    poly <span class="op">=</span> <span class="va">p7</span><span class="op">^</span><span class="fl">2</span>,</span>
 <span>    xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>    shift <span class="op">=</span> <span class="op">-</span><span class="fl">0.000959513</span>,</span>
 <span>    show.legend <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-12-1.png" width="62%" style="display: block; margin: auto;"></p>
+<span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Using shift = -0.000959513 to contour a nearby level set. For repeated-factor varieties, the projected result may still miss branches; if the unsquared polynomial is available, prefer plotting that directly.</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-12-1.png" width="62%" style="display:block; margin: 0 auto;"></p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p7_cross</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"y^2 - x^2"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="reference/geom_variety.html">geom_variety</a></span><span class="op">(</span></span>
+<span>    poly <span class="op">=</span> <span class="va">p7_cross</span><span class="op">^</span><span class="fl">2</span>,</span>
+<span>    xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>    shift <span class="op">=</span> <span class="op">-</span><span class="fl">0.004</span>,</span>
+<span>    projection <span class="op">=</span> <span class="st">"off"</span>,</span>
+<span>    show.legend <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">'projection = "off"'</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="reference/geom_variety.html">geom_variety</a></span><span class="op">(</span></span>
+<span>    poly <span class="op">=</span> <span class="va">p7_cross</span><span class="op">^</span><span class="fl">2</span>,</span>
+<span>    xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>    shift <span class="op">=</span> <span class="op">-</span><span class="fl">0.004</span>,</span>
+<span>    projection <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>    show.legend <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">'projection = "auto"'</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-13-1.png" width="49%" style="display:block; margin: 0 auto;"><img src="reference/figures/README-unnamed-chunk-13-2.png" width="49%" style="display:block; margin: 0 auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="project_onto_variety-projection-with-visualization">
 <code>project_onto_variety()</code>: projection with visualization<a class="anchor" aria-label="anchor" href="#project_onto_variety-projection-with-visualization"></a>
 </h3>
 <p>The projection functions are useful for snapping points back to a variety and for inspecting projection behavior visually.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p8</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 0.25"</span><span class="op">)</span></span>
 <span><span class="va">x0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.3</span>, <span class="fl">0.9</span><span class="op">)</span></span>
 <span><span class="op">(</span><span class="va">x0_proj</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/project-onto-variety.html">project_onto_variety</a></span><span class="op">(</span><span class="va">x0</span>, <span class="va">p8</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.4110961 0.2846050</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-14-1.png" width="62%" style="display: block; margin: auto;"></p>
+<p><img src="reference/figures/README-unnamed-chunk-15-1.png" width="62%" style="display:block; margin: 0 auto;"></p>
 <p>The red point is the starting value and the black point is its projection onto the variety. The grey segment shows the displacement from the starting point to the projected point.</p>
 <p>Adaptive time stepping is used by default. The comparison below illustrates the homotopy projection path from the same starting point using fixed step sizes versus adaptive step sizes (similar to the paper figure). The open circles mark successive iterates along the path.</p>
-<p><img src="reference/figures/README-unnamed-chunk-15-1.png" width="92%" style="display: block; margin: auto;"></p>
+<p><img src="reference/figures/README-unnamed-chunk-16-1.png" width="92%" style="display:block; margin: 0 auto;"></p>
 <p>In each panel, the black curve is the target variety (an ellipse segment), the connected black path is the homotopy projection path from the same starting point, and the open circles show the successive iterates. The adaptive method is the default because it typically reaches the variety in fewer steps while maintaining the error tolerance.</p>
 </div>
 </div>
@@ -261,7 +289,7 @@
 <h2 id="pre-compiled-models">Pre-compiled Models<a class="anchor" aria-label="anchor" href="#pre-compiled-models"></a>
 </h2>
 <p><code>vnorm</code> includes pre-compiled Stan models for common polynomial structures (up to three variables and total degree at most three). For repeated work with a custom polynomial form, use <code><a href="reference/compile_stan_code.html">compile_stan_code()</a></code> once and then call <code><a href="reference/rvnorm.html">rvnorm()</a></code> with <code>user_compiled = TRUE</code> on related polynomials with different coefficients.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_template</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^4 + y^4 - 1"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/compile_stan_code.html">compile_stan_code</a></span><span class="op">(</span>poly <span class="op">=</span> <span class="va">p_template</span><span class="op">)</span></span>
 <span></span>
@@ -280,8 +308,6 @@
 <li>Kahle, David and Hauenstein, Jonathan D. (2024). <em>Stochastic Exploration of Real Varieties via Variety Distributions</em>. <a href="https://arxiv.org/abs/2410.16071" class="external-link">arXiv:2410.16071</a>
 </li>
 <li>Griffin, Zachary A. and Hauenstein, Jonathan D. (2015). <em>Real solutions to systems of polynomial equations and parameter continuation</em>. <em>Advances in Geometry</em>, 15(2), 173–187. <a href="https://doi.org/10.1515/advgeom-2015-0004" class="external-link">doi:10.1515/advgeom-2015-0004</a>
-</li>
-<li>Schenck, Henry (2015). <em>Book Review: Numerically solving polynomial systems with Bertini</em>. <em>Bulletin of the American Mathematical Society</em>, 53(1), 179–186. <a href="https://doi.org/10.1090/bull/1520" class="external-link">doi:10.1090/bull/1520</a>
 </li>
 </ul>
 </div>

@@ -30,3 +30,16 @@ test_that("split_large_projected_jumps splits path groups at large jumps", {
   expect_gt(length(unique(out$group)), 1)
   expect_equal(nrow(out), nrow(df))
 })
+
+test_that("effective_variety_grid boosts hard shifted no-sign-change cases", {
+  ordinary <- effective_variety_grid(201, 201, shift = 0, no_sign_change0 = FALSE)
+  shifted <- effective_variety_grid(201, 201, shift = -0.001, no_sign_change0 = FALSE)
+  hard <- effective_variety_grid(201, 201, shift = -0.001, no_sign_change0 = TRUE)
+
+  expect_equal(ordinary$nx, 201L)
+  expect_equal(ordinary$ny, 201L)
+  expect_equal(shifted$nx, 301L)
+  expect_equal(shifted$ny, 301L)
+  expect_equal(hard$nx, 401L)
+  expect_equal(hard$ny, 401L)
+})

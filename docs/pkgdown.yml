@@ -2,7 +2,7 @@ pandoc: 3.6.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles: {}
-last_built: 2026-02-26T18:10Z
+last_built: 2026-03-16T15:04Z
 urls:
   reference: https://sonish13.github.io/vnorm/reference
   article: https://sonish13.github.io/vnorm/articles

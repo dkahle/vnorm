@@ -287,8 +287,6 @@
 #' ggplot(samps_normd, aes(x, y)) +
 #'   geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
 #' }
-
-
 #' @rdname rvnorm
 #' @export
 rvnorm <- function(
@@ -436,7 +434,7 @@ rvnorm <- function(
         NULL
       }
     )
-    if (is.null(model) || !file.exists(model$exe_file())) {
+    if (!model_has_usable_executable(model)) {
       poly <- poly_original
       output_needs_rewriting <- output_needs_rewriting_original
       stan_code <- create_stan_code(poly, sd, n_eqs, w, homo, vars)
@@ -508,4 +506,22 @@ rvnorm <- function(
   }
 }
 
+model_has_usable_executable <- function(model) {
+  if (is.null(model)) return(FALSE)
 
+  exe_ref <- model$exe_file
+  if (is.null(exe_ref)) {
+    # Test doubles may only provide a sample() method; treat those as usable.
+    return(is.function(model$sample))
+  }
+
+  exe_path <- tryCatch(
+    if (is.function(exe_ref)) exe_ref() else exe_ref,
+    error = function(e) NULL
+  )
+
+  is.character(exe_path) &&
+    length(exe_path) >= 1 &&
+    nzchar(exe_path[[1]]) &&
+    file.exists(exe_path[[1]])
+}

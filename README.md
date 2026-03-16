@@ -179,7 +179,12 @@ pdvnorm(x1, p4, sigma = diag(c(1, 4)))
 
 `geom_variety()` supports both single-polynomial (`mpoly`) and
 multi-polynomial (`mpolyList`) inputs and works with standard ggplot2
-themes/scales.
+themes/scales. It now defaults to a `201 x 201` contouring grid and
+`projection = "auto"`, which projects extracted contours back onto
+`poly = 0` whenever a shift is used, when the plotting grid has no
+strict sign change, or when the raw contour drifts noticeably off the
+zero set. Use `projection = "off"` to inspect the raw shifted level set
+directly, or `projection = "on"` to always project.
 
 ``` r
 p5 <- mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
@@ -213,14 +218,17 @@ ggplot() +
 If a squared polynomial (for example, `p^2`) produces no contour at
 `shift = 0`, `geom_variety()` prints a suggested negative `shift`. Using
 that `shift` can help recover the plotted zero set in no-sign-change
-cases.
+cases. With the default `projection = "auto"`, the shifted contour is
+then projected back onto the actual zero set; this usually improves
+repeated-factor plots, although hard singular cases can still miss
+branches.
 
 ``` r
 p7 <- mp("y^2 - x^2")
 ggplot() +
   geom_variety(poly = p7^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
-#> All values are positive on the plotting grid; try shift = -0.000959513.
+#> All values are positive on the plotting grid; try shift = -0.000562449.
 #> Zero contours were generated
 ```
 
@@ -235,9 +243,40 @@ ggplot() +
   ) +
   coord_equal() +
   theme_minimal()
+#> Using shift = -0.000959513 to contour a nearby level set. For repeated-factor varieties, the projected result may still miss branches; if the unsquared polynomial is available, prefer plotting that directly.
 ```
 
 <img src="man/figures/README-unnamed-chunk-12-1.png" width="62%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+
+``` r
+p7_cross <- mp("y^2 - x^2")
+
+ggplot() +
+  geom_variety(
+    poly = p7_cross^2,
+    xlim = c(-2, 2), ylim = c(-2, 2),
+    shift = -0.004,
+    projection = "off",
+    show.legend = FALSE
+  ) +
+  coord_equal() +
+  ggtitle('projection = "off"') +
+  theme_minimal()
+
+ggplot() +
+  geom_variety(
+    poly = p7_cross^2,
+    xlim = c(-2, 2), ylim = c(-2, 2),
+    shift = -0.004,
+    projection = "auto",
+    show.legend = FALSE
+  ) +
+  coord_equal() +
+  ggtitle('projection = "auto"') +
+  theme_minimal()
+```
+
+<img src="man/figures/README-unnamed-chunk-13-1.png" width="49%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" /><img src="man/figures/README-unnamed-chunk-13-2.png" width="49%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 ### `project_onto_variety()`: projection with visualization
 
@@ -251,7 +290,7 @@ x0 <- c(1.3, 0.9)
 #> [1] 0.4110961 0.2846050
 ```
 
-<img src="man/figures/README-unnamed-chunk-14-1.png" width="62%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-15-1.png" width="62%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 The red point is the starting value and the black point is its
 projection onto the variety. The grey segment shows the displacement
@@ -262,7 +301,7 @@ illustrates the homotopy projection path from the same starting point
 using fixed step sizes versus adaptive step sizes (similar to the paper
 figure). The open circles mark successive iterates along the path.
 
-<img src="man/figures/README-unnamed-chunk-15-1.png" width="92%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-16-1.png" width="92%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 In each panel, the black curve is the target variety (an ellipse
 segment), the connected black path is the homotopy projection path from

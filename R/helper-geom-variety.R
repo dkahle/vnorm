@@ -126,7 +126,7 @@ collapse_near_duplicate_contours <- function(df, tol) {
       # One-sided distance is the right test here: a short fragment can lie on
       # top of the main path while the symmetric distance stays large.
       d_path_frag <- mean_nn_distance(frag_df, main_df)
-      if (d_path_frag <= 20 * tol) {
+      if (d_path_frag <= 6 * tol) {
         drop_groups <- c(drop_groups, g)
       }
     }
@@ -137,6 +137,143 @@ collapse_near_duplicate_contours <- function(df, tol) {
       out$piece <- as.integer(out$group)
     }
   }
+  out
+}
+
+group_is_closed <- function(g, tol) {
+  if (nrow(g) < 3) return(FALSE)
+  end_dist <- sqrt((g$x[1] - g$x[nrow(g)])^2 + (g$y[1] - g$y[nrow(g)])^2)
+  is.finite(end_dist) && end_dist <= 3 * tol
+}
+
+endpoint_rows <- function(g, tol) {
+  if (nrow(g) < 2 || group_is_closed(g, tol)) return(NULL)
+
+  tibble::tibble(
+    group = as.character(g$group[1]),
+    side = c("first", "last"),
+    x = c(g$x[1], g$x[nrow(g)]),
+    y = c(g$y[1], g$y[nrow(g)]),
+    dir_x = c(g$x[1] - g$x[2], g$x[nrow(g)] - g$x[nrow(g) - 1]),
+    dir_y = c(g$y[1] - g$y[2], g$y[nrow(g)] - g$y[nrow(g) - 1])
+  )
+}
+
+cluster_endpoint_indices <- function(endpoints, gap_tol) {
+  n <- nrow(endpoints)
+  if (n == 0) return(list())
+
+  dx <- outer(endpoints$x, endpoints$x, "-")
+  dy <- outer(endpoints$y, endpoints$y, "-")
+  dist_mat <- sqrt(dx * dx + dy * dy)
+  adjacency <- is.finite(dist_mat) & (dist_mat <= gap_tol)
+
+  seen <- rep(FALSE, n)
+  clusters <- list()
+
+  for (i in seq_len(n)) {
+    if (seen[i]) next
+
+    queue <- i
+    seen[i] <- TRUE
+    members <- integer(0)
+
+    while (length(queue) > 0) {
+      j <- queue[1]
+      queue <- queue[-1]
+      members <- c(members, j)
+
+      nbrs <- which(adjacency[j, ] & !seen)
+      if (length(nbrs) > 0) {
+        seen[nbrs] <- TRUE
+        queue <- c(queue, nbrs)
+      }
+    }
+
+    clusters[[length(clusters) + 1L]] <- sort(unique(members))
+  }
+
+  clusters
+}
+
+close_singular_endpoint_gaps <- function(df, poly, tol) {
+  # Reconnect split branches when several path endpoints cluster around the
+  # same true zero, which is common near repeated singular crossings.
+  if (nrow(df) == 0 || !"group" %in% names(df)) return(df)
+
+  groups <- split(df, df$group)
+  endpoint_list <- lapply(groups, endpoint_rows, tol = tol)
+  endpoint_list <- Filter(Negate(is.null), endpoint_list)
+  if (length(endpoint_list) == 0) return(df)
+
+  endpoints <- dplyr::bind_rows(endpoint_list)
+  if (nrow(endpoints) < 2) return(df)
+
+  gap_tol <- 20 * tol
+  clusters <- cluster_endpoint_indices(endpoints, gap_tol = gap_tol)
+  if (length(clusters) == 0) return(df)
+
+  gfunc <- tryCatch(
+    as.function(poly, varorder = c("x", "y"), silent = TRUE),
+    error = function(e) NULL
+  )
+  if (is.null(gfunc)) return(df)
+
+  for (idx in clusters) {
+    cluster <- endpoints[idx, , drop = FALSE]
+    if (nrow(cluster) < 2) next
+    if (dplyr::n_distinct(cluster$group) < 2) next
+
+    candidate <- c(mean(cluster$x), mean(cluster$y))
+    if (!all(is.finite(candidate))) next
+
+    cand_val <- tryCatch(as.numeric(gfunc(candidate)), error = function(e) NA_real_)
+    if (!is.finite(cand_val) || abs(cand_val) > 1e-8) next
+
+    aligned <- vapply(seq_len(nrow(cluster)), function(i) {
+      v <- candidate - c(cluster$x[i], cluster$y[i])
+      dir <- c(cluster$dir_x[i], cluster$dir_y[i])
+      v_norm <- sqrt(sum(v * v))
+      dir_norm <- sqrt(sum(dir * dir))
+      if (!is.finite(v_norm) || !is.finite(dir_norm) || v_norm <= tol || dir_norm <= 0) {
+        return(FALSE)
+      }
+      sum(v * dir) / (v_norm * dir_norm) >= 0.7
+    }, logical(1))
+
+    if (!all(aligned)) next
+
+    for (i in seq_len(nrow(cluster))) {
+      gname <- cluster$group[i]
+      side <- cluster$side[i]
+      g <- groups[[gname]]
+      if (is.null(g)) next
+
+      if (side == "first") {
+        dist_to_candidate <- sqrt((g$x[1] - candidate[1])^2 + (g$y[1] - candidate[2])^2)
+        if (is.finite(dist_to_candidate) && dist_to_candidate > tol) {
+          new_row <- g[1, , drop = FALSE]
+          new_row$x <- candidate[1]
+          new_row$y <- candidate[2]
+          g <- dplyr::bind_rows(new_row, g)
+        }
+      } else {
+        dist_to_candidate <- sqrt((g$x[nrow(g)] - candidate[1])^2 + (g$y[nrow(g)] - candidate[2])^2)
+        if (is.finite(dist_to_candidate) && dist_to_candidate > tol) {
+          new_row <- g[nrow(g), , drop = FALSE]
+          new_row$x <- candidate[1]
+          new_row$y <- candidate[2]
+          g <- dplyr::bind_rows(g, new_row)
+        }
+      }
+
+      groups[[gname]] <- g
+    }
+  }
+
+  out <- dplyr::bind_rows(groups)
+  out$group <- factor(out$group)
+  out$piece <- as.integer(out$group)
   out
 }
 
@@ -168,9 +305,161 @@ variety_paths_with_refinement <- function(
   best_df
 }
 
+variety_paths_basic <- function(poly, rangex, rangey, nx, ny, shift, group) {
+  dfxyz <- poly_to_df(
+    poly = poly,
+    xlim = rangex,
+    ylim = rangey,
+    nx = nx,
+    ny = ny,
+    shift = shift
+  )
+  isolines <- xyz_to_isolines(dfxyz, 0)
+  iso_to_path(isolines, group)
+}
+
+should_project_contours <- function(df, poly, projection, shift, no_sign_change0) {
+  projection <- match.arg(projection, c("auto", "on", "off"))
+  if (projection == "on") return(TRUE)
+  if (projection == "off") return(FALSE)
+  if (nrow(df) == 0) return(FALSE)
+  if (shift != 0 || isTRUE(no_sign_change0)) return(TRUE)
+
+  gfunc <- tryCatch(
+    as.function(poly, varorder = c("x", "y"), silent = TRUE),
+    error = function(e) NULL
+  )
+  if (is.null(gfunc)) return(FALSE)
+
+  vals <- tryCatch(
+    abs(as.numeric(gfunc(as.matrix(df[, c("x", "y"), drop = FALSE])))),
+    error = function(e) numeric(0)
+  )
+  vals <- vals[is.finite(vals)]
+  if (length(vals) == 0) return(FALSE)
+
+  max(vals) > 1e-4
+}
+
+should_run_duplicate_collapse <- function(df, shift, no_sign_change0) {
+  # Duplicate collapse is meant for obvious shifted repeated-factor doubles,
+  # not for heavily fragmented projected paths.
+  if (nrow(df) == 0) return(FALSE)
+  if (!(isTRUE(no_sign_change0) && shift != 0)) return(FALSE)
+
+  n_groups <- length(unique(df$group))
+  n_groups <= 8
+}
+
+should_close_singular_gaps <- function(df, shift, no_sign_change0) {
+  # Singular gap closing is useful for repeated-factor crossings when several
+  # projected path ends land near the same true zero.
+  if (nrow(df) == 0) return(FALSE)
+  if (!(isTRUE(no_sign_change0) && shift != 0)) return(FALSE)
+
+  n_groups <- length(unique(df$group))
+  n_groups >= 2 && n_groups <= 16
+}
+
+should_prune_projected_fragments <- function(df, shift, no_sign_change0) {
+  # Tiny-fragment pruning is for heavily fragmented repeated-factor projections
+  # where many small groups ride directly on top of a dominant branch.
+  if (nrow(df) == 0) return(FALSE)
+  if (!(isTRUE(no_sign_change0) && shift != 0)) return(FALSE)
+
+  n_groups <- length(unique(df$group))
+  n_groups >= 20
+}
+
+prune_nearby_short_fragments <- function(df, tol) {
+  # Drop very short groups that sit almost entirely on top of much larger
+  # projected branches. This targets dotted debris without collapsing whole
+  # multi-branch geometries.
+  if (nrow(df) == 0 || !"group" %in% names(df)) return(df)
+
+  groups <- split(df, df$group)
+  if (length(groups) <= 1) return(df)
+
+  sizes <- vapply(groups, nrow, integer(1))
+  large_names <- names(sizes)[sizes >= 50L]
+  short_names <- names(sizes)[sizes <= 12L]
+  if (length(large_names) == 0 || length(short_names) == 0) return(df)
+
+  drop_groups <- character(0)
+  for (g in short_names) {
+    frag_df <- groups[[g]]
+    d_main <- min(vapply(
+      large_names,
+      function(h) mean_nn_distance(frag_df, groups[[h]]),
+      numeric(1)
+    ))
+
+    if (is.finite(d_main) && d_main <= 6 * tol) {
+      drop_groups <- c(drop_groups, g)
+    }
+  }
+
+  if (length(drop_groups) == 0) return(df)
+
+  out <- df[!(df$group %in% drop_groups), , drop = FALSE]
+  out$group <- factor(out$group)
+  out$piece <- as.integer(out$group)
+  out
+}
+
+postprocess_projected_paths <- function(
+    df, poly, rangex, rangey, nx, ny, shift, no_sign_change0
+  ) {
+  # Keep the repeated-factor cleanup policy in one place so mpoly and
+  # mpolyList paths stay in sync.
+  if (nrow(df) == 0) return(df)
+
+  dx <- (rangex[2] - rangex[1]) / max(nx - 1, 1)
+  dy <- (rangey[2] - rangey[1]) / max(ny - 1, 1)
+  tol <- 0.75 * max(dx, dy)
+
+  if (should_run_duplicate_collapse(df, shift, no_sign_change0)) {
+    df <- collapse_near_duplicate_contours(df, tol = tol)
+  }
+  if (should_close_singular_gaps(df, shift, no_sign_change0)) {
+    df <- close_singular_endpoint_gaps(df, poly, tol = tol)
+  }
+
+  df
+}
+
+emit_shifted_recovery_disclaimer <- function(shift, projection, no_sign_change0) {
+  # A shifted contour for a repeated-factor polynomial is only a nearby level
+  # set. Projection often helps, but complex cases can still
+  # miss branches, so warn explicitly.
+  projection <- match.arg(projection, c("auto", "on", "off"))
+  if (projection == "off") return()
+  if (!(isTRUE(no_sign_change0) && shift != 0)) return()
+
+  message(
+    "Using shift = ",
+    format(shift, digits = 6),
+    " to contour a nearby level set. For repeated-factor varieties, the ",
+    "projected result may still miss branches; if the unsquared polynomial is ",
+    "available, prefer plotting that directly."
+  )
+}
+
+effective_variety_grid <- function(nx, ny, shift, no_sign_change0) {
+  # Hard shifted/no-sign-change cases benefit much more from contour resolution
+  # than ordinary curves, so use a higher internal floor there.
+  if (shift != 0 && isTRUE(no_sign_change0)) {
+    return(list(nx = max(as.integer(nx), 401L), ny = max(as.integer(ny), 401L)))
+  }
+  if (shift != 0) {
+    return(list(nx = max(as.integer(nx), 301L), ny = max(as.integer(ny), 301L)))
+  }
+  list(nx = as.integer(nx), ny = as.integer(ny))
+}
+
 snap_shifted_contours_to_variety <- function(df, poly) {
-  # For no-sign-change polynomials (e.g., squared factors), shift generates a
-  # nearby level set. Snap those points back to poly = 0 to recover topology.
+  # Project contour points back onto poly = 0. This improves ordinary contours
+  # and is also the main repair for shifted no-sign-change cases.
   if (nrow(df) == 0) return(df)
   if (!all(c("x", "y") %in% names(df))) return(df)
 
@@ -187,8 +476,8 @@ snap_shifted_contours_to_variety <- function(df, poly) {
     dseg <- dseg[is.finite(dseg) & dseg > 0]
     base_step <- if (length(dseg) > 0) stats::median(dseg) else 0.05
     if (!is.finite(base_step) || base_step <= 0) base_step <- 0.05
-    # Squared-polynomial correction is usually underpowered near singularities;
-    # allow larger but still bounded steps.
+    # Repeated factors are usually underpowered near singularities; allow larger
+    # but still bounded steps.
     max_step <- 12 * base_step
     snap_gains <- c(0.5, 1, 2, 4)
 

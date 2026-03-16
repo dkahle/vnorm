@@ -187,6 +187,11 @@ pdvnorm(x1, p4, sigma = diag(c(1, 4)))
 
 `geom_variety()` supports both single-polynomial (`mpoly`) and multi-polynomial
 (`mpolyList`) inputs and works with standard ggplot2 themes/scales.
+It now defaults to a `201 x 201` contouring grid and `projection = "auto"`,
+which projects extracted contours back onto `poly = 0` whenever a shift is
+used, when the plotting grid has no strict sign change, or when the raw contour
+drifts noticeably off the zero set. Use `projection = "off"` to inspect the
+raw shifted level set directly, or `projection = "on"` to always project.
 
 ```{r}
 p5 <- mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
@@ -215,7 +220,10 @@ ggplot() +
 
 If a squared polynomial (for example, `p^2`) produces no contour at `shift = 0`,
 `geom_variety()` prints a suggested negative `shift`. Using that `shift` can help
-recover the plotted zero set in no-sign-change cases.
+recover the plotted zero set in no-sign-change cases. With the default
+`projection = "auto"`, the shifted contour is then projected back onto the
+actual zero set; this usually improves repeated-factor plots, although hard
+singular cases can still miss branches.
 
 ```{r fig.show = "hide"}
 p7 <- mp("y^2 - x^2")
@@ -234,6 +242,34 @@ ggplot() +
     show.legend = FALSE
   ) +
   coord_equal() +
+  theme_minimal()
+```
+
+```{r fig.width = 6.0, fig.height = 2.8, out.width = "49%", fig.show = "hold", warning = FALSE, message = FALSE}
+p7_cross <- mp("y^2 - x^2")
+
+ggplot() +
+  geom_variety(
+    poly = p7_cross^2,
+    xlim = c(-2, 2), ylim = c(-2, 2),
+    shift = -0.004,
+    projection = "off",
+    show.legend = FALSE
+  ) +
+  coord_equal() +
+  ggtitle('projection = "off"') +
+  theme_minimal()
+
+ggplot() +
+  geom_variety(
+    poly = p7_cross^2,
+    xlim = c(-2, 2), ylim = c(-2, 2),
+    shift = -0.004,
+    projection = "auto",
+    show.legend = FALSE
+  ) +
+  coord_equal() +
+  ggtitle('projection = "auto"') +
   theme_minimal()
 ```
 

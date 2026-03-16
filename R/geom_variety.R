@@ -2,6 +2,10 @@
 #'
 #' Plot implicit polynomial varieties with `ggplot2`.
 #'
+#' `geom_variety()` extracts contour paths from a grid evaluation of the
+#' polynomial and, by default, projects those paths back onto `poly = 0` when
+#' that helps recover the intended zero set.
+#'
 #' @section Aesthetics: [geom_variety()] understands the following aesthetics.
 #'   `x` and `y` are computed by the stat, so users typically do not map them
 #'   manually:
@@ -40,6 +44,13 @@
 #'   This is mainly useful when the polynomial does not cross zero on the
 #'   plotting grid (for example, `p^2`). If `shift = 0` and all sampled values
 #'   have one sign, `geom_variety()` prints a message suggesting a shift value.
+#' @param projection Whether to project contour points back onto the true
+#'   variety after contour extraction. `"off"` returns the raw shifted
+#'   level-0 contour. `"on"` always projects. `"auto"` projects when a shift is
+#'   used, when the polynomial has no strict sign change on the plotting grid,
+#'   or when the raw contour is noticeably off the zero set. For shifted
+#'   repeated-factor cases, `geom_variety()` also prints a caution that the
+#'   recovered contour may still miss branches.
 #' @param vary_colour Logical. If `TRUE`, map colour to the polynomial label so
 #'   users can control per-polynomial colours with `scale_colour_*()`.
 #'   Defaults to `FALSE`, which keeps a constant line colour and varies only
@@ -118,6 +129,20 @@
 #'   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001) +
 #'   coord_equal()
 #'
+#' # Inspect the raw shifted level set versus the default projected recovery.
+#' p6 <- mp("y^2 - x^2")
+#' ggplot() +
+#'   geom_variety(
+#'     poly = p6^2,
+#'     xlim = c(-2, 2), ylim = c(-2, 2),
+#'     shift = -0.004, projection = "off"
+#'   ) +
+#'   coord_equal()
+#'
+#' ggplot() +
+#'   geom_variety(poly = p6^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.004) +
+#'   coord_equal()
+#'
 #'
 #' @export
 stat_variety <- function(
@@ -127,18 +152,20 @@ stat_variety <- function(
     position = "identity",
     ...,
     poly = NULL,
-    n = 101,
+    n = 201,
     nx = n,
     ny = n,
     xlim = NULL,
     ylim = NULL,
     shift = 0,
+    projection = c("auto", "on", "off"),
     na.rm = FALSE,
     show.legend = NA,
     inherit.aes = TRUE
 ) {
   # Thin wrapper that wires StatVariety into ggplot2::layer().
   if (is.null(data)) data <- ensure_nonempty_data
+  projection <- match.arg(projection)
 
   layer(
     data = data,
@@ -156,6 +183,7 @@ stat_variety <- function(
       xlim = xlim,
       ylim = ylim,
       shift = shift,
+      projection = projection,
       na.rm = na.rm,
       ...
     )
@@ -172,12 +200,12 @@ StatVariety <- ggproto(
 
   compute_group = function(
     self, data, scales, na.rm = FALSE,
-    poly, n = 101, nx = n, ny = n, xlim = NULL, ylim = NULL,
-    shift = 0, mul = .05
+    poly, n = 201, nx = n, ny = n, xlim = NULL, ylim = NULL,
+    shift = 0, projection = c("auto", "on", "off"), mul = .05
   ) {
-    # Use a denser grid for nonzero shift to reduce fragmented contours.
-    nx_eff <- if (shift != 0) max(as.integer(nx), 301L) else as.integer(nx)
-    ny_eff <- if (shift != 0) max(as.integer(ny), 301L) else as.integer(ny)
+    projection <- match.arg(projection)
+    nx_eff <- as.integer(nx)
+    ny_eff <- as.integer(ny)
 
     rangex <- if (is.null(xlim)) {
       if (!is.null(scales$x)) scales$x$dimension() else c(-1, 1)
@@ -188,9 +216,13 @@ StatVariety <- ggproto(
     } else scales::expand_range(ylim, mul = mul)
 
     if (is.mpoly(poly)) {
-      df0 <- poly_to_df(poly, rangex, rangey, nx_eff, ny_eff, shift = 0)
+      probe_grid <- effective_variety_grid(nx_eff, ny_eff, shift, FALSE)
+      df0 <- poly_to_df(poly, rangex, rangey, probe_grid$nx, probe_grid$ny, shift = 0)
       check_sign_warning(df0$z + shift, shift)
       no_sign_change0 <- !has_strict_sign_change(df0$z)
+      grid_eff <- effective_variety_grid(nx_eff, ny_eff, shift, no_sign_change0)
+      nx_eff <- grid_eff$nx
+      ny_eff <- grid_eff$ny
       if (shift == 0 && no_sign_change0) {
         message("Zero contours were generated")
         return(tibble::tibble())
@@ -204,22 +236,29 @@ StatVariety <- ggproto(
         shift = shift,
         group = data$group[1]
       )
-      if (shift != 0) {
-        if (no_sign_change0) {
-          df <- snap_shifted_contours_to_variety(df, poly)
-        }
-        # Merge near-coincident offset contours produced by shifted surfaces.
-        dx <- (rangex[2] - rangex[1]) / max(nx_eff - 1, 1)
-        dy <- (rangey[2] - rangey[1]) / max(ny_eff - 1, 1)
-        df <- collapse_near_duplicate_contours(df, tol = 0.75 * max(dx, dy))
+      if (should_project_contours(df, poly, projection, shift, no_sign_change0)) {
+        df <- snap_shifted_contours_to_variety(df, poly)
+        df <- postprocess_projected_paths(
+          df = df,
+          poly = poly,
+          rangex = rangex,
+          rangey = rangey,
+          nx = nx_eff,
+          ny = ny_eff,
+          shift = shift,
+          no_sign_change0 = no_sign_change0
+        )
+        emit_shifted_recovery_disclaimer(shift, projection, no_sign_change0)
       }
       df$Polynomial <- as.character(mpoly_to_stan(poly))
       return(df)
     } else if (is.mpolyList(poly)) {
       data_list <- lapply(seq_along(poly), function(i) {
-        df0 <- poly_to_df(poly[[i]], rangex, rangey, nx_eff, ny_eff, shift = 0)
+        probe_grid <- effective_variety_grid(nx_eff, ny_eff, shift, FALSE)
+        df0 <- poly_to_df(poly[[i]], rangex, rangey, probe_grid$nx, probe_grid$ny, shift = 0)
         check_sign_warning(df0$z + shift, shift)
         no_sign_change0 <- !has_strict_sign_change(df0$z)
+        grid_eff <- effective_variety_grid(nx_eff, ny_eff, shift, no_sign_change0)
         if (shift == 0 && no_sign_change0) {
           message("Zero contours were generated")
           return(tibble::tibble())
@@ -228,19 +267,24 @@ StatVariety <- ggproto(
           poly = poly[[i]],
           rangex = rangex,
           rangey = rangey,
-          nx = nx_eff,
-          ny = ny_eff,
+          nx = grid_eff$nx,
+          ny = grid_eff$ny,
           shift = shift,
           group = paste0(data$group[1], "_", i)
         )
-        if (shift != 0) {
-          if (no_sign_change0) {
-            df <- snap_shifted_contours_to_variety(df, poly[[i]])
-          }
-          # Same de-duplication policy for each polynomial in an mpolyList.
-          dx <- (rangex[2] - rangex[1]) / max(nx_eff - 1, 1)
-          dy <- (rangey[2] - rangey[1]) / max(ny_eff - 1, 1)
-          df <- collapse_near_duplicate_contours(df, tol = 0.75 * max(dx, dy))
+        if (should_project_contours(df, poly[[i]], projection, shift, no_sign_change0)) {
+          df <- snap_shifted_contours_to_variety(df, poly[[i]])
+          df <- postprocess_projected_paths(
+            df = df,
+            poly = poly[[i]],
+            rangex = rangex,
+            rangey = rangey,
+            nx = grid_eff$nx,
+            ny = grid_eff$ny,
+            shift = shift,
+            no_sign_change0 = no_sign_change0
+          )
+          emit_shifted_recovery_disclaimer(shift, projection, no_sign_change0)
         }
         df$Polynomial <- as.character(mpoly_to_stan(poly[[i]]))
         return(df)
@@ -279,11 +323,13 @@ geom_variety <- function(
     poly,
     vary_colour = FALSE,
     shift = 0,
+    projection = c("auto", "on", "off"),
     na.rm = FALSE,
     show.legend = NA,
     inherit.aes = TRUE
 ) {
   # Default to linetype differences; colour mapping is opt-in via vary_colour.
+  projection <- match.arg(projection)
   if (is.null(data)) {
     data <- ensure_nonempty_data
   }
@@ -313,6 +359,7 @@ geom_variety <- function(
     params = list(
       poly = poly,
       shift = shift,
+      projection = projection,
       na.rm = na.rm,
       ...
     )

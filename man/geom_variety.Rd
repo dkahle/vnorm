@@ -15,12 +15,13 @@ stat_variety(
   position = "identity",
   ...,
   poly = NULL,
-  n = 101,
+  n = 201,
   nx = n,
   ny = n,
   xlim = NULL,
   ylim = NULL,
   shift = 0,
+  projection = c("auto", "on", "off"),
   na.rm = FALSE,
   show.legend = NA,
   inherit.aes = TRUE
@@ -35,6 +36,7 @@ geom_variety(
   poly,
   vary_colour = FALSE,
   shift = 0,
+  projection = c("auto", "on", "off"),
   na.rm = FALSE,
   show.legend = NA,
   inherit.aes = TRUE
@@ -69,25 +71,34 @@ This is mainly useful when the polynomial does not cross zero on the
 plotting grid (for example, \code{p^2}). If \code{shift = 0} and all sampled values
 have one sign, \code{geom_variety()} prints a message suggesting a shift value.}
 
-\item{na.rm}{If \code{FALSE}, the default, missing values are removed with a warning. If
-\code{TRUE}, missing values are silently removed.}
+\item{projection}{Whether to project contour points back onto the true
+variety after contour extraction. \code{"off"} returns the raw shifted
+level-0 contour. \code{"on"} always projects. \code{"auto"} projects when a shift is
+used, when the polynomial has no strict sign change on the plotting grid,
+or when the raw contour is noticeably off the zero set. For shifted
+repeated-factor cases, \code{geom_variety()} also prints a caution that the
+recovered contour may still miss branches.}
 
-\item{show.legend}{Logical. Should this layer be included in the legends? \code{NA}, the default,
-includes if any aesthetics are mapped. \code{FALSE} never includes, and \code{TRUE}
-always includes. It can also be a named logical vector to finely select the
-aesthetics to display. To include legend keys for all levels, even when no
-data exists, use \code{TRUE}.  If \code{NA}, all levels are shown in legend, but
-unobserved levels are omitted.}
+\item{na.rm}{If \code{FALSE}, the default, missing values are removed with
+a warning. If \code{TRUE}, missing values are silently removed.}
 
-\item{inherit.aes}{If \code{FALSE}, overrides the default aesthetics, rather than combining with
-them. This is most useful for helper functions that define both data and
-aesthetics and shouldn't inherit behaviour from the default plot
-specification, e.g. \code{\link[ggplot2:annotation_borders]{annotation_borders()}}.}
+\item{show.legend}{logical. Should this layer be included in the legends?
+\code{NA}, the default, includes if any aesthetics are mapped.
+\code{FALSE} never includes, and \code{TRUE} always includes.
+It can also be a named logical vector to finely select the aesthetics to
+display. To include legend keys for all levels, even
+when no data exists, use \code{TRUE}.  If \code{NA}, all levels are shown in legend,
+but unobserved levels are omitted.}
 
-\item{stat}{The statistical transformation to use on the data for this layer. When using
-a \verb{geom_*()} function to construct a layer, the \code{stat} argument can be used
-to override the default coupling between geoms and stats. The \code{stat} argument
-accepts the following:
+\item{inherit.aes}{If \code{FALSE}, overrides the default aesthetics,
+rather than combining with them. This is most useful for helper functions
+that define both data and aesthetics and shouldn't inherit behaviour from
+the default plot specification, e.g. \code{\link[ggplot2:annotation_borders]{annotation_borders()}}.}
+
+\item{stat}{The statistical transformation to use on the data for this layer.
+When using a \verb{geom_*()} function to construct a layer, the \code{stat}
+argument can be used to override the default coupling between geoms and
+stats. The \code{stat} argument accepts the following:
 \itemize{
 \item A \code{Stat} ggproto subclass, for example \code{StatCount}.
 \item A string naming the stat. To give the stat as a string, strip the
@@ -104,6 +115,11 @@ linetype across an \code{mpolyList}.}
 }
 \description{
 Plot implicit polynomial varieties with \code{ggplot2}.
+}
+\details{
+\code{geom_variety()} extracts contour paths from a grid evaluation of the
+polynomial and, by default, projects those paths back onto \code{poly = 0} when
+that helps recover the intended zero set.
 }
 \section{Aesthetics}{
  \code{\link[=geom_variety]{geom_variety()}} understands the following aesthetics.
@@ -196,6 +212,20 @@ ggplot() +
 # Use the suggested shift (your printed value may differ slightly).
 ggplot() +
   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001) +
+  coord_equal()
+
+# Inspect the raw shifted level set versus the default projected recovery.
+p6 <- mp("y^2 - x^2")
+ggplot() +
+  geom_variety(
+    poly = p6^2,
+    xlim = c(-2, 2), ylim = c(-2, 2),
+    shift = -0.004, projection = "off"
+  ) +
+  coord_equal()
+
+ggplot() +
+  geom_variety(poly = p6^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.004) +
   coord_equal()
 
 

@@ -12,12 +12,13 @@ stat_variety(
   position = "identity",
   ...,
   poly = NULL,
-  n = 101,
+  n = 201,
   nx = n,
   ny = n,
   xlim = NULL,
   ylim = NULL,
   shift = 0,
+  projection = c("auto", "on", "off"),
   na.rm = FALSE,
   show.legend = NA,
   inherit.aes = TRUE
@@ -32,6 +33,7 @@ geom_variety(
   poly,
   vary_colour = FALSE,
   shift = 0,
+  projection = c("auto", "on", "off"),
   na.rm = FALSE,
   show.legend = NA,
   inherit.aes = TRUE
@@ -89,6 +91,16 @@ geom_variety(
   (for example, `p^2`). If `shift = 0` and all sampled values have one
   sign, `geom_variety()` prints a message suggesting a shift value.
 
+- projection:
+
+  Whether to project contour points back onto the true variety after
+  contour extraction. `"off"` returns the raw shifted level-0 contour.
+  `"on"` always projects. `"auto"` projects when a shift is used, when
+  the polynomial has no strict sign change on the plotting grid, or
+  when the raw contour is noticeably off the zero set. For shifted
+  repeated-factor cases, `geom_variety()` also prints a caution that the
+  recovered contour may still miss branches.
+
 - na.rm:
 
   If `FALSE`, the default, missing values are removed with a warning. If
@@ -136,6 +148,12 @@ geom_variety(
   control per-polynomial colours with `scale_colour_*()`. Defaults to
   `FALSE`, which keeps a constant line colour and varies only linetype
   across an `mpolyList`.
+
+## Details
+
+`geom_variety()` extracts contour paths from a grid evaluation of the
+polynomial and, by default, projects those paths back onto `poly = 0`
+when that helps recover the intended zero set.
 
 ## Aesthetics
 
@@ -253,6 +271,24 @@ ggplot() +
 ggplot() +
   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001) +
   coord_equal()
+#> Using shift = -0.001 to contour a nearby level set. For repeated-factor varieties, the projected result may still miss branches; if the unsquared polynomial is available, prefer plotting that directly.
+
+
+# Inspect the raw shifted level set versus the default projected recovery.
+p6 <- mp("y^2 - x^2")
+ggplot() +
+  geom_variety(
+    poly = p6^2,
+    xlim = c(-2, 2), ylim = c(-2, 2),
+    shift = -0.004, projection = "off"
+  ) +
+  coord_equal()
+
+
+ggplot() +
+  geom_variety(poly = p6^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.004) +
+  coord_equal()
+#> Using shift = -0.004 to contour a nearby level set. For repeated-factor varieties, the projected result may still miss branches; if the unsquared polynomial is available, prefer plotting that directly.
 
 
 ```

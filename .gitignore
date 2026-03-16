@@ -9,5 +9,11 @@ check/
 *.tar.gz
 inst/paper/
 README.html
+README_cache/
+cache/
+figure/
+geom_variety_section_draft.log
+geom_variety_section_draft.pdf
+geom_variety_section_draft.tex
 Rplots.pdf
 man/figures/logo-preview.png
