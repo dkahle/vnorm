@@ -1,18 +1,18 @@
-# Internal helper to generate Stan code for multivariate variety models.
+# internal helper to generate Stan code for multivariate variety models
 
 make_multivariety_stan_codes <- function(num_of_vars,
                                          totaldeg,
                                          num_of_poly,
                                          homo = TRUE,
-                                         w = TRUE,
+                                         windowed = TRUE,
                                          basis = c("x", "y", "z")) {
-  # Track variable sets for each polynomial in the system.
+  # track variable sets for each polynomial in the system
   vars <- list()
   for (i in seq_len(num_of_poly)) {
     vars[[i]] <- basis[seq_len(num_of_vars[i])]
   }
 
-  # Build coefficient data declarations for every polynomial.
+  # build coefficient data declarations for every polynomial
   var_for_data_block <- list()
   for (i in seq_len(num_of_poly)) {
     var_for_data_block[[i]] <- mpoly::basis_monomials(
@@ -37,15 +37,15 @@ make_multivariety_stan_codes <- function(num_of_vars,
   )
   data_block <- paste0(data_block, ";")
 
-  if (w) {
+  if (windowed) {
     data_block <- paste0(data_block, "\n  real w;")
   }
 
   data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
 
-  # Parameter declarations for the union of variables across equations.
+  # parameter declarations for the union of variables across equations
   vars_for_params <- unique(unlist(vars))
-  if (w) {
+  if (windowed) {
     params_block <- paste(sapply(vars_for_params, function(var) {
       paste0("  real<lower=-", "w", ", upper=", "w", "> ", var, ";")
     }), collapse = "\n")
@@ -56,7 +56,7 @@ make_multivariety_stan_codes <- function(num_of_vars,
   }
   params_block <- paste0("\nparameters {\n", params_block, "\n}\n")
 
-  # Build vector g and Jacobian entries used by the model.
+  # build vector g and Jacobian entries used by the model
   g <- list()
   g_coef <- list()
   g_terms <- list()
@@ -103,10 +103,11 @@ make_multivariety_stan_codes <- function(num_of_vars,
     "]';"
   )
   if (homo) {
-    # Homoskedastic case uses symbolic Jacobian entries.
+    # homoskedastic case uses symbolic Jacobian entries
     for (i in seq_len(num_of_poly)) {
       derivatives[[i]] <- unlist(derivatives_pre[[i]])
     }
+    # empty derivative expressions (from constant terms) become zero
     derivatives <- lapply(derivatives, function(v) {
       v[v == "**"] <- 0
       v
@@ -119,7 +120,7 @@ make_multivariety_stan_codes <- function(num_of_vars,
       collapse = ",\n"
     )
   } else {
-    # Heteroskedastic path uses identity Jacobian surrogate.
+    # heteroskedastic path uses identity Jacobian surrogate
     n_eqs <- num_of_poly
     n_vars <- max(num_of_vars)
     jac <- array("", dim = c(n_eqs, n_vars))
@@ -142,7 +143,7 @@ make_multivariety_stan_codes <- function(num_of_vars,
   )
   trans_block <- paste0("\ntransformed parameters {\n", g, "\n", dg, "\n}\n")
 
-  # Assemble full Stan program text.
+  # assemble full Stan program text
   model_block <- paste0(
     "\nmodel {\ntarget += normal_lpdf(0.00 | J' * ((J*J') \\ g), si);\n}"
   )

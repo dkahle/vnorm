@@ -1,5 +1,5 @@
 get_listed_coeficients <- function(coefs) {
-  # Convert monomial names to Stan data names (e.g., x^2 y -> bx2y).
+  # convert monomial names to Stan data names (e.g., x^2 y -> bx2y)
   convert_names <- function(term) {
     term <- gsub("\\s+", "", term)
     if (term == "1") return("b1")
@@ -11,7 +11,7 @@ get_listed_coeficients <- function(coefs) {
 }
 
 mpoly_to_stan <- function(mpoly) {
-  # Print polynomial in Stan-compatible syntax and parseable legend labels.
+  # print polynomial in Stan-compatible syntax and parseable legend labels
   p <- get("print.mpoly", asNamespace("mpoly"))
   result <- p(mpoly, stars = TRUE, silent = TRUE, plus_pad = 0L, times_pad = 0L)
   result <- gsub("[*]{2}", "^", result)
@@ -19,7 +19,7 @@ mpoly_to_stan <- function(mpoly) {
 }
 
 mpolyList_to_stan <- function(mpolyList) {
-  # Print a polynomial list as a Stan vector expression payload.
+  # print a polynomial list as a Stan vector expression payload
   p <- get("print.mpolyList", asNamespace("mpoly"))
   result <- p(
     mpolyList,
@@ -34,7 +34,7 @@ mpolyList_to_stan <- function(mpolyList) {
 }
 
 get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
-  # Construct symbolic derivative in Stan syntax for generated template models.
+  # construct symbolic derivative in Stan syntax for generated template models
   d <- get("deriv.mpoly", asNamespace("mpoly"))
 
   num_coef <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], deg)
@@ -62,6 +62,7 @@ get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
   sym_coef <- get_listed_coeficients(sym_coef)
   sym_coef <- names(sym_coef)
 
+  # pair numeric coefficients, symbolic names, and monomial terms for Stan output
   df_for_der <- data.frame(
     num_coef = num_coef,
     indeterminates = indeterminates,
@@ -69,6 +70,8 @@ get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
   )
 
   df_for_der <- dplyr::filter(df_for_der, num_coef != 0)
+
+  # strip trivial 1* factors from the derivative expression
   gsub(
     "1\\*|\\*1",
     "",

@@ -47,7 +47,7 @@ variety_solve <- function(polylist,
                           show_message = FALSE,
                           stanfit = FALSE,
                           ...) {
-  # Solve by sampling then averaging projected draws coordinate-wise.
+  # solve by sampling then averaging projected draws coordinate-wise
   if (!inherits(polylist, "mpoly") && !inherits(polylist, "mpolyList")) {
     stop("`polylist` must be an mpoly or mpolyList object.", call. = FALSE)
   }
@@ -68,6 +68,9 @@ variety_solve <- function(polylist,
   )
 
   df <- as.data.frame(samps$draws(format = "df", inc_warmup = inc_warmup))
+
+  # take the last n post-warmup draws (clamp if fewer available)
+  n <- min(n, nrow(df))
   df <- df[(nrow(df) - n + 1):nrow(df), mpoly::vars(polylist), drop = FALSE]
   row.names(df) <- NULL
   df <- df |> colMeans() |> round(sig_digit)

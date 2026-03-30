@@ -1,11 +1,10 @@
-# Internal Stan code generation helper used by rvnorm().
-# Split out from rvnorm.R so coverage for rvnorm() can be assessed separately.
+# internal Stan code generation helper used by rvnorm()
+# split out from rvnorm.R so coverage for rvnorm() can be assessed separately
 
 create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
   d <- get("deriv.mpoly", asNamespace("mpoly"))
 
   if (n_eqs == 1L) {
-    # Single polynomial provided
     if (!is.mpoly(poly)) poly <- mp(poly)
     if (missing(vars)) vars <- mpoly::vars(poly)
     n_vars <- length(vars)
@@ -19,13 +18,14 @@ create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
       } else {
         gradient(poly)
       }
+
+      # squared gradient norm for homoskedastic normalization
       ndg_sq <- if (n_vars >1)  Reduce(`+`, grad ^ 2) else grad^2
       ndg_string <- glue::glue("sqrt({mpoly_to_stan(ndg_sq)})")
     } else {
       ndg_string <- "1"
     }
 
-    # Set variables
     if (missing(w)) {
       parms <- glue::glue("real {vars};")
       parms <- paste(parms, collapse = "\n  ")
@@ -66,7 +66,6 @@ model {{
     ")
 
   } else {
-    # Multiple polynomials provided
     vars <- mpoly::vars(poly)
     n_vars <- length(vars)
     printed_polys <- mpolyList_to_stan(poly)
@@ -84,11 +83,12 @@ model {{
         }
       }
     }
+
+    # format Jacobian rows as Stan matrix literal
     printed_jac <- apply(printed_jac, 1, paste, collapse = ", ")
     printed_jac <- paste("      [", printed_jac, "]", collapse = ", \n")
     printed_jac <- paste0("[\n", printed_jac, "\n    ]")
 
-    # Set variables
     if (missing(w)) {
       parms <- paste(sprintf("real %s;", vars), collapse = "\n  ")
     } else if (is.numeric(w) && length(w) == 1L) {
@@ -117,13 +117,15 @@ model {{
     model_string <- if (length(sd) == 1) {
       "normal_lpdf("
     } else {
-      " multi_normal_lpdf("
+      "multi_normal_lpdf("
     }
     mu_string <- if (length(sd) == 1) {
       "0.00"
     } else {
       paste0("[", paste(rep(0.00, n_vars), collapse = ","), "]'")
     }
+
+    # pseudoinverse form depends on system shape (square, over, under)
     gbar_string <- if (n_vars == n_eqs) {
       "J \\ g"
     } else if (n_vars > n_eqs) {

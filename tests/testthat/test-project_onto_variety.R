@@ -134,3 +134,49 @@ test_that("gradient descent and newton support data frame batch inputs", {
   expect_equal(dim(gd_out), dim(pts))
   expect_equal(dim(newt_out), dim(pts))
 })
+
+test_that("project_onto_variety n_correct parameter affects convergence", {
+  p <- mp("x^2 + y^2 - 1")
+  pf <- as.function(p, varorder = c("x", "y"), silent = TRUE)
+  x_few <- suppressWarnings(
+    project_onto_variety(c(1.4, 0.3), p, al = c(1, 1), n_correct = 0, tol = 1)
+  )
+  x_many <- project_onto_variety(c(1.4, 0.3), p, al = c(1, 1), n_correct = 5, tol = 1e-6)
+  expect_true(abs(pf(x_many)) <= abs(pf(x_few)) + 1e-6)
+})
+
+test_that("project_onto_variety works on non-circle polynomial (ellipse)", {
+  p <- mp("x^2 + 4 y^2 - 1")
+  pf <- as.function(p, varorder = c("x", "y"), silent = TRUE)
+  x_proj <- project_onto_variety(c(1.5, 0.5), p, al = c(1, 1), tol = 1e-3)
+  expect_length(x_proj, 2)
+  expect_lt(abs(pf(x_proj)), 1e-2)
+})
+
+test_that("project_onto_variety works in 3D", {
+  p <- mp("x^2 + y^2 + z^2 - 1")
+  pf <- as.function(p, varorder = c("x", "y", "z"), silent = TRUE)
+  x_proj <- project_onto_variety(c(1, 1, 1), p, al = c(1, 1), tol = 1e-3)
+  expect_length(x_proj, 3)
+  expect_lt(abs(pf(x_proj)), 1e-2)
+})
+
+test_that("project_onto_variety tibble input returns tibble", {
+  p <- mp("x^2 + y^2 - 1")
+  pts <- tibble::tibble(x = c(1.2, -1.1), y = c(0.1, 0.3))
+  out <- project_onto_variety(pts, p, al = c(1, 1), tol = 1e-3)
+  expect_true(tibble::is_tibble(out))
+  expect_equal(nrow(out), 2)
+  expect_equal(ncol(out), 2)
+})
+
+test_that("project_onto_variety emits warning on convergence failure", {
+  p <- mp("x^2 + y^2 - 1")
+  expect_warning(
+    project_onto_variety(
+      c(100, 100), p, al = c(1, 1),
+      adaptive = FALSE, dt = 0.5, tol = 1e-12
+    ),
+    "Tolerance not met"
+  )
+})

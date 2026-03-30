@@ -28,15 +28,15 @@ Imports:
     dplyr,
     MASS,
     digest,
-    scales,
-    here,
-    readr
-Suggests: 
+    scales
+Suggests:
     testthat (>= 3.0.0),
     withr,
     vdiffr,
     purrr,
     ggdensity,
     tidyverse,
-    covr
+    covr,
+    here,
+    readr
 Config/testthat/edition: 3

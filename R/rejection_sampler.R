@@ -55,7 +55,7 @@ rejection_sampler <- function(n,
                               correct_p_coefficients = FALSE,
                               correct_dp_coefficients = FALSE,
                               message = FALSE) {
-  # Expand scalar/length-2 window specs to per-variable bounds.
+  # expand scalar/length-2 window specs to per-variable bounds
   n_vars <- length(vars)
   if (is.numeric(w) && length(w) == 1) {
     w <- replicate(length(vars), c(-w, w), simplify = FALSE)
@@ -68,7 +68,7 @@ rejection_sampler <- function(n,
   if (correct_p_coefficients) poly <- normalize_coefficients(poly)
 
   if (is.mpolyList(poly)) {
-    # mpolyList case: g(x) is vector-valued and uses Jacobian-based scaling.
+    # mpolyList case: g(x) is vector-valued and uses Jacobian-based scaling
     n_polys <- length(poly)
     pf <- as.function(poly, varorder = vars, silent = TRUE)
     dp <- dpfs <- vector(mode = "list", length = n_polys)
@@ -78,14 +78,16 @@ rejection_sampler <- function(n,
       dpfs[[i]] <- as.function(dp[[i]], varorder = vars, silent = TRUE)
     }
 
+    # assemble Jacobian row-by-row from per-polynomial gradients
     dpf <- function(x) {
       mat <- matrix(NA_real_, nrow = n_polys, ncol = n_vars)
       for (i in seq_len(n_polys)) mat[i, ] <- dpfs[[i]](x)
       mat
     }
 
+    # build the acceptance kernel based on sd shape and homo setting
     if (is.vector(sd)) {
-      # Scalar/diagonal scale case.
+      # scalar/diagonal scale case
       if (homo) {
         if (length(sd) == 1) {
           pbar <- function(x) {
@@ -142,7 +144,7 @@ rejection_sampler <- function(n,
         }
       }
     } else if (is.matrix(sd)) {
-      # Full covariance case via spectral decomposition.
+      # full covariance case via spectral decomposition
       eig_sd <- eigen(sd, symmetric = TRUE)
       la <- eig_sd$values
       P <- eig_sd$vectors
@@ -171,11 +173,12 @@ rejection_sampler <- function(n,
       ptilde <- function(x) exp(-pbar(x) / 2)
     }
   } else if (is.mpoly(poly)) {
-    # Single-polynomial case.
+    # single-polynomial case
     pf <- as.function(poly, varorder = vars, silent = TRUE)
     dp <- deriv(poly, vars)
     if (correct_dp_coefficients) dp <- normalize_coefficients(dp)
 
+    # sum of squared partial derivatives (gradient norm squared)
     if (n_vars > 1) {
       ssdp <- mp("0")
       for (i in seq_len(n_vars)) {
@@ -192,8 +195,10 @@ rejection_sampler <- function(n,
     }
 
     if (homo) {
-      # Normalize by gradient magnitude for approximate arc-length scaling.
+      # normalize by gradient magnitude for approximate arc-length scaling
       pbar <- function(x) pf(x) / sqrt(ssdpf(x))
+
+      # log-space arithmetic avoids overflow of pbar(x)^2
       log_ptilde <- function(x) {
         -exp((2 * log(abs(pf(x))) - log(ssdpf(x))) - log(2) - 2 * log(sd))
       }
@@ -210,8 +215,9 @@ rejection_sampler <- function(n,
 
   mat <- matrix(nrow = 0, ncol = n_vars, dimnames = list(NULL, vars))
   n_remaining <- n
+
+  # rejection loop: propose uniformly in box, accept by kernel
   while (n_remaining > 0) {
-    # Propose points uniformly inside the box, then accept/reject.
     if (message) cat("\r", strrep(" ", 80))
     if (message) {
       cat(
@@ -242,8 +248,8 @@ rejection_sampler <- function(n,
       n_remaining <- n_remaining - n_accept
     }
   }
-  cat("\r", strrep(" ", 80))
-  cat("\r")
+  if (message) cat("\r", strrep(" ", 80))
+  if (message) cat("\r")
   row.names(mat) <- NULL
   out <- if (output == "tibble") tibble::as_tibble(mat) else mat
   out

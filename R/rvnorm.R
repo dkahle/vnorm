@@ -46,6 +46,8 @@
 #' @param user_compiled If `TRUE`, use a user-compiled Stan program produced by
 #'   [compile_stan_code()]. Defaults to `FALSE`.
 #' @param show_messages If `TRUE`, Stan sampler messages are shown.
+#' @param seed Optional integer seed passed to CmdStan's sampler for
+#'   reproducibility. Note that R's `set.seed()` does not control Stan's RNG.
 #' @name rvnorm
 #' @return Either (1) matrix whose rows are the individual draws from the
 #'   distribution, (2) a [tbl_df-class] object with the draws along with
@@ -295,8 +297,13 @@ rvnorm <- function(
   thin = 1L, verbose = FALSE, cores = min(chains, getOption("mc.cores", 1L)),
   homo = TRUE, w, vars, numerator, denominator, refresh = 0L,
   code_only = FALSE, pre_compiled = TRUE, user_compiled = FALSE,
-  show_messages = FALSE, ...
+  show_messages = FALSE, seed = NULL, ...
 ) {
+
+  if (!is.numeric(n) || length(n) != 1L || n < 1 || n != as.integer(n)) {
+    stop("`n` must be a positive integer.", call. = FALSE)
+  }
+  n <- as.integer(n)
 
   if (rejection) {
     if (missing(w)) {
@@ -334,26 +341,25 @@ rvnorm <- function(
       call. = FALSE
     )
   }
-  if (!is.null(Sigma)) {
-    sd <- Sigma
-  }
+  # resolve sd/Sigma into a single value for Stan
+  sigma_stan <- if (!is.null(Sigma)) Sigma else sd
   n_vars <- length(mpoly::vars(poly))
-  if (length(sd) == 1) {
-    sd <- sd
-  } else if (is.vector(sd) && length(sd) == n_vars) {
-    sd <- diag(sd)
-  } else if (is.matrix(sd) && length(diag(sd)) == n_vars) {
-    sd <- sd
+  if (is.numeric(sigma_stan) && length(sigma_stan) == 1) {
+  } else if (is.vector(sigma_stan) && length(sigma_stan) == n_vars) {
+    sigma_stan <- diag(sigma_stan)
+  } else if (is.matrix(sigma_stan) &&
+    nrow(sigma_stan) == n_vars && ncol(sigma_stan) == n_vars) {
   } else {
     stop(
-      "`Sigma` should be a number, vector of length equal to number of ",
-      "variables or matrix with diagonal length equal to number of variables.",
+      "`Sigma` should be a scalar, a vector of length equal to the number of ",
+      "variables, or a square matrix with dimensions equal to the number of ",
+      "variables.",
       call. = FALSE
     )
   }
 
-  if (refresh) {
-    refresh <- if (verbose) max(ceiling(n / 10), 1L) else 0L
+  if (isTRUE(verbose) && refresh == 0L) {
+    refresh <- max(ceiling(n / 10), 1L)
   }
 
   if (
@@ -361,18 +367,20 @@ rvnorm <- function(
       length(mpoly::vars(poly)) > 3 ||
       base::max(mpoly::totaldeg(poly)) > 3
   ) {
-    # Precompiled binaries only cover a small catalog of low-degree templates.
+    # precompiled binaries only cover a small catalog of low-degree templates
     pre_compiled <- FALSE
   }
 
   if (code_only) {
-    stan_code <- create_stan_code(poly, sd, n_eqs, w, homo)
+    stan_code <- create_stan_code(poly, sigma_stan, n_eqs, w, homo)
     return(stan_code)
   }
 
   if (user_compiled) {
-    # Look up a previously compiled user template from the internal cache.
-    model_name <- generate_model_name(poly = poly, homo = homo, w = !missing(w))
+    # look up a previously compiled user template from the internal cache
+    model_name <- generate_model_name(
+      poly = poly, homo = homo, windowed = !missing(w)
+    )
     compiled_stan_info <- get_compiled_stan_info()
     if (nrow(compiled_stan_info) == 0) {
       stop(
@@ -391,16 +399,16 @@ rvnorm <- function(
     }
 
     model <- cmdstan_model(model_path[1])
-    stan_data <- get_coefficeints_data(poly)
+    stan_data <- get_coefficients_data(poly)
     stan_data <- if (missing(w)) {
-      c(stan_data, "si" = sd)
+      c(stan_data, "si" = sigma_stan)
     } else {
-      c(stan_data, "w" = w, "si" = sd)
+      c(stan_data, "w" = w, "si" = sigma_stan)
     }
   } else if (pre_compiled) {
     poly_original <- poly
     output_needs_rewriting_original <- output_needs_rewriting
-    # Remap variable names to x/y/z because shipped models are keyed that way.
+    # remap variable names to x/y/z because shipped models are keyed that way
     list_for_transformation <- check_and_replace_vars(poly_original)
     if (!is.null(unlist(list_for_transformation$mapping))) {
       poly <- list_for_transformation$polynomial
@@ -427,9 +435,8 @@ rvnorm <- function(
       ),
       error = function(e) {
         message(
-          "Pre-compiled Stan model not available (",
-          conditionMessage(e),
-          "); falling back to regular rvnorm sampling."
+          "pre-compiled Stan model not available; ",
+          "falling back to regular rvnorm sampling"
         )
         NULL
       }
@@ -437,27 +444,27 @@ rvnorm <- function(
     if (!model_has_usable_executable(model)) {
       poly <- poly_original
       output_needs_rewriting <- output_needs_rewriting_original
-      stan_code <- create_stan_code(poly, sd, n_eqs, w, homo, vars)
+      stan_code <- create_stan_code(poly, sigma_stan, n_eqs, w, homo, vars)
       stan_file <- write_stan_file(stan_code)
       model <- cmdstan_model(stan_file)
-      stan_data <- list("si" = sd)
+      stan_data <- list("si" = sigma_stan)
     } else {
       stan_data <- make_coefficients_data(poly, num_of_vars, deg)
       stan_data <- if (missing(w)) {
-        c(stan_data, "si" = sd)
+        c(stan_data, "si" = sigma_stan)
       } else {
-        c(stan_data, "w" = w, "si" = sd)
+        c(stan_data, "w" = w, "si" = sigma_stan)
       }
     }
   } else {
-    # Fall back to generating and compiling a temporary Stan model.
-    stan_code <- create_stan_code(poly, sd, n_eqs, w, homo, vars)
+    # fall back to generating and compiling a temporary Stan model
+    stan_code <- create_stan_code(poly, sigma_stan, n_eqs, w, homo, vars)
     stan_file <- write_stan_file(stan_code)
     model <- cmdstan_model(stan_file)
-    stan_data <- list("si" = sd)
+    stan_data <- list("si" = sigma_stan)
   }
 
-  samps <- model$sample(
+  sample_args <- list(
     data = stan_data,
     refresh = refresh,
     iter_warmup = warmup,
@@ -470,11 +477,14 @@ rvnorm <- function(
     show_messages = show_messages,
     ...
   )
+  # seed is injected separately to avoid passing NULL to cmdStan
+  if (!is.null(seed)) sample_args$seed <- seed
+  samps <- do.call(model$sample, sample_args)
 
   if (output == "simple") {
-    # Keep only the requested post-warmup rows and coordinate columns.
     df <- as.data.frame(samps$draws(format = "df", inc_warmup = inc_warmup))
-    df <- df[(nrow(df) - n + 1):nrow(df), mpoly::vars(poly)]
+    if (!inc_warmup) df <- tail(df, n)
+    df <- df[, mpoly::vars(poly), drop = FALSE]
     row.names(df) <- NULL
     if (output_needs_rewriting) {
       df <- rename_output_df(df, replacement_list = var_info)
@@ -484,9 +494,8 @@ rvnorm <- function(
 
   if (output == "tibble") {
     df <- as.data.frame(samps$draws(format = "df", inc_warmup = inc_warmup))
-    df <- df[(nrow(df) - n + 1):nrow(df), ]
+    if (!inc_warmup) df <- tail(df, n)
     row.names(df) <- NULL
-    # Move lp__ to the last column for a stable display layout.
     df <- cbind(df[, -1], df[, 1])
     if (output_needs_rewriting) {
       df <- rename_output_df(df, replacement_list = var_info)

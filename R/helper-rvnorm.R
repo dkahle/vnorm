@@ -1,27 +1,32 @@
 make_coefficients_data <- function(
     poly, num_of_vars, deg, basis = c("x", "y", "z")
   ) {
-  # Build a complete coefficient list (missing terms filled with zero).
-  required_coefs <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], deg)
-  required_coefs <- lapply(required_coefs, reorder, varorder = basis)
-  required_coefs <- lapply(required_coefs, coef)
-  required_coefs <- unlist(required_coefs)
-  required_coefs <- get_listed_coeficients(required_coefs)
-  required_coefs <- lapply(required_coefs, function(x) 0L)
+  # enumerate all monomials up to degree; zero-fill any not in poly
+  monos <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], deg)
 
+  # single pass: reorder, extract coef name, convert to Stan name
+  stan_names <- vapply(monos, function(m) {
+    nm <- names(coef(reorder(m, varorder = basis)))
+    nm <- gsub("\\s+", "", nm)
+    if (nm == "1") return("b1")
+    paste0("b", gsub("\\^", "", nm))
+  }, character(1))
+
+  required_coefs <- as.list(stats::setNames(rep(0L, length(stan_names)), stan_names))
   available_coef <- get_listed_coeficients(coef(poly))
   required_coefs[names(available_coef)] <- available_coef
   required_coefs
 }
 
-get_coefficeints_data <- function(poly) {
-  # Collect named coefficients for either a single polynomial
-  # or polynomial list.
+get_coefficients_data <- function(poly) {
+  # collect named coefficients for either a single polynomial
+  # or polynomial list
   if (is.mpoly(poly)) {
     data <- get_listed_coeficients(coef(poly))
   } else if (is.mpolyList(poly)) {
     poly <- canonicalize_mpolylist(poly)
     poly <- sort_mpolylist_lexicographically(poly)
+    # suffix coefficient names with polynomial index (e.g. bx2_1, by_2)
     convert_names <- function(term, i) {
       term <- gsub("\\s+", "", term)
       if (term == "1") return(paste0("b1_", i))
@@ -40,7 +45,7 @@ get_coefficeints_data <- function(poly) {
 }
 
 check_and_replace_vars <- function(p) {
-  # Map arbitrary variable names to x/y/z for precompiled Stan templates.
+  # map arbitrary variable names to x/y/z for precompiled Stan templates
   current_vars <- mpoly::vars(p)
   num_vars <- length(current_vars)
   target_vars <- list(
@@ -55,11 +60,12 @@ check_and_replace_vars <- function(p) {
 
   expected_vars <- target_vars[[num_vars]]
   if (setequal(current_vars, expected_vars)) {
-    return(list(polynomial = p, mapping = list()))  # No replacement needed
+    return(list(polynomial = p, mapping = list()))
   }
 
+  # two-pass swap via temporary names to avoid collisions (e.g. x->y, y->x)
   var_mapping <- list()
-  temp_vars <- paste0("tmp", seq_along(current_vars))  # Temporary placeholders
+  temp_vars <- paste0("tmp", seq_along(current_vars))
 
   for (i in seq_along(current_vars)) {
     p <- swap(p, current_vars[i], temp_vars[i])
@@ -76,7 +82,7 @@ check_and_replace_vars <- function(p) {
 }
 
 rename_output_df <- function(df, replacement_list) {
-  # Restore original variable names in output after x/y/z remapping.
+  # restore original variable names in output after x/y/z remapping
   names(df) <- sapply(names(df), function(col) {
     if (col %in% names(replacement_list)) {
       replacement_list[[col]]

@@ -26,13 +26,16 @@ fake_cmdstan_fit <- function(draws_df) {
 
 fake_cmdstan_model <- function(draws_df, capture = NULL) {
   fit <- fake_cmdstan_fit(draws_df)
+  exe <- tempfile()
+  writeLines("fake", exe)
   list(
     sample = function(...) {
       if (!is.null(capture)) {
         capture$args <- list(...)
       }
       fit
-    }
+    },
+    exe_file = function() exe
   )
 }
 
@@ -302,7 +305,7 @@ test_that("rvnorm() user_compiled path works with cached model metadata", {
   draws_df <- data.frame(
     lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
   )
-  model_name <- generate_model_name(mp("x^2 + y^2 - 1"), homo = TRUE, w = FALSE)
+  model_name <- generate_model_name(mp("x^2 + y^2 - 1"), homo = TRUE, windowed = FALSE)
   set_compiled_stan_info(data.frame(
     name = model_name, path = "cached-model.stan", stringsAsFactors = FALSE
   ))
@@ -310,7 +313,7 @@ test_that("rvnorm() user_compiled path works with cached model metadata", {
 
   testthat::local_mocked_bindings(
     cmdstan_model = function(...) fake_cmdstan_model(draws_df),
-    get_coefficeints_data = function(...) list(fake_coef = 1),
+    get_coefficients_data = function(...) list(fake_coef = 1),
     .package = "vnorm"
   )
 
@@ -353,11 +356,11 @@ test_that("rvnorm() validates Sigma dimensions before sampling", {
       Sigma = c(1, 2, 3),
       code_only = TRUE
     ),
-    "`Sigma` should be a number, vector of length equal to number of variables"
+    "`Sigma` should be a scalar"
   )
 })
 
-test_that("rvnorm() passes computed refresh to sample when refresh=TRUE and verbose=TRUE", {
+test_that("rvnorm() computes refresh from n when verbose=TRUE and refresh is default", {
   draws_df <- data.frame(
     lp__ = seq_len(20),
     x = seq(0.1, 2.0, length.out = 20),
@@ -378,7 +381,6 @@ test_that("rvnorm() passes computed refresh to sample when refresh=TRUE and verb
     poly = mp(c("x^2 + y^2 - 1", "y")),
     sd = 0.05,
     pre_compiled = TRUE,
-    refresh = TRUE,
     verbose = TRUE,
     chains = 2,
     cores = 1
@@ -388,7 +390,7 @@ test_that("rvnorm() passes computed refresh to sample when refresh=TRUE and verb
   expect_gte(capture$args$refresh, 1)
 })
 
-test_that("rvnorm() sets refresh to 0 when refresh=TRUE and verbose=FALSE", {
+test_that("rvnorm() preserves user-supplied refresh value", {
   draws_df <- data.frame(
     lp__ = seq_len(20),
     x = seq(0.1, 2.0, length.out = 20),
@@ -409,13 +411,13 @@ test_that("rvnorm() sets refresh to 0 when refresh=TRUE and verbose=FALSE", {
     poly = mp(c("x^2 + y^2 - 1", "y")),
     sd = 0.05,
     pre_compiled = TRUE,
-    refresh = TRUE,
-    verbose = FALSE,
+    refresh = 500,
+    verbose = TRUE,
     chains = 2,
     cores = 1
   )
 
-  expect_equal(capture$args$refresh, 0)
+  expect_equal(capture$args$refresh, 500)
 })
 
 test_that("rvnorm() accepts character poly and valid Sigma shapes in code_only mode", {
@@ -482,4 +484,251 @@ test_that("rvnorm() emits stanfit rename warning in precompiled path", {
     "variable names as x,y,z"
   )
   expect_true(inherits(out, "CmdStanMCMC"))
+})
+
+test_that("rvnorm() returns all draws when inc_warmup = TRUE", {
+  warmup_df <- data.frame(
+    lp__ = seq_len(6),
+    x = seq(0.1, 0.6, length.out = 6),
+    y = seq(0.2, 0.7, length.out = 6),
+    check.names = FALSE
+  )
+  post_df <- data.frame(
+    lp__ = seq_len(4),
+    x = seq(0.7, 1.0, length.out = 4),
+    y = seq(0.8, 1.1, length.out = 4),
+    check.names = FALSE
+  )
+  combined_df <- rbind(warmup_df, post_df)
+
+  fake_fit <- structure(
+    list(
+      draws = function(format = "df", inc_warmup = FALSE) {
+        if (inc_warmup) combined_df else post_df
+      }
+    ),
+    class = "CmdStanMCMC"
+  )
+  exe <- tempfile()
+  writeLines("fake", exe)
+  fake_model <- list(
+    sample = function(...) fake_fit,
+    exe_file = function() exe
+  )
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_model,
+    .package = "vnorm"
+  )
+
+  out_with <- rvnorm(
+    n = 4,
+    poly = mp(c("x^2 + y^2 - 1", "y")),
+    sd = 0.05,
+    output = "tibble",
+    inc_warmup = TRUE,
+    pre_compiled = TRUE,
+    chains = 1,
+    cores = 1
+  )
+  expect_equal(nrow(out_with), nrow(combined_df))
+
+  out_without <- rvnorm(
+    n = 4,
+    poly = mp(c("x^2 + y^2 - 1", "y")),
+    sd = 0.05,
+    output = "tibble",
+    inc_warmup = FALSE,
+    pre_compiled = TRUE,
+    chains = 1,
+    cores = 1
+  )
+  expect_equal(nrow(out_without), 4)
+})
+
+test_that("rvnorm() errors for non-positive n", {
+  expect_error(rvnorm(n = 0, poly = mp("x"), sd = 0.1), "`n` must be a positive integer")
+  expect_error(rvnorm(n = -5, poly = mp("x"), sd = 0.1), "`n` must be a positive integer")
+})
+
+test_that("rvnorm() errors for non-integer n", {
+  expect_error(rvnorm(n = 2.5, poly = mp("x"), sd = 0.1), "`n` must be a positive integer")
+  expect_error(rvnorm(n = "a", poly = mp("x"), sd = 0.1), "`n` must be a positive integer")
+})
+
+test_that("rvnorm() Sigma dimension mismatch with matrix", {
+  expect_error(
+    rvnorm(n = 10, poly = mp("x^2 + y^2 - 1"), sd = 0.05, Sigma = matrix(1:9, 3, 3)),
+    "`Sigma` should be a scalar"
+  )
+})
+
+test_that("rvnorm() seed parameter is forwarded to Stan sampler", {
+  draws_df <- data.frame(
+    lp__ = seq_len(4), x = seq(0.1, 0.4, length.out = 4),
+    y = seq(0.2, 0.5, length.out = 4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "vnorm"
+  )
+
+  rvnorm(
+    n = 4, poly = mp(c("x^2 + y^2 - 1", "y")), sd = 0.05,
+    pre_compiled = TRUE, chains = 1, cores = 1, seed = 42
+  )
+  expect_equal(capture$args$seed, 42)
+})
+
+test_that("rvnorm() extra ... args are forwarded to Stan sampler", {
+  draws_df <- data.frame(
+    lp__ = seq_len(4), x = seq(0.1, 0.4, length.out = 4),
+    y = seq(0.2, 0.5, length.out = 4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "vnorm"
+  )
+
+  rvnorm(
+    n = 4, poly = mp(c("x^2 + y^2 - 1", "y")), sd = 0.05,
+    pre_compiled = TRUE, chains = 1, cores = 1, init = 0.5
+  )
+  expect_equal(capture$args$init, 0.5)
+})
+
+test_that("rvnorm() show_messages parameter is forwarded", {
+  draws_df <- data.frame(
+    lp__ = seq_len(4), x = seq(0.1, 0.4, length.out = 4),
+    y = seq(0.2, 0.5, length.out = 4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "vnorm"
+  )
+
+  rvnorm(
+    n = 4, poly = mp(c("x^2 + y^2 - 1", "y")), sd = 0.05,
+    pre_compiled = TRUE, chains = 1, cores = 1, show_messages = TRUE
+  )
+  expect_true(capture$args$show_messages)
+})
+
+test_that("rvnorm() handles character poly input through sampling path", {
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.7, 0.8), y = c(0.7, 0.6), check.names = FALSE
+  )
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df),
+    .package = "vnorm"
+  )
+
+  out <- rvnorm(
+    n = 2, poly = "x^2 + y^2 - 1", sd = 0.05,
+    pre_compiled = TRUE, chains = 1, cores = 1
+  )
+  expect_true(is.data.frame(out))
+  expect_equal(nrow(out), 2)
+  expect_true(all(c("x", "y") %in% names(out)))
+})
+
+test_that("rvnorm() homo=FALSE through sampling path", {
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.7, 0.8), y = c(0.7, 0.6), check.names = FALSE
+  )
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df),
+    .package = "vnorm"
+  )
+
+  out <- rvnorm(
+    n = 2, poly = mp("x^2 + y^2 - 1"), sd = 0.05,
+    homo = FALSE, pre_compiled = TRUE, chains = 1, cores = 1
+  )
+  expect_true(is.data.frame(out))
+  expect_equal(nrow(out), 2)
+})
+
+test_that("rvnorm() full non-diagonal Sigma passed to Stan data", {
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.7, 0.8), y = c(0.7, 0.6), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "vnorm"
+  )
+
+  S <- matrix(c(1, 0.5, 0.5, 1), 2, 2)
+  rvnorm(
+    n = 2, poly = mp(c("x^2 + y^2 - 1", "y")), Sigma = S, sd = 0.05,
+    pre_compiled = TRUE, chains = 1, cores = 1
+  )
+  expect_true(is.matrix(capture$args$data$si))
+  expect_equal(dim(capture$args$data$si), c(2, 2))
+})
+
+test_that("rvnorm() n < chains edge case sets iter_sampling to 1", {
+  draws_df <- data.frame(
+    lp__ = seq_len(4), x = seq(0.1, 0.4, length.out = 4),
+    y = seq(0.2, 0.5, length.out = 4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "vnorm"
+  )
+
+  rvnorm(
+    n = 1, poly = mp(c("x^2 + y^2 - 1", "y")), sd = 0.05,
+    pre_compiled = TRUE, chains = 4, cores = 1
+  )
+  expect_equal(capture$args$iter_sampling, 1)
+})
+
+test_that("rvnorm() Sigma as diagonal vector is converted to matrix", {
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.7, 0.8), y = c(0.7, 0.6), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "vnorm"
+  )
+
+  rvnorm(
+    n = 2, poly = mp(c("x^2 + y^2 - 1", "y")), sd = 0.05, Sigma = c(0.5, 0.5),
+    pre_compiled = TRUE, chains = 1, cores = 1
+  )
+  expect_true(is.matrix(capture$args$data$si))
+  expect_equal(capture$args$data$si, diag(c(0.5, 0.5)))
 })

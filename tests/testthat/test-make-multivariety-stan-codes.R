@@ -4,7 +4,7 @@ test_that("make_multivariety_stan_codes returns homoskedastic code with Jacobian
     totaldeg = c(1, 2),
     num_of_poly = 2,
     homo = TRUE,
-    w = TRUE
+    windowed = TRUE
   )
 
   expect_type(code, "character")
@@ -21,7 +21,7 @@ test_that("make_multivariety_stan_codes heteroskedastic path uses identity Jacob
     totaldeg = c(2, 1),
     num_of_poly = 2,
     homo = FALSE,
-    w = FALSE
+    windowed = FALSE
   )
 
   expect_false(grepl("real w;", code, fixed = TRUE))

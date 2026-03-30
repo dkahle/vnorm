@@ -27,6 +27,7 @@ rvnorm(
   pre_compiled = TRUE,
   user_compiled = FALSE,
   show_messages = FALSE,
+  seed = NULL,
   ...
 )
 }
@@ -84,6 +85,9 @@ for polynomials with three indeterminates and three degrees. Defaults to
 \code{\link[=compile_stan_code]{compile_stan_code()}}. Defaults to \code{FALSE}.}
 
 \item{show_messages}{If \code{TRUE}, Stan sampler messages are shown.}
+
+\item{seed}{Optional integer seed passed to CmdStan's sampler for
+reproducibility. Note that R's \code{set.seed()} does not control Stan's RNG.}
 
 \item{...}{Additional parameters passed to \code{stan()}.}
 }

@@ -253,6 +253,7 @@ StatVariety <- ggproto(
       df$Polynomial <- as.character(mpoly_to_stan(poly))
       return(df)
     } else if (is.mpolyList(poly)) {
+      # process each polynomial independently, then combine
       data_list <- lapply(seq_along(poly), function(i) {
         probe_grid <- effective_variety_grid(nx_eff, ny_eff, shift, FALSE)
         df0 <- poly_to_df(poly[[i]], rangex, rangey, probe_grid$nx, probe_grid$ny, shift = 0)
@@ -342,6 +343,7 @@ geom_variety <- function(
     )
   }
 
+  # defaults override user mappings so group and linetype stay wired to stat
   mapping <- if (is.null(mapping)) {
     default_mapping
   } else {

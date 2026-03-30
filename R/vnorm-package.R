@@ -5,7 +5,7 @@
 #' @importFrom glue glue
 #' @importFrom tibble as_tibble tibble
 #' @importFrom stats coef deriv optimize quantile reorder rnorm runif
-#' @importFrom utils modifyList
+#' @importFrom utils modifyList head tail
 #' @name vnorm
 #' @aliases vnorm vnorm-package
 #' @keywords internal

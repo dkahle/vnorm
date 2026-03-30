@@ -73,3 +73,26 @@ test_that("rvnorm(user_compiled=TRUE) errors when model is missing in cache", {
     "Requested compiled model not found in cache"
   )
 })
+
+test_that("multiple distinct models stored in cache", {
+  on.exit(vnorm:::clear_compiled_stan_info(), add = TRUE)
+  vnorm:::clear_compiled_stan_info()
+  vnorm:::add_compiled_stan_info("model_a", "/tmp/a.stan")
+  vnorm:::add_compiled_stan_info("model_b", "/tmp/b.stan")
+  info <- vnorm:::get_compiled_stan_info()
+  expect_equal(nrow(info), 2)
+  expect_true(all(c("model_a", "model_b") %in% info$name))
+})
+
+test_that("clear_compiled_stan_info on already-empty cache does not error", {
+  vnorm:::clear_compiled_stan_info()
+  expect_no_error(vnorm:::clear_compiled_stan_info())
+})
+
+test_that("get_compiled_stan_info returns zero-row data.frame on fresh state", {
+  vnorm:::clear_compiled_stan_info()
+  info <- vnorm:::get_compiled_stan_info()
+  expect_true(is.data.frame(info))
+  expect_equal(nrow(info), 0)
+  expect_true(all(c("name", "path") %in% names(info)))
+})

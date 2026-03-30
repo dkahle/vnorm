@@ -1,9 +1,9 @@
 ## geom_variety-specific helpers
-## Keep generic ggplot/contour conversion utilities in helpers-ggplot2.R
-## (e.g., xyz_to_isolines(), iso_to_path(), ensure_nonempty_data()).
+## keep generic ggplot/contour conversion utilities in helpers-ggplot2.R
+## (e.g., xyz_to_isolines(), iso_to_path(), ensure_nonempty_data())
 
 poly_to_df <- function(poly, xlim, ylim, nx, ny, shift = 0) {
-  # Evaluate polynomial on a regular x/y grid for contour extraction.
+  # evaluate polynomial on a regular x/y grid for contour extraction
   if (!is.mpoly(poly)) poly <- mp(poly)
   f <- as.function(x = poly, varorder = c("x", "y"), silent = TRUE)
 
@@ -17,7 +17,7 @@ poly_to_df <- function(poly, xlim, ylim, nx, ny, shift = 0) {
 }
 
 is_fragmented_paths <- function(df) {
-  # Heuristic: many tiny groups indicates under-resolved contours.
+  # heuristic: many tiny groups indicates under-resolved contours
   if (nrow(df) == 0) return(FALSE)
   n_per_group <- as.numeric(table(df$group))
   if (length(n_per_group) <= 8) return(FALSE)
@@ -27,7 +27,7 @@ is_fragmented_paths <- function(df) {
 }
 
 mean_nn_distance <- function(df_a, df_b) {
-  # Mean nearest-neighbor distance from A to B.
+  # mean nearest-neighbor distance from A to B
   dx <- outer(df_a$x, df_b$x, "-")
   dy <- outer(df_a$y, df_b$y, "-")
   d2 <- dx * dx + dy * dy
@@ -35,12 +35,12 @@ mean_nn_distance <- function(df_a, df_b) {
 }
 
 path_proximity <- function(df_a, df_b) {
-  # Symmetric path proximity metric based on NN distances.
+  # symmetric path proximity metric based on NN distances
   max(mean_nn_distance(df_a, df_b), mean_nn_distance(df_b, df_a))
 }
 
 collapse_near_duplicate_contours <- function(df, tol) {
-  # Merge contours that are geometric near-duplicates (common after shift).
+  # merge contours that are geometric near-duplicates (common after shift)
   if (nrow(df) == 0) return(df)
   dup_mult <- 6
 
@@ -55,7 +55,7 @@ collapse_near_duplicate_contours <- function(df, tol) {
   ))
   rownames(centroids) <- g_names
 
-  # Fast path for the common shifted-double case (two near-coincident contours).
+  # fast path for the common shifted-double case (two near-coincident contours)
   if (length(groups) == 2) {
     g1 <- g_names[1]
     g2 <- g_names[2]
@@ -70,6 +70,7 @@ collapse_near_duplicate_contours <- function(df, tol) {
     }
   }
 
+  # greedy clustering: group nearby contours by centroid, merge closest
   removed <- stats::setNames(rep(FALSE, length(groups)), g_names)
   keep <- character(0)
 
@@ -108,7 +109,7 @@ collapse_near_duplicate_contours <- function(df, tol) {
   out$group <- factor(out$group)
   out$piece <- as.integer(out$group)
 
-  # Post-merge cleanup: drop tiny fragments that hug a dominant contour.
+  # post-merge cleanup: drop tiny fragments that hug a dominant contour
   out_groups <- split(out, out$group)
   if (length(out_groups) >= 2) {
     sizes <- vapply(out_groups, nrow, integer(1))
@@ -123,8 +124,8 @@ collapse_near_duplicate_contours <- function(df, tol) {
       frag_n <- nrow(frag_df)
       if (frag_n > max(25L, as.integer(0.8 * main_n))) next
 
-      # One-sided distance is the right test here: a short fragment can lie on
-      # top of the main path while the symmetric distance stays large.
+      # one-sided distance is the right test here: a short fragment can lie on
+      # top of the main path while the symmetric distance stays large
       d_path_frag <- mean_nn_distance(frag_df, main_df)
       if (d_path_frag <= 6 * tol) {
         drop_groups <- c(drop_groups, g)
@@ -280,7 +281,7 @@ close_singular_endpoint_gaps <- function(df, poly, tol) {
 variety_paths_with_refinement <- function(
     poly, rangex, rangey, nx, ny, shift, group
   ) {
-  # Retry at higher grid resolution if initial contours are fragmented.
+  # retry at higher grid resolution if initial contours are fragmented
   refinement_steps <- c(1L, 2L, 4L)
   best_df <- tibble::tibble()
 
@@ -459,7 +460,8 @@ effective_variety_grid <- function(nx, ny, shift, no_sign_change0) {
 
 snap_shifted_contours_to_variety <- function(df, poly) {
   # Project contour points back onto poly = 0. This improves ordinary contours
-  # and is also the main repair for shifted no-sign-change cases.
+  # and is also the main repair for shifted no-sign-change cases that only
+  # expose a nearby level set.
   if (nrow(df) == 0) return(df)
   if (!all(c("x", "y") %in% names(df))) return(df)
 
@@ -471,7 +473,7 @@ snap_shifted_contours_to_variety <- function(df, poly) {
 
     x <- as.matrix(df[, c("x", "y"), drop = FALSE])
 
-    # Typical contour-point spacing for step capping.
+    # typical contour-point spacing for step capping
     dseg <- sqrt(diff(x[, 1])^2 + diff(x[, 2])^2)
     dseg <- dseg[is.finite(dseg) & dseg > 0]
     base_step <- if (length(dseg) > 0) stats::median(dseg) else 0.05
@@ -504,10 +506,11 @@ snap_shifted_contours_to_variety <- function(df, poly) {
       best_abs <- abs(vals)
       best_abs[!is.finite(best_abs)] <- Inf
 
+      # try multiple step gains; keep the one that best reduces the residual
       for (gain in snap_gains) {
         step <- gain * step0
 
-        # Prevent jumping across branches near singular crossings.
+        # prevent jumping across branches near singular crossings
         step_norm <- sqrt(rowSums(step * step))
         too_big <- is.finite(step_norm) & step_norm > max_step
         if (any(too_big)) {
@@ -552,8 +555,8 @@ snap_shifted_contours_to_variety <- function(df, poly) {
 }
 
 split_large_projected_jumps <- function(df) {
-  # Projection can collapse different shifted components onto the same variety,
-  # creating jumps within a path. Split those jumps before plotting.
+  # projection can collapse different shifted components onto the same variety,
+  # creating jumps within a path. Split those jumps before plotting
   if (nrow(df) == 0 || !"group" %in% names(df)) return(df)
 
   groups <- split(df, df$group)
@@ -572,6 +575,7 @@ split_large_projected_jumps <- function(df) {
     cut_idx <- which(d > 8 * base)
     if (length(cut_idx) == 0) return(g)
 
+    # assign new group ids at detected jumps using cumulative split index
     seg_id <- cumsum(c(TRUE, seq_len(nrow(g) - 1) %in% cut_idx))
     g$group <- factor(paste0(as.character(g$group[1]), "_s", seg_id))
     g
@@ -583,11 +587,11 @@ split_large_projected_jumps <- function(df) {
   out
 }
 
-## Sign diagnostics for shifted contour guidance in geom_variety()
+## sign diagnostics for shifted contour guidance in geom_variety()
 
 has_strict_sign_change <- function(zvals) {
-  # True only when the field takes both positive and negative values,
-  # ignoring near-zero floating-point noise.
+  # true only when the field takes both positive and negative values,
+  # ignoring near-zero floating-point noise
   z <- zvals[is.finite(zvals)]
   if (length(z) == 0) return(FALSE)
   scale_z <- max(abs(z), na.rm = TRUE)
@@ -596,7 +600,7 @@ has_strict_sign_change <- function(zvals) {
 }
 
 check_sign_warning <- function(zvals, shift) {
-  # Emit user guidance when grid values do not cross zero.
+  # emit user guidance when grid values do not cross zero
   z <- zvals[is.finite(zvals)]
   if (length(z) == 0) return()
   scale_z <- max(abs(z), na.rm = TRUE)

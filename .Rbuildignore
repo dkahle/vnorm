@@ -11,6 +11,7 @@ inst/setup.R
 ^README_cache($|/)
 ^Rplots\.pdf$
 ^\.github($|/)
+^\.claude($|/)
 ^_pkgdown\.yml$
 ^cache$
 ^cache($|/)

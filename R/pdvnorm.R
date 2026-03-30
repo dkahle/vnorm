@@ -51,7 +51,7 @@
 #'
 #' @export
 pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
-  # Dispatch between single-polynomial and polynomial-list density evaluation.
+  # dispatch between single-polynomial and polynomial-list density evaluation
   is_uni <- inherits(poly, "mpoly")
   is_multi <- inherits(poly, "mpolyList")
   if (!(is_uni || is_multi)) {
@@ -64,7 +64,7 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
   }
 
   if (is_uni) {
-    # Univariate/single-polynomial path.
+    # univariate/single-polynomial path
     if (!is.numeric(sigma) || length(sigma) != 1 || sigma <= 0) {
       stop(
         "For the single-polynomial case, 'sigma' must be a single positive numeric (sd)."
@@ -95,6 +95,8 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
       grad_g_obj <- mpoly::gradient(poly)
       if (mean(is.constant(grad_g_obj)) == 1) {
         const <- unname(unlist(grad_g_obj))
+
+        # force() ensures const is evaluated in this iteration, not lazily
         force(const)
         grad_g <- function(...) const
       } else {
@@ -121,7 +123,7 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
   n <- length(vars)
   m <- length(poly)
 
-  # Multivariate/polynomial-list path.
+  # multivariate/polynomial-list path
   X <- if (is.null(dim(x))) matrix(as.numeric(x), nrow = 1) else as.matrix(x)
   if (!is.numeric(X) || any(!is.finite(X))) {
     stop("'x' must be finite numeric.")
@@ -173,6 +175,8 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
     grad_fun[[i]] <- deriv(poly[[i]], var = vars)
     if (mean(is.constant(grad_fun[[i]])) == 1) {
       const <- unname(unlist(grad_fun[[i]]))
+
+      # force() captures the current iteration's constant, not the final one
       force(const)
       grad_fun[[i]] <- function(...) {
         const
@@ -184,6 +188,7 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
     }
   }
 
+  # Cholesky factor for efficient Mahalanobis distance
   L <- tryCatch(
     chol(Sigma),
     error = function(e) {
@@ -198,7 +203,7 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
     g_vals <- as.numeric(g_vals_mat[i, ])
 
     if (homo) {
-      # Jacobian of g(x): rows are equations, columns are variables.
+      # Jacobian of g(x): rows are equations, columns are variables
       J <- matrix(NA_real_, nrow = m, ncol = n)
       for (j in seq_len(m)) {
         J[j, ] <- grad_fun[[j]](xi)
@@ -211,16 +216,16 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
       r <- sum(sv$d > tol)
 
       if (n > m && r == m) {
-        # Full row rank (underdetermined): right pseudoinverse.
+        # full row rank (underdetermined): right pseudoinverse
         Jp <- t(J) %*% solve(J %*% t(J))
       } else if (m > n && r == n) {
-        # Full column rank (overdetermined): left pseudoinverse.
+        # full column rank (overdetermined): left pseudoinverse
         Jp <- solve(t(J) %*% J) %*% t(J)
       } else if (m == n && r == n) {
-        # Square and full rank: exact inverse.
+        # square and full rank: exact inverse
         Jp <- solve(J)
       } else {
-        # Rank-deficient fallback: SVD pseudoinverse with tolerance cutoff.
+        # rank-deficient fallback: SVD pseudoinverse with tolerance cutoff
         dplus <- ifelse(sv$d > tol, 1 / sv$d, 0)
         Jp <- sv$v %*% (dplus * t(sv$u))
       }

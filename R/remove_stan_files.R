@@ -9,7 +9,7 @@
 #'
 #' @export
 remove_stan_files <- function(path = getwd()) {
-  # Remove cached .stan files and corresponding executables, then clear cache.
+  # remove cached .Stan files and corresponding executables, then clear cache
   compiled_stan_info <- get_compiled_stan_info()
 
   if (nrow(compiled_stan_info) > 0) {

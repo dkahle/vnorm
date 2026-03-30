@@ -4,7 +4,7 @@
 \alias{compile_stan_code}
 \title{Compile a Stan Model for User-Defined Polynomials}
 \usage{
-compile_stan_code(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE)
+compile_stan_code(poly, custom_stan_code = FALSE, w = NULL, homo = TRUE)
 }
 \arguments{
 \item{poly}{An \code{mpoly} or \code{mpolyList} object.}

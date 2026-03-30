@@ -204,7 +204,7 @@ project_onto_variety <- function(
     adaptive = TRUE,
     dt_min = 1e-6, dt_max = 0.1, error_tol = .01
 ) {
-  # Homotopy from t=1 (x0 offset equation) to t=0 (target variety equation).
+  # homotopy from t=1 (x0 offset equation) to t=0 (target variety equation)
   t_start <- 1
   t_end <- 0
   if (missing(x0)) stop("`x0` must be supplied.")
@@ -214,11 +214,11 @@ project_onto_variety <- function(
   }
 
 
-  # Build polynomial, Jacobian, and Hessian function handles when not supplied.
+  # build polynomial, Jacobian, and Hessian function handles when not supplied
   if (missing(gfunc) || missing(dgfunc) || missing(ddgfunc)) {
 
     if (!missing(gfunc) || !missing(dgfunc) || !missing(ddgfunc)) {
-      # If one derivative helper is missing, rebuild all three consistently.
+      # if one derivative helper is missing, rebuild all three consistently
       warning(
         "If any of `gfunc`, `dgfunc`, or `ddgfunc` is not provided,",
         " they are all computed internally.",
@@ -230,11 +230,11 @@ project_onto_variety <- function(
     g <- poly
     gfunc <- as.function(g, varorder = varorder, silent = TRUE)
 
-    # jacobian
+    # Jacobian
     dg <- deriv(g, var = varorder)
     dgfunc <- as.function(dg, varorder = varorder, silent = TRUE)
 
-    # hessian
+    # Hessian
     ddg <- lapply(dg, deriv, var = varorder)
     ddgfunc_list <- lapply(ddg, as.function, varorder = varorder, silent = TRUE)
     ddgfunc <- function(x) sapply(ddgfunc_list, function(f) f(x))
@@ -242,7 +242,7 @@ project_onto_variety <- function(
   }
 
 
-  # Vectorized convenience path for row-wise projection of matrices/data frames.
+  # vectorized convenience path for row-wise projection of matrices/data frames
   if (is.matrix(x0) || is.data.frame(x0)) {
     out <- apply(
       x0, 1, project_onto_variety,
@@ -258,14 +258,14 @@ project_onto_variety <- function(
     return(out)
   }
 
-  # Main computation for one starting point x0.
+  # main computation for one starting point x0
   n_vars <- length(varorder)
 
   ts <- seq(1, 0, -dt)
   vn <- c(x0, al[1], 0)
 
   Ha <- function(v, t) {
-    # Augmented homotopy system in (x, lambda0, lambda1).
+    # augmented homotopy system in (x, lambda0, lambda1)
     x <- v[1:n_vars]; la <- v[-(1:n_vars)]
     c(
       gfunc(x) - t*gfunc(x0),
@@ -273,7 +273,7 @@ project_onto_variety <- function(
       la[1] + la[2]*al[2] - al[1]
     )
   }
-  # Ha(vn, .99)
+  # ha(vn, .99)
 
   JHa <- function(v, t) {
     x <- v[1:n_vars]
@@ -290,30 +290,30 @@ project_onto_variety <- function(
       c(rep(0, n_vars), 1, al1)
     )
   }
-  # JHa(vn, .99)
+  # jHa(vn, .99)
 
   # partial derivative of H w.r.t t:
   Ht <- function(v, t) c(-gfunc(x0), rep(0, n_vars + 2 - 1))
-  # Ht(c(1,1), 1)
+  # ht(c(1,1), 1)
 
   if (adaptive) {
-    # Adaptive predictor-corrector (Euler + Heun) with error control.
+    # adaptive predictor-corrector (Euler + Heun) with error control
     t <- t_start
     while (t > t_end) {
       h <- min(dt, t - t_end)
 
-      # Predictor: Euler step
+      # predictor: Euler step
       F1 <- solve(JHa(vn, t), Ht(vn, t))
       v_euler <- vn + h * F1
 
-      # Corrector: Heun step
+      # corrector: Heun step
       F2 <- solve(JHa(v_euler, t - h), Ht(v_euler, t - h))
       v_heun <- vn + 0.5 * h * (F1 + F2)
 
       err <- sqrt(sum((v_heun - v_euler)^2))
 
       if (err < error_tol) {
-        # Accept step and perform Newton corrections on the new time slice.
+        # accept step and perform Newton corrections on the new time slice
         vn <- v_euler
         t <- t - h
 
@@ -325,14 +325,14 @@ project_onto_variety <- function(
 
         dt <- min(dt_max, h * min(2, (error_tol / err)^0.5))
       } else {
-        # Reject step and shrink dt.
+        # reject step and shrink dt
         dt <- max(dt_min, h * max(0.1, (error_tol / err)^0.5))
         if (message) message("  Rejected step. Reducing dt to ", round(dt, 6))
       }
     }
 
   } else {
-    # Fixed-step predictor + Newton-corrector path.
+    # fixed-step predictor + Newton-corrector path
     ts <- seq(t_start, t_end, -dt)
     for (i in 2:length(ts)) {
       vn <- vn + solve(JHa(vn, t = ts[i - 1]), Ht(vn, t = ts[i - 1])) * dt
@@ -368,9 +368,9 @@ project_onto_variety_lagrange <- function(
     tol = .Machine$double.eps^(1/2), tol_x = .Machine$double.eps^(1/2),
     message = FALSE, ...
   ) {
-  # Solve KKT stationarity system for closest-point projection.
+  # solve KKT stationarity system for closest-point projection
 
-  # Vectorized convenience path for row-wise projection.
+  # vectorized convenience path for row-wise projection
   if (is.matrix(x0) || is.data.frame(x0)) {
     out <- apply(
       x0, 1, project_onto_variety_lagrange,
@@ -384,7 +384,7 @@ project_onto_variety_lagrange <- function(
     return(out)
   }
 
-  # Build Lagrangian and stationarity equations.
+  # build Lagrangian and stationarity equations
   form <- paste0("(", varorder, " - ", x0, ")^2", collapse = " + ")
   L <- mp(form) + mp("la")*poly
   dL <- stats::deriv(L, var = c(varorder, "la"))
@@ -401,6 +401,7 @@ project_onto_variety_lagrange <- function(
     )
     H <- function(v) do.call(rbind, lapply(ddLf, function(f) f(v)))
 
+    # initialize Lagrange multiplier by minimizing stationarity residual
     la0 <- stats::optimize(
       function(.) sum(dLf(c(x0, .))^2),
       lower = 0,
@@ -414,7 +415,7 @@ project_onto_variety_lagrange <- function(
     while (
       sum(abs(dLf(xn))) > tol &&
       sum(abs(xn - xn_1)) > tol_x &&
-      count <= maxit
+      count < maxit
     ) {
       xn_1 <- xn
       xn <- xn_1 + solve( H(xn_1), -dLf(xn_1) )
@@ -435,8 +436,7 @@ project_onto_variety_lagrange <- function(
       function(.) sum(dLf(.))^2,
       method = method,
       ...
-    )$par[1:2]
-    xn <- xn[seq_along(varorder)]
+    )$par[seq_len(length(varorder))]
 
   }
 
@@ -467,9 +467,9 @@ project_onto_variety_gradient_descent <- function(
     tol = .Machine$double.eps^(1/2), tol_x = .Machine$double.eps^(1/2),
     maxit = 1e3, message = FALSE
 ) {
-  # Minimize g(x)^2 using gradient descent variants.
+  # minimize g(x)^2 using gradient descent variants
 
-  # Vectorized convenience path for row-wise projection.
+  # vectorized convenience path for row-wise projection
   if (is.matrix(x0) || is.data.frame(x0)) {
     out <- apply(
       x0, 1, project_onto_variety_gradient_descent,
@@ -487,10 +487,10 @@ project_onto_variety_gradient_descent <- function(
     return(out)
   }
 
-  # Validate and dispatch descent strategy.
+  # validate and dispatch descent strategy
   method <- match.arg(method)
 
-  # Build objective, gradient, and Hessian helpers for g(x)^2.
+  # build objective, gradient, and Hessian helpers for g(x)^2
   pf  <- as.function(poly, varorder = varorder, silent = TRUE)
   p2f <- as.function(poly^2, varorder = varorder, silent = TRUE)
   dp2 <- stats::deriv(poly^2, var = varorder)
@@ -527,14 +527,18 @@ project_onto_variety_gradient_descent <- function(
     if (message) message(paste(round(xn, 5), collapse = " "))
 
     count <- 0
-    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count <= maxit) {
+    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
       xn_2 <- xn_1
       xn_1 <- xn
       direction_2 <- dp2f(xn_2)
       direction_1 <- dp2f(xn_1)
-      ga <- abs(
-        sum((xn_1 - xn_2) * (direction_1 - direction_2))
-      ) / sum((direction_1 - direction_2)^2)
+      # Barzilai-Borwein step size from successive gradient difference
+      denom <- sum((direction_1 - direction_2)^2)
+      ga <- if (denom > 0) {
+        abs(sum((xn_1 - xn_2) * (direction_1 - direction_2))) / denom
+      } else {
+        max_ga
+      }
       xn   <- xn_1 - ga*direction_1
       count <- count + 1
       if (message) message(paste(round(xn, 5), collapse = " "))
@@ -554,7 +558,7 @@ project_onto_variety_gradient_descent <- function(
     if (message) message(paste(round(xn, 5), collapse = " "))
 
     count <- 0
-    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count <= maxit) {
+    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
       xn_1 <- xn
       direction <- dp2f(xn_1)
       ga <- stats::optimize(
@@ -576,7 +580,7 @@ project_onto_variety_gradient_descent <- function(
     if (message) message(paste(round(xn, 5), collapse = " "))
 
     count <- 0
-    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count <= maxit) {
+    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
       xn_1 <- xn
       direction <- dp2f(xn_1)
       xn   <- xn_1 - ga*direction
@@ -612,9 +616,9 @@ project_onto_variety_newton <- function(
     tol = .Machine$double.eps^(1/2), tol_x = .Machine$double.eps^(1/2),
     maxit = 1e3, message = FALSE
 ) {
-  # Minimize g(x)^2 with Newton updates and optional line search.
+  # minimize g(x)^2 with Newton updates and optional line search
 
-  # Vectorized convenience path for row-wise projection.
+  # vectorized convenience path for row-wise projection
   if (is.matrix(x0) || is.data.frame(x0)) {
     out <- apply(
       x0, 1, project_onto_variety_newton,
@@ -628,10 +632,10 @@ project_onto_variety_newton <- function(
     return(out)
   }
 
-  # Validate method option.
+  # validate method option
   method <- match.arg(method)
 
-  # Build objective, gradient, and Hessian helpers for g(x)^2.
+  # build objective, gradient, and Hessian helpers for g(x)^2
   pf  <- as.function(poly, varorder = varorder, silent = TRUE)
   p2f <- as.function(poly^2, varorder = varorder, silent = TRUE)
   dp2 <- stats::deriv(poly^2, var = varorder)
@@ -644,7 +648,7 @@ project_onto_variety_newton <- function(
     )
   }
 
-  # Iterative Newton updates.
+  # iterative Newton updates
   xn_1 <- x0
 
   direction <- solve(ddp2f(xn_1), -dp2f(xn_1))
@@ -659,7 +663,7 @@ project_onto_variety_newton <- function(
   if (message) message(paste(round(xn, 5), collapse = " "))
 
   count <- 0
-  while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count <= maxit) {
+  while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
     xn_1 <- xn
     direction <- solve(ddp2f(xn_1), -dp2f(xn_1))
     if (method == "line") {
