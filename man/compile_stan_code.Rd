@@ -4,7 +4,12 @@
 \alias{compile_stan_code}
 \title{Compile a Stan Model for User-Defined Polynomials}
 \usage{
-compile_stan_code(poly, custom_stan_code = FALSE, w = NULL, homo = TRUE)
+compile_stan_code(
+  poly,
+  custom_stan_code = FALSE,
+  windowed = FALSE,
+  homo = TRUE
+)
 }
 \arguments{
 \item{poly}{An \code{mpoly} or \code{mpolyList} object.}
@@ -13,8 +18,8 @@ compile_stan_code(poly, custom_stan_code = FALSE, w = NULL, homo = TRUE)
 general case of the polynomial is already included during package
 installation. Defaults to \code{FALSE}.}
 
-\item{w}{A named list of box constraints for vectors to be passed to Stan.
-See \code{\link[=rvnorm]{rvnorm()}} examples. Defaults to \code{FALSE}.}
+\item{windowed}{If \code{TRUE}, the compiled Stan model includes a window (box
+constraint) parameter \code{w} in its data block. Defaults to \code{FALSE}.}
 
 \item{homo}{If \code{TRUE}, sampling is done from a homoskedastic variety
 normal distribution. Defaults to \code{TRUE}.
