@@ -1,6 +1,6 @@
 Package: vnorm
 Title: Variety Normal Distribution
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: c(
     person("Sonish", "Lamsal", email = "sonish_lamsal1@baylor.edu", role = "aut"),
     person("David", "Kahle", email = "david@kahle.io", role = c("aut", "cre"))
