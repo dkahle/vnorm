@@ -123,7 +123,7 @@ rvnorm(
 - user_compiled:
 
   If `TRUE`, use a user-compiled Stan program produced by
-  [`compile_stan_code()`](https://dkahle.github.io/vnorm/reference/compile_stan_code.md).
+  [`compile_stan_code()`](https://www.kahle.io/vnorm/reference/compile_stan_code.md).
   Defaults to `FALSE`.
 
 - show_messages:

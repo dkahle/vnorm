@@ -10,13 +10,13 @@ status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repost
 real algebraic varieties defined by polynomial equations. It implements
 the variety normal distribution using `mpoly` for polynomial
 representations and Stan-based samplers. In addition to sampling with
-[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md), the
+[`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md), the
 package includes pseudo-density evaluation via
-[`pdvnorm()`](https://dkahle.github.io/vnorm/reference/pdvnorm.md),
+[`pdvnorm()`](https://www.kahle.io/vnorm/reference/pdvnorm.md),
 ggplot2 visualization with
-[`geom_variety()`](https://dkahle.github.io/vnorm/reference/geom_variety.md),
+[`geom_variety()`](https://www.kahle.io/vnorm/reference/geom_variety.md),
 and projection onto varieties with
-[`project_onto_variety()`](https://dkahle.github.io/vnorm/reference/project-onto-variety.md).
+[`project_onto_variety()`](https://www.kahle.io/vnorm/reference/project-onto-variety.md).
 
 ## Installation
 
@@ -29,7 +29,7 @@ devtools::install_github("dkahle/mpoly")
 devtools::install_github("dkahle/vnorm")
 ```
 
-[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md) uses
+[`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md) uses
 Stan/HMC as the primary sampling backend, so you should install
 `cmdstanr` and CmdStan for normal package use. A rejection sampler
 interface is also available (`rejection = TRUE`) and can be useful for
@@ -38,9 +38,9 @@ quick examples or simple low-dimensional cases.
 ## Quick Start: Sample and Plot a Variety
 
 The main workflow is: define a polynomial variety, sample near it with
-[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md), and
+[`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md), and
 visualize with
-[`geom_variety()`](https://dkahle.github.io/vnorm/reference/geom_variety.md).
+[`geom_variety()`](https://www.kahle.io/vnorm/reference/geom_variety.md).
 
 Stan/HMC (primary path):
 
@@ -65,21 +65,21 @@ ggplot(samps1, aes(x, y)) +
 
 ## Main Functions
 
-- [`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md)
+- [`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md)
   samples from a variety normal distribution near a polynomial variety.
-- [`pdvnorm()`](https://dkahle.github.io/vnorm/reference/pdvnorm.md)
+- [`pdvnorm()`](https://www.kahle.io/vnorm/reference/pdvnorm.md)
   evaluates the pseudo-density (up to a normalizing constant).
-- [`geom_variety()`](https://dkahle.github.io/vnorm/reference/geom_variety.md)
+- [`geom_variety()`](https://www.kahle.io/vnorm/reference/geom_variety.md)
   plots real 1D varieties in 2D using `ggplot2`.
-- [`project_onto_variety()`](https://dkahle.github.io/vnorm/reference/project-onto-variety.md)
+- [`project_onto_variety()`](https://www.kahle.io/vnorm/reference/project-onto-variety.md)
   projects points onto a variety.
-- [`compile_stan_code()`](https://dkahle.github.io/vnorm/reference/compile_stan_code.md)
+- [`compile_stan_code()`](https://www.kahle.io/vnorm/reference/compile_stan_code.md)
   pre-compiles reusable Stan models for repeated sampling with related
   polynomial forms.
 
 ### `rvnorm()`: the main sampling function
 
-[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md) is the
+[`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md) is the
 main entry point for sampling near varieties defined by one polynomial
 (`mpoly`) or a system of polynomials (`mpolyList`). It supports:
 
@@ -126,7 +126,7 @@ ggplot(samps2, aes(x, y)) +
 ```
 
 Additional common
-[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md) usage
+[`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md) usage
 patterns:
 
 ``` r
@@ -172,7 +172,7 @@ ggplot(samps3, aes(x, y)) +
 
 ### `pdvnorm()`: pseudo-density evaluation
 
-[`pdvnorm()`](https://dkahle.github.io/vnorm/reference/pdvnorm.md) can
+[`pdvnorm()`](https://www.kahle.io/vnorm/reference/pdvnorm.md) can
 be used with single polynomials and polynomial systems, and supports
 scalar, vector, or matrix `sigma` inputs depending on the setting.
 
@@ -191,7 +191,7 @@ pdvnorm(x1, p4, sigma = diag(c(1, 4)))
 
 ### `geom_variety()`: ggplot2-compatible variety plots
 
-[`geom_variety()`](https://dkahle.github.io/vnorm/reference/geom_variety.md)
+[`geom_variety()`](https://www.kahle.io/vnorm/reference/geom_variety.md)
 supports both single-polynomial (`mpoly`) and multi-polynomial
 (`mpolyList`) inputs and works with standard ggplot2 themes/scales. It
 now defaults to a `201 x 201` contouring grid and `projection = "auto"`,
@@ -234,7 +234,7 @@ ggplot() +
 
 If a squared polynomial (for example, `p^2`) produces no contour at
 `shift = 0`,
-[`geom_variety()`](https://dkahle.github.io/vnorm/reference/geom_variety.md)
+[`geom_variety()`](https://www.kahle.io/vnorm/reference/geom_variety.md)
 prints a suggested negative `shift`. Using that `shift` can help recover
 the plotted zero set in no-sign-change cases. With the default
 `projection = "auto"`, the shifted contour is then projected back onto
@@ -337,9 +337,9 @@ tolerance.
 `vnorm` includes pre-compiled Stan models for common polynomial
 structures (up to three variables and total degree at most three). For
 repeated work with a custom polynomial form, use
-[`compile_stan_code()`](https://dkahle.github.io/vnorm/reference/compile_stan_code.md)
+[`compile_stan_code()`](https://www.kahle.io/vnorm/reference/compile_stan_code.md)
 once and then call
-[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md) with
+[`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md) with
 `user_compiled = TRUE` on related polynomials with different
 coefficients.
 

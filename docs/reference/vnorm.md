@@ -6,7 +6,7 @@ Samples, projects, and visualizes variety normal distributions.
 
 Useful links:
 
-- <https://dkahle.github.io/vnorm/>
+- <https://www.kahle.io/vnorm/>
 
 - <https://github.com/dkahle/vnorm>
 

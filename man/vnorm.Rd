@@ -13,7 +13,7 @@ Samples, projects, and visualizes variety normal distributions.
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://dkahle.github.io/vnorm/}
+  \item \url{https://www.kahle.io/vnorm/}
   \item \url{https://github.com/dkahle/vnorm}
   \item Report bugs at \url{https://github.com/dkahle/vnorm/issues}
 }
