@@ -8,14 +8,17 @@
 #'   evaluation point).
 #' @param poly An `mpoly` object (single polynomial) or an `mpolyList` object
 #'   (multiple polynomials).
-#' @param sigma For the single-polynomial case, a positive scalar standard
-#'   deviation. For the multi-polynomial case, a scalar, vector, or matrix. If
-#'   `homo = TRUE`, `sigma` must conform to the number of variables; if
-#'   `homo = FALSE`, it must conform to the number of polynomials.
+#' @param sd Scale parameter for the normal kernel. For polynomial systems,
+#'   a scalar is recycled across the relevant dimension, while a vector supplies
+#'   component-wise standard deviations.
+#' @param Sigma Full covariance matrix, scalar covariance, or a diagonal vector
+#'   of covariance terms. If supplied, `Sigma` replaces `sd`.
 #' @param homo Logical; default is `TRUE`. If `TRUE`, compute the homoskedastic
 #'   variety normal pseudo-density. If `FALSE`, compute the heteroskedastic
 #'   pseudo-density.
 #' @param log Logical. If `TRUE`, returns the log of the density.
+#' @param ... Deprecated. A named `sigma` argument is accepted for backward
+#'   compatibility.
 #' @return A numeric scalar or vector containing the pseudo-density evaluated at
 #'   `x`.
 #'
@@ -25,32 +28,33 @@
 #'
 #' ## Single polynomial in one variable
 #' p1 <- mp("x")
-#' pdvnorm(c(-1, 0, 1), p1, sigma = 1)
-#' pdvnorm(0, p1, sigma = 2, log = TRUE)
+#' pdvnorm(c(-1, 0, 1), p1, sd = 1)
+#' pdvnorm(0, p1, sd = 2, log = TRUE)
 #'
 #' ## Multivariate (square) system: two polynomials in two variables
 #' p2 <- mp(c("x", "y"))
 #' x2 <- rbind(c(0, 0), c(1, 2), c(-1, 3))
 #'
-#' ## Different sigma forms
-#' pdvnorm(x2, p2, sigma = 1)
-#' pdvnorm(x2, p2, sigma = c(1, 2))
-#' pdvnorm(x2, p2, sigma = diag(c(1, 4)))
+#' ## Different dispersion forms
+#' pdvnorm(x2, p2, sd = 1)
+#' pdvnorm(x2, p2, sd = c(1, 2))
+#' pdvnorm(x2, p2, Sigma = diag(c(1, 4)))
 #'
 #' ## Multivariate (underdetermined): one polynomial in two variables
 #' p3 <- mp("x + y")
 #' x3 <- rbind(c(1, 1), c(2, -1), c(0, 3))
-#' pdvnorm(x3, p3, sigma = 1)
-#' pdvnorm(as.data.frame(x3), p3, sigma = 1)
+#' pdvnorm(x3, p3, sd = 1)
+#' pdvnorm(as.data.frame(x3), p3, sd = 1)
+#' pdvnorm(c(1, 1), p3, Sigma = diag(c(1, 4)))
 #'
 #' ## Multivariate (overdetermined): three polynomials in two variables
 #' p4 <- mp(c("x", "y", "x + y"))
 #' x4 <- rbind(c(1, 2), c(0, -1), c(2, 2))
-#' pdvnorm(x4, p4, sigma = diag(2),    homo = TRUE)
-#' pdvnorm(x4, p4, sigma = c(1, 2, 3), homo = FALSE)
+#' pdvnorm(x4, p4, Sigma = diag(2), homo = TRUE)
+#' pdvnorm(x4, p4, sd = c(1, 2, 3), homo = FALSE)
 #'
 #' @export
-pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
+pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
   # dispatch between single-polynomial and polynomial-list density evaluation
   is_uni <- inherits(poly, "mpoly")
   is_multi <- inherits(poly, "mpolyList")
@@ -63,15 +67,33 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
     )
   }
 
-  if (is_uni) {
-    # univariate/single-polynomial path
-    if (!is.numeric(sigma) || length(sigma) != 1 || sigma <= 0) {
+  has_sd <- !missing(sd)
+  legacy_sigma <- NULL
+  legacy_sigma_supplied <- FALSE
+  dots <- list(...)
+  if (length(dots) > 0L) {
+    dot_names <- names(dots)
+    if (
+      is.null(dot_names) ||
+        any(!nzchar(dot_names)) ||
+        any(dot_names != "sigma") ||
+        length(dots) > 1L
+    ) {
       stop(
-        "For the single-polynomial case, 'sigma' must be a single positive numeric (sd)."
+        "Unused argument(s): ",
+        paste(ifelse(nzchar(dot_names), dot_names, "<unnamed>"), collapse = ", "),
+        call. = FALSE
       )
     }
-    sd <- as.numeric(sigma)
+    if (has_sd || !is.null(Sigma)) {
+      stop("Specify only one of `sd`, `Sigma`, or `sigma`.", call. = FALSE)
+    }
+    legacy_sigma <- dots$sigma
+    legacy_sigma_supplied <- TRUE
+  }
 
+  if (is_uni) {
+    # univariate/single-polynomial path
     n <- length(mpoly::vars(poly))
     if (is.data.frame(x)) {
       x <- as.matrix(x)
@@ -104,6 +126,68 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
       }
     }
 
+    if (
+      !legacy_sigma_supplied &&
+        !is.null(Sigma) &&
+        !pdvnorm_is_scalar(Sigma)
+    ) {
+      if (!homo) {
+        stop(
+          "`Sigma` matrices for single-polynomial densities require `homo = TRUE`.",
+          call. = FALSE
+        )
+      }
+      covariance <- pdvnorm_covariance_from_Sigma(
+        Sigma, homo = TRUE, n = n, m = 1L, label = "`Sigma`"
+      )
+      tryCatch(
+        chol(covariance$Sigma),
+        error = function(e) {
+          stop("`Sigma` must be positive definite.", call. = FALSE)
+        }
+      )
+
+      log_density <- apply(x, 1, function(row_vec) {
+        g_val <- g_func(row_vec)
+        grad_g_val <- as.numeric(grad_g(row_vec))
+        grad_g_norm <- sqrt(sum(grad_g_val^2))
+        if (grad_g_norm == 0) {
+          return(Inf)
+        }
+        normal_direction <- grad_g_val / grad_g_norm
+        normal_var <- as.numeric(
+          t(normal_direction) %*% covariance$Sigma %*% normal_direction
+        )
+        normal_sd <- sqrt(normal_var)
+        z <- (g_val / grad_g_norm) / normal_sd
+        -(0.5 * z^2 + base::log(normal_sd) + 0.5 * base::log(2 * base::pi))
+      })
+      return(if (log) log_density else base::exp(log_density))
+    }
+
+    sd_value <- if (legacy_sigma_supplied) {
+      legacy_sigma
+    } else if (!is.null(Sigma)) {
+      pdvnorm_single_sd_from_Sigma(Sigma)
+    } else {
+      if (!has_sd) {
+        stop("`sd` must be supplied unless `Sigma` is supplied.", call. = FALSE)
+      }
+      sd
+    }
+    if (
+      !is.numeric(sd_value) ||
+        length(sd_value) != 1L ||
+        !is.finite(sd_value) ||
+        sd_value <= 0
+    ) {
+      stop(
+        "For the single-polynomial case, `sd` must be a single positive numeric.",
+        call. = FALSE
+      )
+    }
+    sd <- as.numeric(sd_value)
+
     log_density <- apply(x, 1, function(row_vec) {
       g_val <- g_func(row_vec)
       if (homo) {
@@ -131,38 +215,23 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
   if (ncol(X) != n) {
     stop("'x' must have length n (vector) or n columns (matrix).")
   }
-  if (!is.numeric(sigma) || any(!is.finite(sigma))) {
-    stop("'sigma' must be finite numeric.")
-  }
 
-  if (length(sigma) == 1) {
-    if (sigma <= 0) {
-      stop("'sigma' must be positive.")
-    }
-    Sigma <- if (homo) diag(sigma, n) else diag(sigma, m)
-  } else if (is.vector(sigma)) {
-    if (any(sigma <= 0)) {
-      stop("'sigma' vector entries must be positive.")
-    }
-    if (homo && length(sigma) != n) {
-      stop("When homo=TRUE, length(sigma) must be n.")
-    }
-    if (!homo && length(sigma) != m) {
-      stop("When homo=FALSE, length(sigma) must be m.")
-    }
-    Sigma <- diag(sigma)
+  if (legacy_sigma_supplied) {
+    covariance <- pdvnorm_covariance_from_Sigma(
+      legacy_sigma, homo = homo, n = n, m = m, label = "`sigma`"
+    )
+  } else if (!is.null(Sigma)) {
+    covariance <- pdvnorm_covariance_from_Sigma(
+      Sigma, homo = homo, n = n, m = m, label = "`Sigma`"
+    )
   } else {
-    Sigma <- as.matrix(sigma)
-    if (homo) {
-      if (!all(dim(Sigma) == c(n, n))) {
-        stop("'sigma' matrix must be n x n when homo=TRUE.")
-      }
-    } else {
-      if (!all(dim(Sigma) == c(m, m))) {
-        stop("'sigma' matrix must be m x m when homo=FALSE.")
-      }
+    if (!has_sd) {
+      stop("`sd` must be supplied unless `Sigma` is supplied.", call. = FALSE)
     }
+    covariance <- pdvnorm_covariance_from_sd(sd, homo = homo, n = n, m = m)
   }
+  Sigma <- covariance$Sigma
+  dispersion_label <- covariance$label
 
   g_fns <- suppressMessages(as.function(poly))
   g_vals_mat <- t(apply(X, 1, g_fns))
@@ -175,12 +244,11 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
     grad_fun[[i]] <- deriv(poly[[i]], var = vars)
     if (mean(is.constant(grad_fun[[i]])) == 1) {
       const <- unname(unlist(grad_fun[[i]]))
-
-      # force() captures the current iteration's constant, not the final one
-      force(const)
-      grad_fun[[i]] <- function(...) {
-        const
-      }
+      grad_fun[[i]] <- local({
+        const_i <- const
+        force(const_i)
+        function(...) const_i
+      })
     } else {
       grad_fun[[i]] <- suppressMessages(
         as.function(deriv(poly[[i]], var = vars), varorder = vars)
@@ -192,7 +260,7 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
   L <- tryCatch(
     chol(Sigma),
     error = function(e) {
-      stop("'sigma' must be positive definite.", call. = FALSE)
+      stop(dispersion_label, " must be positive definite.", call. = FALSE)
     }
   )
   log_det_sigma <- 2 * sum(base::log(diag(L)))
@@ -242,4 +310,92 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
   }
 
   if (log) out_log else base::exp(out_log)
+}
+
+pdvnorm_is_scalar <- function(x) {
+  length(x) == 1L
+}
+
+pdvnorm_single_sd_from_Sigma <- function(Sigma) {
+  if (!is.numeric(Sigma) || any(!is.finite(Sigma))) {
+    stop("`Sigma` must be finite numeric.", call. = FALSE)
+  }
+  if (length(Sigma) != 1L) {
+    stop(
+      "For the single-polynomial case, `Sigma` must be a single positive variance.",
+      call. = FALSE
+    )
+  }
+  if (Sigma <= 0) {
+    stop("`Sigma` must be positive.", call. = FALSE)
+  }
+  sqrt(as.numeric(Sigma))
+}
+
+pdvnorm_covariance_from_sd <- function(sd, homo, n, m) {
+  q <- if (homo) n else m
+  dim_label <- if (homo) "n" else "m"
+
+  if (!is.numeric(sd) || any(!is.finite(sd))) {
+    stop("`sd` must be finite numeric.", call. = FALSE)
+  }
+  if (is.matrix(sd)) {
+    stop("Use `Sigma` to supply a covariance matrix.", call. = FALSE)
+  }
+  if (length(sd) == 1L) {
+    if (sd <= 0) {
+      stop("`sd` must be positive.", call. = FALSE)
+    }
+    return(list(Sigma = diag(as.numeric(sd)^2, q), label = "`sd`"))
+  }
+  if (!is.vector(sd)) {
+    stop("`sd` must be a scalar or vector.", call. = FALSE)
+  }
+  if (any(sd <= 0)) {
+    stop("`sd` vector entries must be positive.", call. = FALSE)
+  }
+  if (length(sd) != q) {
+    stop(
+      "When homo=", homo, ", length(`sd`) must be ", dim_label, ".",
+      call. = FALSE
+    )
+  }
+  list(Sigma = diag(as.numeric(sd)^2), label = "`sd`")
+}
+
+pdvnorm_covariance_from_Sigma <- function(Sigma, homo, n, m, label) {
+  q <- if (homo) n else m
+  dim_label <- if (homo) "n" else "m"
+
+  if (!is.numeric(Sigma) || any(!is.finite(Sigma))) {
+    stop(label, " must be finite numeric.", call. = FALSE)
+  }
+  if (is.null(dim(Sigma)) && length(Sigma) == 1L) {
+    if (Sigma <= 0) {
+      stop(label, " must be positive.", call. = FALSE)
+    }
+    return(list(Sigma = diag(as.numeric(Sigma), q), label = label))
+  }
+  if (is.null(dim(Sigma)) && is.vector(Sigma)) {
+    if (any(Sigma <= 0)) {
+      stop(label, " vector entries must be positive.", call. = FALSE)
+    }
+    if (length(Sigma) != q) {
+      stop(
+        "When homo=", homo, ", length(", label, ") must be ", dim_label, ".",
+        call. = FALSE
+      )
+    }
+    return(list(Sigma = diag(as.numeric(Sigma)), label = label))
+  }
+
+  Sigma <- as.matrix(Sigma)
+  if (!all(dim(Sigma) == c(q, q))) {
+    stop(
+      label, " matrix must be ", dim_label, " x ", dim_label,
+      " when homo=", homo, ".",
+      call. = FALSE
+    )
+  }
+  list(Sigma = Sigma, label = label)
 }

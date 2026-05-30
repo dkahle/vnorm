@@ -159,19 +159,19 @@ ggplot(samps3, aes(x, y)) +
 
 ### `pdvnorm()`: pseudo-density evaluation
 
-`pdvnorm()` can be used with single polynomials and polynomial systems,
-and supports scalar, vector, or matrix `sigma` inputs depending on the
-setting.
+`pdvnorm()` can be used with single polynomials and polynomial systems.
+Use `sd` for standard-deviation scale inputs and `Sigma` for covariance
+inputs.
 
 ``` r
 p4 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
 x1 <- c(0.8, 0.3)
 
-pdvnorm(x1, p4, sigma = 1)
+pdvnorm(x1, p4, sd = 1)
 #> [1] 0.1560083
-pdvnorm(x1, p4, sigma = c(1, 2), homo = FALSE)
-#> [1] 0.1085086
-pdvnorm(x1, p4, sigma = diag(c(1, 4)))
+pdvnorm(x1, p4, sd = c(1, 2), homo = FALSE)
+#> [1] 0.07672814
+pdvnorm(x1, p4, Sigma = diag(c(1, 4)))
 #> [1] 0.07810636
 ```
 

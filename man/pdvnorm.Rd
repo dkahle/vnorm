@@ -4,7 +4,7 @@
 \alias{pdvnorm}
 \title{Pseudo-Density for the Variety Normal Distribution}
 \usage{
-pdvnorm(x, poly, sigma, homo = TRUE, log = FALSE)
+pdvnorm(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...)
 }
 \arguments{
 \item{x}{A numeric vector of length equal to the number of variables in
@@ -14,16 +14,21 @@ evaluation point).}
 \item{poly}{An \code{mpoly} object (single polynomial) or an \code{mpolyList} object
 (multiple polynomials).}
 
-\item{sigma}{For the single-polynomial case, a positive scalar standard
-deviation. For the multi-polynomial case, a scalar, vector, or matrix. If
-\code{homo = TRUE}, \code{sigma} must conform to the number of variables; if
-\code{homo = FALSE}, it must conform to the number of polynomials.}
+\item{sd}{Scale parameter for the normal kernel. For polynomial systems,
+a scalar is recycled across the relevant dimension, while a vector supplies
+component-wise standard deviations.}
+
+\item{Sigma}{Full covariance matrix, scalar covariance, or a diagonal vector
+of covariance terms. If supplied, \code{Sigma} replaces \code{sd}.}
 
 \item{homo}{Logical; default is \code{TRUE}. If \code{TRUE}, compute the homoskedastic
 variety normal pseudo-density. If \code{FALSE}, compute the heteroskedastic
 pseudo-density.}
 
 \item{log}{Logical. If \code{TRUE}, returns the log of the density.}
+
+\item{...}{Deprecated. A named \code{sigma} argument is accepted for backward
+compatibility.}
 }
 \value{
 A numeric scalar or vector containing the pseudo-density evaluated at
@@ -39,28 +44,29 @@ library("mpoly")
 
 ## Single polynomial in one variable
 p1 <- mp("x")
-pdvnorm(c(-1, 0, 1), p1, sigma = 1)
-pdvnorm(0, p1, sigma = 2, log = TRUE)
+pdvnorm(c(-1, 0, 1), p1, sd = 1)
+pdvnorm(0, p1, sd = 2, log = TRUE)
 
 ## Multivariate (square) system: two polynomials in two variables
 p2 <- mp(c("x", "y"))
 x2 <- rbind(c(0, 0), c(1, 2), c(-1, 3))
 
-## Different sigma forms
-pdvnorm(x2, p2, sigma = 1)
-pdvnorm(x2, p2, sigma = c(1, 2))
-pdvnorm(x2, p2, sigma = diag(c(1, 4)))
+## Different dispersion forms
+pdvnorm(x2, p2, sd = 1)
+pdvnorm(x2, p2, sd = c(1, 2))
+pdvnorm(x2, p2, Sigma = diag(c(1, 4)))
 
 ## Multivariate (underdetermined): one polynomial in two variables
 p3 <- mp("x + y")
 x3 <- rbind(c(1, 1), c(2, -1), c(0, 3))
-pdvnorm(x3, p3, sigma = 1)
-pdvnorm(as.data.frame(x3), p3, sigma = 1)
+pdvnorm(x3, p3, sd = 1)
+pdvnorm(as.data.frame(x3), p3, sd = 1)
+pdvnorm(c(1, 1), p3, Sigma = diag(c(1, 4)))
 
 ## Multivariate (overdetermined): three polynomials in two variables
 p4 <- mp(c("x", "y", "x + y"))
 x4 <- rbind(c(1, 2), c(0, -1), c(2, 2))
-pdvnorm(x4, p4, sigma = diag(2),    homo = TRUE)
-pdvnorm(x4, p4, sigma = c(1, 2, 3), homo = FALSE)
+pdvnorm(x4, p4, Sigma = diag(2), homo = TRUE)
+pdvnorm(x4, p4, sd = c(1, 2, 3), homo = FALSE)
 
 }
