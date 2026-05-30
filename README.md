@@ -5,7 +5,7 @@
 
 <img src="man/figures/logo.png" align="right" width="180" />
 
-[CRAN status](https://cran.r-project.org/package=vnorm) [![CRAN
+[![CRAN
 status](https://img.shields.io/badge/CRAN-not%20released-lightgrey)](https://cran.r-project.org/package=vnorm)
 [![repo
 status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
@@ -57,7 +57,7 @@ ggplot(samps1, aes(x, y)) +
   theme_minimal()
 ```
 
-<img src="man/figures/README-unnamed-chunk-3-1.png" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-3-1.png" alt="" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 ## Main Functions
 
@@ -195,7 +195,7 @@ ggplot() +
   theme_minimal()
 ```
 
-<img src="man/figures/README-unnamed-chunk-9-1.png" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-9-1.png" alt="" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 ``` r
 p6 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
@@ -213,7 +213,7 @@ ggplot() +
   theme(legend.position = "top")
 ```
 
-<img src="man/figures/README-unnamed-chunk-10-1.png" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-10-1.png" alt="" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 If a squared polynomial (for example, `p^2`) produces no contour at
 `shift = 0`, `geom_variety()` prints a suggested negative `shift`. Using
@@ -246,7 +246,7 @@ ggplot() +
 #> Using shift = -0.000959513 to contour a nearby level set. For repeated-factor varieties, the projected result may still miss branches; if the unsquared polynomial is available, prefer plotting that directly.
 ```
 
-<img src="man/figures/README-unnamed-chunk-12-1.png" width="62%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-12-1.png" alt="" width="62%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 ``` r
 p7_cross <- mp("y^2 - x^2")
@@ -276,7 +276,7 @@ ggplot() +
   theme_minimal()
 ```
 
-<img src="man/figures/README-unnamed-chunk-13-1.png" width="49%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" /><img src="man/figures/README-unnamed-chunk-13-2.png" width="49%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-13-1.png" alt="" width="49%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" /><img src="man/figures/README-unnamed-chunk-13-2.png" alt="" width="49%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 ### `project_onto_variety()`: projection with visualization
 
@@ -290,7 +290,7 @@ x0 <- c(1.3, 0.9)
 #> [1] 0.4110961 0.2846050
 ```
 
-<img src="man/figures/README-unnamed-chunk-15-1.png" width="62%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-15-1.png" alt="" width="62%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 The red point is the starting value and the black point is its
 projection onto the variety. The grey segment shows the displacement
@@ -301,7 +301,7 @@ illustrates the homotopy projection path from the same starting point
 using fixed step sizes versus adaptive step sizes (similar to the paper
 figure). The open circles mark successive iterates along the path.
 
-<img src="man/figures/README-unnamed-chunk-16-1.png" width="92%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-16-1.png" alt="" width="92%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 In each panel, the black curve is the target variety (an ellipse
 segment), the connected black path is the homotopy projection path from
