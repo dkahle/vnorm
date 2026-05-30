@@ -1,7 +1,7 @@
 # Solve a Zero-Dimensional Variety
 
 Estimates the solution of a zero-dimensional variety by sampling with
-[`rvnorm()`](https://sonish13.github.io/vnorm/reference/rvnorm.md) and
+[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md) and
 averaging the draws. For well-behaved varieties, this method works
 reliably. When multiple isolated components exist, the sampler may favor
 some over others, and the posterior mean may fall between true
@@ -32,7 +32,7 @@ variety_solve(
 - sd:
 
   Numeric scalar standard deviation used by
-  [`rvnorm()`](https://sonish13.github.io/vnorm/reference/rvnorm.md)
+  [`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md)
   (default: `0.01`).
 
 - n:
@@ -64,7 +64,7 @@ variety_solve(
 - ...:
 
   Additional arguments passed to
-  [`rvnorm()`](https://sonish13.github.io/vnorm/reference/rvnorm.md).
+  [`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md).
 
 ## Value
 

@@ -13,9 +13,9 @@ Samples, projects, and visualizes variety normal distributions.
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://sonish13.github.io/vnorm/}
-  \item \url{https://github.com/sonish13/vnorm}
-  \item Report bugs at \url{https://github.com/sonish13/vnorm/issues}
+  \item \url{https://dkahle.github.io/vnorm/}
+  \item \url{https://github.com/dkahle/vnorm}
+  \item Report bugs at \url{https://github.com/dkahle/vnorm/issues}
 }
 
 }

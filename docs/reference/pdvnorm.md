@@ -47,7 +47,13 @@ A numeric scalar or vector containing the pseudo-density evaluated at
 ## Examples
 
 ``` r
+
 library("mpoly")
+#> 
+#> Attaching package: ‘mpoly’
+#> The following object is masked from ‘package:ggplot2’:
+#> 
+#>     vars
 
 ## Single polynomial in one variable
 p1 <- mp("x")

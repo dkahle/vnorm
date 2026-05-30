@@ -4,31 +4,32 @@
 status](https://img.shields.io/badge/CRAN-not%20released-lightgrey)](https://cran.r-project.org/package=vnorm)
 [![repo
 status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![codecov](https://codecov.io/gh/sonish13/vnorm/graph/badge.svg)](https://app.codecov.io/gh/sonish13/vnorm)
+[![codecov](https://codecov.io/gh/dkahle/vnorm/graph/badge.svg)](https://app.codecov.io/gh/dkahle/vnorm)
 
 `vnorm` provides tools for sampling, visualizing, and projecting near
 real algebraic varieties defined by polynomial equations. It implements
 the variety normal distribution using `mpoly` for polynomial
 representations and Stan-based samplers. In addition to sampling with
-[`rvnorm()`](https://sonish13.github.io/vnorm/reference/rvnorm.md), the
+[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md), the
 package includes pseudo-density evaluation via
-[`pdvnorm()`](https://sonish13.github.io/vnorm/reference/pdvnorm.md),
+[`pdvnorm()`](https://dkahle.github.io/vnorm/reference/pdvnorm.md),
 ggplot2 visualization with
-[`geom_variety()`](https://sonish13.github.io/vnorm/reference/geom_variety.md),
+[`geom_variety()`](https://dkahle.github.io/vnorm/reference/geom_variety.md),
 and projection onto varieties with
-[`project_onto_variety()`](https://sonish13.github.io/vnorm/reference/project-onto-variety.md).
+[`project_onto_variety()`](https://dkahle.github.io/vnorm/reference/project-onto-variety.md).
 
 ## Installation
 
 You can install the development version of `vnorm` from GitHub with:
 
 ``` r
+
 if (!requireNamespace("devtools")) install.packages("devtools")
 devtools::install_github("dkahle/mpoly")
-devtools::install_github("sonish13/vnorm")
+devtools::install_github("dkahle/vnorm")
 ```
 
-[`rvnorm()`](https://sonish13.github.io/vnorm/reference/rvnorm.md) uses
+[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md) uses
 Stan/HMC as the primary sampling backend, so you should install
 `cmdstanr` and CmdStan for normal package use. A rejection sampler
 interface is also available (`rejection = TRUE`) and can be useful for
@@ -37,13 +38,14 @@ quick examples or simple low-dimensional cases.
 ## Quick Start: Sample and Plot a Variety
 
 The main workflow is: define a polynomial variety, sample near it with
-[`rvnorm()`](https://sonish13.github.io/vnorm/reference/rvnorm.md), and
+[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md), and
 visualize with
-[`geom_variety()`](https://sonish13.github.io/vnorm/reference/geom_variety.md).
+[`geom_variety()`](https://dkahle.github.io/vnorm/reference/geom_variety.md).
 
 Stan/HMC (primary path):
 
 ``` r
+
 p1 <- mp("x^2 + y^2 - 1")
 samps1 <- rvnorm(
   2000,
@@ -63,24 +65,23 @@ ggplot(samps1, aes(x, y)) +
 
 ## Main Functions
 
-- [`rvnorm()`](https://sonish13.github.io/vnorm/reference/rvnorm.md)
+- [`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md)
   samples from a variety normal distribution near a polynomial variety.
-- [`pdvnorm()`](https://sonish13.github.io/vnorm/reference/pdvnorm.md)
+- [`pdvnorm()`](https://dkahle.github.io/vnorm/reference/pdvnorm.md)
   evaluates the pseudo-density (up to a normalizing constant).
-- [`geom_variety()`](https://sonish13.github.io/vnorm/reference/geom_variety.md)
+- [`geom_variety()`](https://dkahle.github.io/vnorm/reference/geom_variety.md)
   plots real 1D varieties in 2D using `ggplot2`.
-- [`project_onto_variety()`](https://sonish13.github.io/vnorm/reference/project-onto-variety.md)
+- [`project_onto_variety()`](https://dkahle.github.io/vnorm/reference/project-onto-variety.md)
   projects points onto a variety.
-- [`compile_stan_code()`](https://sonish13.github.io/vnorm/reference/compile_stan_code.md)
+- [`compile_stan_code()`](https://dkahle.github.io/vnorm/reference/compile_stan_code.md)
   pre-compiles reusable Stan models for repeated sampling with related
   polynomial forms.
 
 ### `rvnorm()`: the main sampling function
 
-[`rvnorm()`](https://sonish13.github.io/vnorm/reference/rvnorm.md) is
-the main entry point for sampling near varieties defined by one
-polynomial (`mpoly`) or a system of polynomials (`mpolyList`). It
-supports:
+[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md) is the
+main entry point for sampling near varieties defined by one polynomial
+(`mpoly`) or a system of polynomials (`mpolyList`). It supports:
 
 - Stan/HMC sampling (default; best for most serious use)
 - rejection sampling (`rejection = TRUE`; good for quick examples and
@@ -106,6 +107,7 @@ low dimensional examples.
 Default Stan/HMC usage:
 
 ``` r
+
 p2 <- mp("x^2 + y^2 - 1")
 samps2 <- rvnorm(2000, poly = p2, sd = 0.1, output = "tibble")
 ```
@@ -113,6 +115,7 @@ samps2 <- rvnorm(2000, poly = p2, sd = 0.1, output = "tibble")
 Typical default workflow (sample, then visualize), shown above:
 
 ``` r
+
 p2 <- mp("x^2 + y^2 - 1")
 samps2 <- rvnorm(2000, poly = p2, sd = 0.1, output = "tibble")
 
@@ -123,10 +126,11 @@ ggplot(samps2, aes(x, y)) +
 ```
 
 Additional common
-[`rvnorm()`](https://sonish13.github.io/vnorm/reference/rvnorm.md) usage
+[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md) usage
 patterns:
 
 ``` r
+
 # Use a packaged pre-compiled Stan model when available (small degree/variable cases)
 rvnorm(2000, mp("x^2 + y^2 + z^2 - 1"), sd = 0.1, pre_compiled = TRUE)
 
@@ -147,6 +151,7 @@ Rejection sampler usage (alternative path; currently the wrapper
 supports scalar `sd`):
 
 ``` r
+
 set.seed(1)
 p3 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
 samps3 <- rvnorm(
@@ -167,11 +172,12 @@ ggplot(samps3, aes(x, y)) +
 
 ### `pdvnorm()`: pseudo-density evaluation
 
-[`pdvnorm()`](https://sonish13.github.io/vnorm/reference/pdvnorm.md) can
+[`pdvnorm()`](https://dkahle.github.io/vnorm/reference/pdvnorm.md) can
 be used with single polynomials and polynomial systems, and supports
 scalar, vector, or matrix `sigma` inputs depending on the setting.
 
 ``` r
+
 p4 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
 x1 <- c(0.8, 0.3)
 
@@ -185,17 +191,18 @@ pdvnorm(x1, p4, sigma = diag(c(1, 4)))
 
 ### `geom_variety()`: ggplot2-compatible variety plots
 
-[`geom_variety()`](https://sonish13.github.io/vnorm/reference/geom_variety.md)
+[`geom_variety()`](https://dkahle.github.io/vnorm/reference/geom_variety.md)
 supports both single-polynomial (`mpoly`) and multi-polynomial
 (`mpolyList`) inputs and works with standard ggplot2 themes/scales. It
-now defaults to a `201 x 201` contouring grid and
-`projection = "auto"`, which projects extracted contours back onto
-`poly = 0` whenever a shift is used, when the plotting grid has no
-strict sign change, or when the raw contour drifts noticeably off the
-zero set. Use `projection = "off"` to inspect the raw shifted level set
-directly, or `projection = "on"` to always project.
+now defaults to a `201 x 201` contouring grid and `projection = "auto"`,
+which projects extracted contours back onto `poly = 0` whenever a shift
+is used, when the plotting grid has no strict sign change, or when the
+raw contour drifts noticeably off the zero set. Use `projection = "off"`
+to inspect the raw shifted level set directly, or `projection = "on"` to
+always project.
 
 ``` r
+
 p5 <- mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
 
 ggplot() +
@@ -207,6 +214,7 @@ ggplot() +
 ![](reference/figures/README-unnamed-chunk-9-1.png)
 
 ``` r
+
 p6 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
 
 ggplot() +
@@ -226,7 +234,7 @@ ggplot() +
 
 If a squared polynomial (for example, `p^2`) produces no contour at
 `shift = 0`,
-[`geom_variety()`](https://sonish13.github.io/vnorm/reference/geom_variety.md)
+[`geom_variety()`](https://dkahle.github.io/vnorm/reference/geom_variety.md)
 prints a suggested negative `shift`. Using that `shift` can help recover
 the plotted zero set in no-sign-change cases. With the default
 `projection = "auto"`, the shifted contour is then projected back onto
@@ -234,15 +242,17 @@ the actual zero set; this usually improves repeated-factor plots,
 although hard singular cases can still miss branches.
 
 ``` r
+
 p7 <- mp("y^2 - x^2")
 ggplot() +
   geom_variety(poly = p7^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
-#> All values are positive on the plotting grid; try shift = -0.000959513.
+#> All values are positive on the plotting grid; try shift = -0.000562449.
 #> Zero contours were generated
 ```
 
 ``` r
+
 p7 <- mp("y^2 - x^2")
 ggplot() +
   geom_variety(
@@ -259,6 +269,7 @@ ggplot() +
 ![](reference/figures/README-unnamed-chunk-12-1.png)
 
 ``` r
+
 p7_cross <- mp("y^2 - x^2")
 
 ggplot() +
@@ -294,6 +305,7 @@ The projection functions are useful for snapping points back to a
 variety and for inspecting projection behavior visually.
 
 ``` r
+
 p8 <- mp("x^2 + y^2 - 0.25")
 x0 <- c(1.3, 0.9)
 (x0_proj <- project_onto_variety(x0, p8))
@@ -325,13 +337,14 @@ tolerance.
 `vnorm` includes pre-compiled Stan models for common polynomial
 structures (up to three variables and total degree at most three). For
 repeated work with a custom polynomial form, use
-[`compile_stan_code()`](https://sonish13.github.io/vnorm/reference/compile_stan_code.md)
+[`compile_stan_code()`](https://dkahle.github.io/vnorm/reference/compile_stan_code.md)
 once and then call
-[`rvnorm()`](https://sonish13.github.io/vnorm/reference/rvnorm.md) with
+[`rvnorm()`](https://dkahle.github.io/vnorm/reference/rvnorm.md) with
 `user_compiled = TRUE` on related polynomials with different
 coefficients.
 
 ``` r
+
 p_template <- mp("x^4 + y^4 - 1")
 compile_stan_code(poly = p_template)
 

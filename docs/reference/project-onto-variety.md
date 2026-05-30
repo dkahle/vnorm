@@ -185,6 +185,7 @@ David Kahle
 ## Examples
 
 ``` r
+
 library("ggplot2")
 library("mpoly")
 

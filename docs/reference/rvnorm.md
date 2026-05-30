@@ -30,6 +30,7 @@ rvnorm(
   pre_compiled = TRUE,
   user_compiled = FALSE,
   show_messages = FALSE,
+  seed = NULL,
   ...
 )
 ```
@@ -122,12 +123,18 @@ rvnorm(
 - user_compiled:
 
   If `TRUE`, use a user-compiled Stan program produced by
-  [`compile_stan_code()`](https://sonish13.github.io/vnorm/reference/compile_stan_code.md).
+  [`compile_stan_code()`](https://dkahle.github.io/vnorm/reference/compile_stan_code.md).
   Defaults to `FALSE`.
 
 - show_messages:
 
   If `TRUE`, Stan sampler messages are shown.
+
+- seed:
+
+  Optional integer seed passed to CmdStan's sampler for reproducibility.
+  Note that R's [`set.seed()`](https://rdrr.io/r/base/Random.html) does
+  not control Stan's RNG.
 
 - ...:
 
@@ -154,7 +161,18 @@ does this generalize to more varieties of varying dimensions?
 
 ``` r
 
+
 library("tidyverse")
+#> ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+#> ✔ dplyr     1.2.1     ✔ readr     2.2.0
+#> ✔ forcats   1.0.1     ✔ stringr   1.6.0
+#> ✔ lubridate 1.9.5     ✔ tibble    3.3.1
+#> ✔ purrr     1.2.2     ✔ tidyr     1.3.2
+#> ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+#> ✖ dplyr::filter() masks stats::filter()
+#> ✖ dplyr::lag()    masks stats::lag()
+#> ✖ dplyr::vars()   masks mpoly::vars(), ggplot2::vars()
+#> ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
 options("mc.cores" = parallel::detectCores() - 1)
 
 if (FALSE) { # \dontrun{

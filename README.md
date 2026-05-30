@@ -9,7 +9,7 @@
 status](https://img.shields.io/badge/CRAN-not%20released-lightgrey)](https://cran.r-project.org/package=vnorm)
 [![repo
 status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![codecov](https://codecov.io/gh/sonish13/vnorm/graph/badge.svg)](https://app.codecov.io/gh/sonish13/vnorm)
+[![codecov](https://codecov.io/gh/dkahle/vnorm/graph/badge.svg)](https://app.codecov.io/gh/dkahle/vnorm)
 
 `vnorm` provides tools for sampling, visualizing, and projecting near
 real algebraic varieties defined by polynomial equations. It implements
@@ -26,7 +26,7 @@ You can install the development version of `vnorm` from GitHub with:
 ``` r
 if (!requireNamespace("devtools")) install.packages("devtools")
 devtools::install_github("dkahle/mpoly")
-devtools::install_github("sonish13/vnorm")
+devtools::install_github("dkahle/vnorm")
 ```
 
 `rvnorm()` uses Stan/HMC as the primary sampling backend, so you should

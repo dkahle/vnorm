@@ -9,8 +9,8 @@ Maintainer: David Kahle <david@kahle.io>
 Description: Samples, projects, and visualizes variety normal distributions.
 License: MIT + file LICENSE
 Encoding: UTF-8
-URL: https://sonish13.github.io/vnorm/, https://github.com/sonish13/vnorm
-BugReports: https://github.com/sonish13/vnorm/issues
+URL: https://dkahle.github.io/vnorm/, https://github.com/dkahle/vnorm
+BugReports: https://github.com/dkahle/vnorm/issues
 Additional_repositories: https://mc-stan.org/r-packages/
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3

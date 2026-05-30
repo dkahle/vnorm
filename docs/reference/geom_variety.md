@@ -96,8 +96,8 @@ geom_variety(
   Whether to project contour points back onto the true variety after
   contour extraction. `"off"` returns the raw shifted level-0 contour.
   `"on"` always projects. `"auto"` projects when a shift is used, when
-  the polynomial has no strict sign change on the plotting grid, or
-  when the raw contour is noticeably off the zero set. For shifted
+  the polynomial has no strict sign change on the plotting grid, or when
+  the raw contour is noticeably off the zero set. For shifted
   repeated-factor cases, `geom_variety()` also prints a caution that the
   recovered contour may still miss branches.
 
@@ -108,7 +108,7 @@ geom_variety(
 
 - show.legend:
 
-  logical. Should this layer be included in the legends? `NA`, the
+  Logical. Should this layer be included in the legends? `NA`, the
   default, includes if any aesthetics are mapped. `FALSE` never
   includes, and `TRUE` always includes. It can also be a named logical
   vector to finely select the aesthetics to display. To include legend
@@ -194,6 +194,7 @@ computed by the stat, so users typically do not map them manually:
 ## Examples
 
 ``` r
+
 library("ggplot2")
 
 # 1) Ellipse
@@ -263,7 +264,7 @@ p5 <- mp("x^2 + y^2 - 1")
 ggplot() +
   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
-#> All values are positive on the plotting grid; try shift = -0.00101684.
+#> All values are positive on the plotting grid; try shift = -0.0010096.
 #> Zero contours were generated
 
 
