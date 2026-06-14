@@ -21,8 +21,8 @@
 #'
 #' @section Computed variables:
 #'   \describe{
-#'     \item{Polynomial}{A parseable label for the polynomial, useful for
-#'     `after_stat(Polynomial)` mappings (for example, linetype or colour).}
+#'     \item{polynomial}{A parseable label for the polynomial, useful for
+#'     `after_stat(polynomial)` mappings (for example, linetype or colour).}
 #'     \item{group}{Contour path group identifier used internally by the layer.}
 #'   }
 #'
@@ -250,7 +250,7 @@ StatVariety <- ggproto(
         )
         emit_shifted_recovery_disclaimer(shift, projection, no_sign_change0)
       }
-      df$Polynomial <- as.character(mpoly_to_stan(poly))
+      df$polynomial <- as.character(mpoly_to_stan(poly))
       return(df)
     } else if (is.mpolyList(poly)) {
       # process each polynomial independently, then combine
@@ -287,7 +287,7 @@ StatVariety <- ggproto(
           )
           emit_shifted_recovery_disclaimer(shift, projection, no_sign_change0)
         }
-        df$Polynomial <- as.character(mpoly_to_stan(poly[[i]]))
+        df$polynomial <- as.character(mpoly_to_stan(poly[[i]]))
         return(df)
       })
       combined_data <- dplyr::bind_rows(data_list)
@@ -335,11 +335,11 @@ geom_variety <- function(
     data <- ensure_nonempty_data
   }
 
-  default_mapping <- aes(group = after_stat(group), linetype = after_stat(Polynomial))
+  default_mapping <- aes(group = after_stat(group), linetype = after_stat(polynomial))
   if (isTRUE(vary_colour)) {
     default_mapping <- modifyList(
       default_mapping,
-      aes(colour = after_stat(Polynomial))
+      aes(colour = after_stat(polynomial))
     )
   }
 

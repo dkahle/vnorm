@@ -188,6 +188,11 @@ David Kahle
 
 library("ggplot2")
 library("mpoly")
+#>
+#> Attaching package: ‘mpoly’
+#> The following object is masked from ‘package:ggplot2’:
+#>
+#>     vars
 
 if (FALSE) { # \dontrun{
 ## basic usage

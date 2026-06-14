@@ -61,7 +61,11 @@ callr::r(
       for (candidate in candidates) {
         ok <- tryCatch({
           dir.create(candidate, recursive = TRUE, showWarnings = FALSE)
-          dir.exists(candidate)
+          if (!dir.exists(candidate)) return(FALSE)
+          probe <- tempfile("write-probe-", tmpdir = candidate)
+          on.exit(unlink(probe, force = TRUE), add = TRUE)
+          saveRDS(TRUE, probe)
+          file.exists(probe)
         }, error = function(e) FALSE)
         if (isTRUE(ok)) return(candidate)
       }
@@ -85,6 +89,20 @@ callr::r(
       paste0("path-", sanitize_component(cmdstan_path))
     )
     dir.create(cache_stan, recursive = TRUE, showWarnings = FALSE)
+    cache_probe <- tempfile("write-probe-", tmpdir = cache_stan)
+    tryCatch(
+      {
+        saveRDS(TRUE, cache_probe)
+        unlink(cache_probe, force = TRUE)
+      },
+      error = function(e) {
+        stop(
+          "Could not write to the Stan model cache directory: ",
+          cache_stan,
+          call. = FALSE
+        )
+      }
+    )
 
     source_models <- sort(
       list.files(

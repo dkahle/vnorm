@@ -45,7 +45,7 @@ geom_variety(
 - mapping:
 
   Aesthetic mappings created with
-  [`ggplot2::aes()`](https://ggplot2.tidyverse.org/reference/aes.html).
+  [`ggplot2::aes()`](https://rdrr.io/pkg/ggplot2/man/aes.html).
 
 - data:
 
@@ -62,7 +62,7 @@ geom_variety(
 - ...:
 
   Additional parameters forwarded to
-  [`ggplot2::layer()`](https://ggplot2.tidyverse.org/reference/layer.html).
+  [`ggplot2::layer()`](https://rdrr.io/pkg/ggplot2/man/layer.html).
 
 - poly:
 
@@ -108,7 +108,7 @@ geom_variety(
 
 - show.legend:
 
-  Logical. Should this layer be included in the legends? `NA`, the
+  logical. Should this layer be included in the legends? `NA`, the
   default, includes if any aesthetics are mapped. `FALSE` never
   includes, and `TRUE` always includes. It can also be a named logical
   vector to finely select the aesthetics to display. To include legend
@@ -121,7 +121,7 @@ geom_variety(
   with them. This is most useful for helper functions that define both
   data and aesthetics and shouldn't inherit behaviour from the default
   plot specification, e.g.
-  [`annotation_borders()`](https://ggplot2.tidyverse.org/reference/annotation_borders.html).
+  [`annotation_borders()`](https://rdrr.io/pkg/ggplot2/man/annotation_borders.html).
 
 - stat:
 
@@ -134,12 +134,11 @@ geom_variety(
 
   - A string naming the stat. To give the stat as a string, strip the
     function name of the `stat_` prefix. For example, to use
-    [`stat_count()`](https://ggplot2.tidyverse.org/reference/geom_bar.html),
+    [`stat_count()`](https://rdrr.io/pkg/ggplot2/man/geom_bar.html),
     give the stat as `"count"`.
 
   - For more information and other ways to specify the stat, see the
-    [layer
-    stat](https://ggplot2.tidyverse.org/reference/layer_stats.html)
+    [layer stat](https://rdrr.io/pkg/ggplot2/man/layer_stats.html)
     documentation.
 
 - vary_colour:
@@ -178,10 +177,10 @@ computed by the stat, so users typically do not map them manually:
 
 ## Computed variables
 
-- Polynomial:
+- polynomial:
 
   A parseable label for the polynomial, useful for
-  `after_stat(Polynomial)` mappings (for example, linetype or colour).
+  `after_stat(polynomial)` mappings (for example, linetype or colour).
 
 - group:
 
@@ -189,7 +188,7 @@ computed by the stat, so users typically do not map them manually:
 
 ## See also
 
-[`ggplot2::geom_path()`](https://ggplot2.tidyverse.org/reference/geom_path.html)
+[`geom_path()`](https://rdrr.io/pkg/ggplot2/man/geom_path.html)
 
 ## Examples
 

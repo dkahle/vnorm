@@ -18,4 +18,6 @@ Useful links:
 
 Authors:
 
+- David Kahle <david@kahle.io>
+
 - Sonish Lamsal <sonish_lamsal1@baylor.edu>

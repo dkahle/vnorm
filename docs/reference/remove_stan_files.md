@@ -16,4 +16,5 @@ remove_stan_files(path = getwd())
 
   Directory used in
   [`compile_stan_code()`](https://www.kahle.io/vnorm/reference/compile_stan_code.md).
-  Defaults to the current working directory.
+  Deprecated and ignored; compiled files are removed from the internal
+  cache.

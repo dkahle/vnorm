@@ -92,7 +92,7 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
     if (windowed) {
       data_block <- paste0(data_block, "  real w;")
     }
-    data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
+    data_block <- paste0("data {\n  real<lower=0> si;\n", data_block, "\n}\n")
 
     # parameter block: unconstrained or box-constrained coordinates
     if (windowed) {
@@ -184,7 +184,7 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
       data_block <- paste0(data_block, "\n  real w;")
     }
 
-    data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
+    data_block <- paste0("data {\n  real<lower=0> si;\n", data_block, "\n}\n")
     vars_for_params <- unique(unlist(vars))
     if (windowed) {
       params_block <- paste(sapply(vars_for_params, function(var) {
@@ -221,6 +221,7 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
       "]';"
     )
 
+    gbar_string <- "g"
     if (homo) {
       for (i in seq_along(poly)) {
         derivatives[[i]] <- unlist(derivatives_pre[[i]])
@@ -232,27 +233,20 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
         ),
         collapse = ",\n"
       )
-    } else {
-      jac <- array("", dim = c(n_eqs, n_vars))
-      for (i in seq_len(n_eqs)) {
-        for (j in seq_len(n_vars)) {
-          jac[i, j] <- if (i == j) "1" else "0"
-        }
+      dg <- paste0("  matrix[", n_eqs, ",", n_vars, "] J = [ \n", jac, "\n    ];")
+      trans_block <- paste0("\ntransformed parameters {\n", g, "\n", dg, "\n}\n")
+
+      gbar_string <- if (n_vars == n_eqs) {
+        "J \\ g"
+      } else if (n_vars > n_eqs) {
+        "J' * ((J*J') \\ g)"
+      } else {
+        "(J'*J) \\ (J'*g)"
       }
-      jac <- apply(jac, 1L, paste, collapse = ", ")
-      jac <- paste("      [", jac, "]", collapse = ", \n")
-    }
-
-    dg <- paste0("  matrix[", n_eqs, ",", n_vars, "] J = [ \n", jac, "\n    ];")
-    trans_block <- paste0("\ntransformed parameters {\n", g, "\n", dg, "\n}\n")
-
-    gbar_string <- if (n_vars == n_eqs) {
-      "J \\ g"
-    } else if (n_vars > n_eqs) {
-      "J' * ((J*J') \\ g)"
     } else {
-      "(J'*J) \\ (J'*g)"
+      trans_block <- paste0("\ntransformed parameters {\n", g, "\n}\n")
     }
+
     model_block <- paste0(
       "\nmodel {\n  target += normal_lpdf(0.00 |",
       gbar_string,

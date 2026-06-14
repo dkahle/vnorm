@@ -24,30 +24,27 @@
 #'
 #' @examples
 #'
-#' library("mpoly")
-#'
 #' ## Single polynomial in one variable
 #' p1 <- mp("x")
 #' pdvnorm(c(-1, 0, 1), p1, sd = 1)
 #' pdvnorm(0, p1, sd = 2, log = TRUE)
 #'
-#' ## Multivariate (square) system: two polynomials in two variables
-#' p2 <- mp(c("x", "y"))
-#' x2 <- rbind(c(0, 0), c(1, 2), c(-1, 3))
+#' ## Single polynomial in two variables
+#' p2 <- mp("x^2 + y^2 - 1")
+#' x2 <- rbind(c(1, 0), c(0, 1), c(1, 1))
+#' pdvnorm(x2, p2, sd = 0.1)
+#' pdvnorm(as.data.frame(x2), p2, sd = 0.1)
+#' pdvnorm(c(1, 1), p2, Sigma = diag(c(1, 4)))
 #'
-#' ## Different dispersion forms
-#' pdvnorm(x2, p2, sd = 1)
-#' pdvnorm(x2, p2, sd = c(1, 2))
-#' pdvnorm(x2, p2, Sigma = diag(c(1, 4)))
-#'
-#' ## Multivariate (underdetermined): one polynomial in two variables
-#' p3 <- mp("x + y")
-#' x3 <- rbind(c(1, 1), c(2, -1), c(0, 3))
+#' ## Polynomial systems
+#' p3 <- mp(c("x", "y"))
+#' x3 <- rbind(c(0, 0), c(1, 2), c(-1, 3))
 #' pdvnorm(x3, p3, sd = 1)
-#' pdvnorm(as.data.frame(x3), p3, sd = 1)
-#' pdvnorm(c(1, 1), p3, Sigma = diag(c(1, 4)))
+#' pdvnorm(x3, p3, sd = c(1, 2))
+#' pdvnorm(x3, p3, Sigma = diag(c(1, 4)))
 #'
-#' ## Multivariate (overdetermined): three polynomials in two variables
+#' ## Overdetermined systems use the variable dimension when homo = TRUE
+#' ## and the equation dimension when homo = FALSE.
 #' p4 <- mp(c("x", "y", "x + y"))
 #' x4 <- rbind(c(1, 2), c(0, -1), c(2, 2))
 #' pdvnorm(x4, p4, Sigma = diag(2), homo = TRUE)
@@ -109,6 +106,9 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
       }
     } else if (!(is.matrix(x) && ncol(x) == n)) {
       stop("x must be length n or a matrix with n columns.")
+    }
+    if (!is.numeric(x) || any(!is.finite(x))) {
+      stop("'x' must be finite numeric.")
     }
 
     g_func <- suppressMessages(as.function(poly))

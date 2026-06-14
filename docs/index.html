@@ -12,8 +12,8 @@
 <link rel="icon" sizes="any" href="favicon.ico">
 <link rel="manifest" href="site.webmanifest">
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Variety Normal Distribution">
 <meta name="description" content="Samples, projects, and visualizes variety normal distributions.">
@@ -53,8 +53,8 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
 
-<p><img src="reference/figures/logo.png" align="right" width="180"></p>
-<p><a href="https://cran.r-project.org/package=vnorm" class="external-link">CRAN status</a> <a href="https://cran.r-project.org/package=vnorm" class="external-link"><img src="https://img.shields.io/badge/CRAN-not%20released-lightgrey" alt="CRAN status"></a> <a href="https://www.repostatus.org/#active" class="external-link"><img src="https://www.repostatus.org/badges/latest/active.svg" alt="repo status"></a> <a href="https://app.codecov.io/gh/dkahle/vnorm" class="external-link"><img src="https://codecov.io/gh/dkahle/vnorm/graph/badge.svg" alt="codecov"></a></p>
+<p><img src="reference/figures/logo.png" align="right" width="180" alt="vnorm logo"></p>
+<p><a href="https://cran.r-project.org/package=vnorm" class="external-link"><img src="https://img.shields.io/badge/CRAN-not%20released-lightgrey" alt="CRAN status"></a> <a href="https://www.repostatus.org/#active" class="external-link"><img src="https://www.repostatus.org/badges/latest/active.svg" alt="repo status"></a> <a href="https://app.codecov.io/gh/dkahle/vnorm" class="external-link"><img src="https://codecov.io/gh/dkahle/vnorm/graph/badge.svg" alt="codecov"></a></p>
 <p><code>vnorm</code> provides tools for sampling, visualizing, and projecting near real algebraic varieties defined by polynomial equations. It implements the variety normal distribution using <code>mpoly</code> for polynomial representations and Stan-based samplers. In addition to sampling with <code><a href="reference/rvnorm.html">rvnorm()</a></code>, the package includes pseudo-density evaluation via <code><a href="reference/pdvnorm.html">pdvnorm()</a></code>, ggplot2 visualization with <code><a href="reference/geom_variety.html">geom_variety()</a></code>, and projection onto varieties with <code><a href="reference/project-onto-variety.html">project_onto_variety()</a></code>.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -62,8 +62,8 @@
 <p>You can install the development version of <code>vnorm</code> from GitHub with:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install-deprecated.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dkahle/mpoly"</span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install-deprecated.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dkahle/vnorm"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/devtools/man/install-deprecated.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dkahle/mpoly"</span><span class="op">)</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/devtools/man/install-deprecated.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dkahle/vnorm"</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="reference/rvnorm.html">rvnorm()</a></code> uses Stan/HMC as the primary sampling backend, so you should install <code>cmdstanr</code> and CmdStan for normal package use. A rejection sampler interface is also available (<code>rejection = TRUE</code>) and can be useful for quick examples or simple low-dimensional cases.</p>
 </div>
 <div class="section level2">
@@ -85,7 +85,7 @@
 <span>  <span class="fu"><a href="reference/geom_variety.html">geom_variety</a></span><span class="op">(</span>poly <span class="op">=</span> <span class="va">p1</span>, inherit.aes <span class="op">=</span> <span class="cn">FALSE</span>, show.legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-3-1.png" width="72%" style="display:block; margin: 0 auto;"></p>
+<p><img src="reference/figures/README-unnamed-chunk-3-1.png" alt="" width="72%" style="display:block; margin: 0 auto;"></p>
 </div>
 <div class="section level2">
 <h2 id="main-functions">Main Functions<a class="anchor" aria-label="anchor" href="#main-functions"></a>
@@ -118,7 +118,7 @@
 <li>
 <code>poly</code>: the polynomial or polynomial system defining the target variety</li>
 <li>
-<code>sd</code> / <code>Sigma</code>: controls concentration around the variety</li>
+<code>sd</code> / <code>Sigma</code>: controls concentration around the variety; for <code><a href="reference/rvnorm.html">rvnorm()</a></code>, single-polynomial sampling supports only scalar <code>sd</code> or scalar variance <code>Sigma</code>, while polynomial systems also support diagonal/full covariance inputs</li>
 <li>
 <code>output</code>: output format (for example <code>"tibble"</code>)</li>
 <li>
@@ -151,10 +151,10 @@
 <span><span class="co"># Multi-polynomial systems (underdetermined / overdetermined are both supported)</span></span>
 <span><span class="fu"><a href="reference/rvnorm.html">rvnorm</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x^2 + y^2 + z^2 - 1"</span>, <span class="st">"z"</span><span class="op">)</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">0.1</span>, output <span class="op">=</span> <span class="st">"tibble"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Use Sigma for anisotropic concentration (single polynomial)</span></span>
-<span><span class="fu"><a href="reference/rvnorm.html">rvnorm</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span><span class="op">)</span>, Sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.02</span>, <span class="fl">0.10</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>, output <span class="op">=</span> <span class="st">"tibble"</span><span class="op">)</span></span>
+<span><span class="co"># Use Sigma as a scalar variance for single-polynomial sampling</span></span>
+<span><span class="fu"><a href="reference/rvnorm.html">rvnorm</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span><span class="op">)</span>, Sigma <span class="op">=</span> <span class="fl">0.1</span><span class="op">^</span><span class="fl">2</span>, output <span class="op">=</span> <span class="st">"tibble"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Use Sigma with polynomial systems as well</span></span>
+<span><span class="co"># Use diagonal/full Sigma with polynomial systems</span></span>
 <span><span class="fu"><a href="reference/rvnorm.html">rvnorm</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span>, <span class="st">"x y - 0.25"</span><span class="op">)</span><span class="op">)</span>, Sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.05</span>, <span class="fl">0.08</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Rejection sampler usage (alternative path; currently the wrapper supports scalar <code>sd</code>):</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -179,16 +179,16 @@
 <h3 id="pdvnorm-pseudo-density-evaluation">
 <code>pdvnorm()</code>: pseudo-density evaluation<a class="anchor" aria-label="anchor" href="#pdvnorm-pseudo-density-evaluation"></a>
 </h3>
-<p><code><a href="reference/pdvnorm.html">pdvnorm()</a></code> can be used with single polynomials and polynomial systems, and supports scalar, vector, or matrix <code>sigma</code> inputs depending on the setting.</p>
+<p><code><a href="reference/pdvnorm.html">pdvnorm()</a></code> can be used with single polynomials and polynomial systems. Use <code>sd</code> for standard-deviation scale inputs and <code>Sigma</code> for covariance inputs.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p4</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span>, <span class="st">"x y - 0.25"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="fl">0.3</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="reference/pdvnorm.html">pdvnorm</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">p4</span>, sigma <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/pdvnorm.html">pdvnorm</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">p4</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.1560083</span></span>
-<span><span class="fu"><a href="reference/pdvnorm.html">pdvnorm</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">p4</span>, sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, homo <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.1085086</span></span>
-<span><span class="fu"><a href="reference/pdvnorm.html">pdvnorm</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">p4</span>, sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/pdvnorm.html">pdvnorm</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">p4</span>, sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, homo <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0.07672814</span></span>
+<span><span class="fu"><a href="reference/pdvnorm.html">pdvnorm</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">p4</span>, Sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.07810636</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -203,7 +203,7 @@
 <span>  <span class="fu"><a href="reference/geom_variety.html">geom_variety</a></span><span class="op">(</span>poly <span class="op">=</span> <span class="va">p5</span>, xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, show.legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-9-1.png" width="72%" style="display:block; margin: 0 auto;"></p>
+<p><img src="reference/figures/README-unnamed-chunk-9-1.png" alt="" width="72%" style="display:block; margin: 0 auto;"></p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p6</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span>, <span class="st">"x y - 0.25"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -218,7 +218,7 @@
 <span>  <span class="fu">scale_colour_manual</span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-10-1.png" width="72%" style="display:block; margin: 0 auto;"></p>
+<p><img src="reference/figures/README-unnamed-chunk-10-1.png" alt="" width="72%" style="display:block; margin: 0 auto;"></p>
 <p>If a squared polynomial (for example, <code>p^2</code>) produces no contour at <code>shift = 0</code>, <code><a href="reference/geom_variety.html">geom_variety()</a></code> prints a suggested negative <code>shift</code>. Using that <code>shift</code> can help recover the plotted zero set in no-sign-change cases. With the default <code>projection = "auto"</code>, the shifted contour is then projected back onto the actual zero set; this usually improves repeated-factor plots, although hard singular cases can still miss branches.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p7</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"y^2 - x^2"</span><span class="op">)</span></span>
@@ -239,7 +239,7 @@
 <span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Using shift = -0.000959513 to contour a nearby level set. For repeated-factor varieties, the projected result may still miss branches; if the unsquared polynomial is available, prefer plotting that directly.</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-12-1.png" width="62%" style="display:block; margin: 0 auto;"></p>
+<p><img src="reference/figures/README-unnamed-chunk-12-1.png" alt="" width="62%" style="display:block; margin: 0 auto;"></p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p7_cross</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"y^2 - x^2"</span><span class="op">)</span></span>
 <span></span>
@@ -266,7 +266,7 @@
 <span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">'projection = "auto"'</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-13-1.png" width="49%" style="display:block; margin: 0 auto;"><img src="reference/figures/README-unnamed-chunk-13-2.png" width="49%" style="display:block; margin: 0 auto;"></p>
+<p><img src="reference/figures/README-unnamed-chunk-13-1.png" alt="" width="49%" style="display:block; margin: 0 auto;"><img src="reference/figures/README-unnamed-chunk-13-2.png" alt="" width="49%" style="display:block; margin: 0 auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="project_onto_variety-projection-with-visualization">
@@ -278,10 +278,10 @@
 <span><span class="va">x0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.3</span>, <span class="fl">0.9</span><span class="op">)</span></span>
 <span><span class="op">(</span><span class="va">x0_proj</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/project-onto-variety.html">project_onto_variety</a></span><span class="op">(</span><span class="va">x0</span>, <span class="va">p8</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.4110961 0.2846050</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-15-1.png" width="62%" style="display:block; margin: 0 auto;"></p>
+<p><img src="reference/figures/README-unnamed-chunk-15-1.png" alt="" width="62%" style="display:block; margin: 0 auto;"></p>
 <p>The red point is the starting value and the black point is its projection onto the variety. The grey segment shows the displacement from the starting point to the projected point.</p>
 <p>Adaptive time stepping is used by default. The comparison below illustrates the homotopy projection path from the same starting point using fixed step sizes versus adaptive step sizes (similar to the paper figure). The open circles mark successive iterates along the path.</p>
-<p><img src="reference/figures/README-unnamed-chunk-16-1.png" width="92%" style="display:block; margin: 0 auto;"></p>
+<p><img src="reference/figures/README-unnamed-chunk-16-1.png" alt="" width="92%" style="display:block; margin: 0 auto;"></p>
 <p>In each panel, the black curve is the target variety (an ellipse segment), the connected black path is the homotopy projection path from the same starting point, and the open circles show the successive iterates. The adaptive method is the default because it typically reaches the variety in fewer steps while maintaining the error tolerance.</p>
 </div>
 </div>
@@ -315,6 +315,7 @@
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
+<li><a href="https://www.kahle.io/vnorm/">View on project website</a></li>
 <li><a href="https://github.com/dkahle/vnorm/" class="external-link">Browse source code</a></li>
 <li><a href="https://github.com/dkahle/vnorm/issues" class="external-link">Report a bug</a></li>
 </ul>

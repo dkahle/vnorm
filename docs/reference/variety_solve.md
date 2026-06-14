@@ -32,8 +32,8 @@ variety_solve(
 - sd:
 
   Numeric scalar standard deviation used by
-  [`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md)
-  (default: `0.01`).
+  [`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md) (default:
+  `0.01`).
 
 - n:
 

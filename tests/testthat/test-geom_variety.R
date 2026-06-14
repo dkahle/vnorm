@@ -22,6 +22,15 @@ test_that("geom_variety maps linetype by polynomial for mpolyList", {
   expect_gt(length(unique(built$data[[1]]$linetype)), 1)
 })
 
+test_that("geom_variety exposes snake_case polynomial computed variable", {
+  poly <- mp("x^2 + y^2 - 1")
+  p <- ggplot() + geom_variety(poly = poly, xlim = c(-2, 2), ylim = c(-2, 2))
+
+  built <- ggplot2::ggplot_build(p)
+  expect_true("polynomial" %in% names(built$data[[1]]))
+  expect_false("Polynomial" %in% names(built$data[[1]]))
+})
+
 test_that("geom_variety keeps a single default colour for mpolyList", {
   poly_list <- mpolyList(mp("x^2 + y^2 - 1"), mp("y - x"))
   p <- ggplot() +

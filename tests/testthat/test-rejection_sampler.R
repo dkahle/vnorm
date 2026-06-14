@@ -56,7 +56,7 @@ test_that("rejection_sampler validates mpolyList vector sd lengths", {
     rejection_sampler(
       n = 5, poly = p, sd = c(0.1, 0.2, 0.3), w = 1.5, homo = FALSE, message = FALSE
     ),
-    "length\\(`sd`\\) must be 1, `length\\(poly\\)`"
+    "length\\(`sd`\\) must be 1 or `length\\(poly\\)`"
   )
 })
 
@@ -67,7 +67,7 @@ test_that("rejection_sampler validates homo=TRUE mpolyList sd vector length", {
     rejection_sampler(
       n = 5, poly = p, sd = c(0.1, 0.2, 0.3), w = 1.5, homo = TRUE, message = FALSE
     ),
-    "length\\(`sd`\\) must be 1, `length\\(vars\\)`"
+    "length\\(`sd`\\) must be 1 or `length\\(vars\\)`"
   )
 })
 
@@ -99,6 +99,63 @@ test_that("rejection_sampler validates poly class", {
       n = 3, poly = 1:3, vars = c("x", "y"), sd = 0.1, w = 1, message = FALSE
     ),
     "`poly` should be a `mpoly` or `mpolyList`"
+  )
+})
+
+test_that("rejection_sampler validates n, output, windows, and scalar unif sd", {
+  p <- mp("x^2 + y^2 - 1")
+
+  expect_error(
+    rejection_sampler(n = 0, poly = p, sd = 0.1, w = 1, message = FALSE),
+    "`n` must be a positive integer"
+  )
+  expect_error(
+    rejection_sampler(n = 2, poly = p, sd = 0.1, w = 1, output = "bad", message = FALSE),
+    "'arg' should be one of"
+  )
+  expect_error(
+    rejection_sampler(n = 2, poly = p, sd = 0.1, w = -1, message = FALSE),
+    "Scalar `w` must be positive"
+  )
+  expect_error(
+    rejection_sampler(
+      n = 2,
+      poly = p,
+      sd = 0.1,
+      w = list(x = c(-1, 1)),
+      message = FALSE
+    ),
+    "missing bounds"
+  )
+  expect_error(
+    rejection_sampler(
+      n = 2,
+      poly = p,
+      sd = c(0.1, 0.2),
+      w = 1,
+      dist = "unif",
+      message = FALSE
+    ),
+    "requires scalar `sd`"
+  )
+})
+
+test_that("rejection_sampler validates matrix sd dimensions and definiteness", {
+  p <- mp(c("x^2 + y^2 - 1", "y"))
+  expect_error(
+    rejection_sampler(n = 2, poly = p, sd = diag(3), w = 1, homo = TRUE, message = FALSE),
+    "`length\\(vars\\)` by `length\\(vars\\)`"
+  )
+  expect_error(
+    rejection_sampler(
+      n = 2,
+      poly = p,
+      sd = matrix(c(1, 2, 2, 4), 2, 2),
+      w = 1,
+      homo = TRUE,
+      message = FALSE
+    ),
+    "positive definite"
   )
 })
 

@@ -6,7 +6,7 @@ or heteroskedastic setting.
 ## Usage
 
 ``` r
-pdvnorm(x, poly, sigma, homo = TRUE, log = FALSE)
+pdvnorm(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...)
 ```
 
 ## Arguments
@@ -22,12 +22,11 @@ pdvnorm(x, poly, sigma, homo = TRUE, log = FALSE)
   An `mpoly` object (single polynomial) or an `mpolyList` object
   (multiple polynomials).
 
-- sigma:
+- sd:
 
-  For the single-polynomial case, a positive scalar standard deviation.
-  For the multi-polynomial case, a scalar, vector, or matrix. If
-  `homo = TRUE`, `sigma` must conform to the number of variables; if
-  `homo = FALSE`, it must conform to the number of polynomials.
+  Scale parameter for the normal kernel. For polynomial systems, a
+  scalar is recycled across the relevant dimension, while a vector
+  supplies component-wise standard deviations.
 
 - homo:
 
@@ -39,6 +38,16 @@ pdvnorm(x, poly, sigma, homo = TRUE, log = FALSE)
 
   Logical. If `TRUE`, returns the log of the density.
 
+- Sigma:
+
+  Full covariance matrix, scalar covariance, or a diagonal vector of
+  covariance terms. If supplied, `Sigma` replaces `sd`.
+
+- ...:
+
+  Deprecated. A named `sigma` argument is accepted for backward
+  compatibility.
+
 ## Value
 
 A numeric scalar or vector containing the pseudo-density evaluated at
@@ -48,45 +57,39 @@ A numeric scalar or vector containing the pseudo-density evaluated at
 
 ``` r
 
-library("mpoly")
-#> 
-#> Attaching package: ‘mpoly’
-#> The following object is masked from ‘package:ggplot2’:
-#> 
-#>     vars
-
 ## Single polynomial in one variable
 p1 <- mp("x")
-pdvnorm(c(-1, 0, 1), p1, sigma = 1)
+pdvnorm(c(-1, 0, 1), p1, sd = 1)
 #> [1] 0.2419707 0.3989423 0.2419707
-pdvnorm(0, p1, sigma = 2, log = TRUE)
+pdvnorm(0, p1, sd = 2, log = TRUE)
 #> [1] -1.612086
 
-## Multivariate (square) system: two polynomials in two variables
-p2 <- mp(c("x", "y"))
-x2 <- rbind(c(0, 0), c(1, 2), c(-1, 3))
+## Single polynomial in two variables
+p2 <- mp("x^2 + y^2 - 1")
+x2 <- rbind(c(1, 0), c(0, 1), c(1, 1))
+pdvnorm(x2, p2, sd = 0.1)
+#> [1] 3.989422804 3.989422804 0.007701398
+pdvnorm(as.data.frame(x2), p2, sd = 0.1)
+#> [1] 3.989422804 3.989422804 0.007701398
+pdvnorm(c(1, 1), p2, Sigma = diag(c(1, 4)))
+#> [1] 0.2460836
 
-## Different sigma forms
-pdvnorm(x2, p2, sigma = 1)
-#> [1] 0.15915494 0.05167004 0.09653235
-pdvnorm(x2, p2, sigma = c(1, 2))
-#> [1] 0.11253954 0.06412310 0.08764588
-pdvnorm(x2, p2, sigma = diag(c(1, 4)))
-#> [1] 0.07957747 0.06006823 0.07022687
+## Polynomial systems
+p3 <- mp(c("x", "y"))
+x3 <- rbind(c(0, 0), c(1, 2), c(-1, 3))
+pdvnorm(x3, p3, sd = 1)
+#> [1] 0.159154943 0.013064233 0.001072378
+pdvnorm(x3, p3, sd = c(1, 2))
+#> [1] 0.07957747 0.02927492 0.01566973
+pdvnorm(x3, p3, Sigma = diag(c(1, 4)))
+#> [1] 0.07957747 0.02927492 0.01566973
 
-## Multivariate (underdetermined): one polynomial in two variables
-p3 <- mp("x + y")
-x3 <- rbind(c(1, 1), c(2, -1), c(0, 3))
-pdvnorm(x3, p3, sigma = 1)
-#> [1] 0.14676266 0.31069656 0.04204821
-pdvnorm(as.data.frame(x3), p3, sigma = 1)
-#> [1] 0.14676266 0.31069656 0.04204821
-
-## Multivariate (overdetermined): three polynomials in two variables
+## Overdetermined systems use the variable dimension when homo = TRUE
+## and the equation dimension when homo = FALSE.
 p4 <- mp(c("x", "y", "x + y"))
 x4 <- rbind(c(1, 2), c(0, -1), c(2, 2))
-pdvnorm(x4, p4, sigma = diag(2),    homo = TRUE)
-#> [1] 0.05854983 0.14241810 0.02689930
-pdvnorm(x4, p4, sigma = c(1, 2, 3), homo = FALSE)
-#> [1] 0.0012905390 0.0170882873 0.0000896711
+pdvnorm(x4, p4, Sigma = diag(2), homo = TRUE)
+#> [1] 0.013064233 0.096532353 0.002915024
+pdvnorm(x4, p4, sd = c(1, 2, 3), homo = FALSE)
+#> [1] 0.002361224 0.008834148 0.000357111
 ```

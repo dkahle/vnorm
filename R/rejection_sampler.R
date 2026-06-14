@@ -55,16 +55,44 @@ rejection_sampler <- function(n,
                               correct_p_coefficients = FALSE,
                               correct_dp_coefficients = FALSE,
                               message = FALSE) {
-  # expand scalar/length-2 window specs to per-variable bounds
-  n_vars <- length(vars)
-  if (is.numeric(w) && length(w) == 1) {
-    w <- replicate(length(vars), c(-w, w), simplify = FALSE)
-    names(w) <- vars
-  } else if (is.numeric(w) && length(w) == 2) {
-    w <- replicate(length(vars), w, simplify = FALSE)
-    names(w) <- vars
+  if (
+    !is.numeric(n) || length(n) != 1L || !is.finite(n) ||
+      n < 1 || n != as.integer(n)
+  ) {
+    stop("`n` must be a positive integer.", call. = FALSE)
   }
+  n <- as.integer(n)
+  if (!(is.mpoly(poly) || is.mpolyList(poly))) {
+    stop("`poly` should be a `mpoly` or `mpolyList` object.", call. = FALSE)
+  }
+  if (missing(vars)) vars <- sort(mpoly::vars(poly))
+  if (!is.character(vars) || any(!nzchar(vars)) || anyDuplicated(vars)) {
+    stop("`vars` must be a character vector of unique variable names.", call. = FALSE)
+  }
+  output <- match.arg(output, c("simple", "tibble"))
   dist <- match.arg(dist)
+  if (!is.logical(homo) || length(homo) != 1L || is.na(homo)) {
+    stop("`homo` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (
+    !is.logical(correct_p_coefficients) || length(correct_p_coefficients) != 1L ||
+      is.na(correct_p_coefficients)
+  ) {
+    stop("`correct_p_coefficients` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (
+    !is.logical(correct_dp_coefficients) || length(correct_dp_coefficients) != 1L ||
+      is.na(correct_dp_coefficients)
+  ) {
+    stop("`correct_dp_coefficients` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (!is.logical(message) || length(message) != 1L || is.na(message)) {
+    stop("`message` must be TRUE or FALSE.", call. = FALSE)
+  }
+
+  n_vars <- length(vars)
+  w <- rejection_normalize_window(w, vars)
+  sd <- rejection_validate_scale(sd, poly, homo, dist, n_vars)
   if (correct_p_coefficients) poly <- normalize_coefficients(poly)
 
   if (is.mpolyList(poly)) {
@@ -254,4 +282,100 @@ rejection_sampler <- function(n,
   out <- if (output == "tibble") tibble::as_tibble(mat) else mat
   out
 
+}
+
+rejection_normalize_window <- function(w, vars) {
+  check_bounds <- function(bounds, label) {
+    if (
+      !is.numeric(bounds) || length(bounds) != 2L ||
+        any(!is.finite(bounds)) || bounds[1] >= bounds[2]
+    ) {
+      stop(label, " must be a finite numeric interval `c(lower, upper)`.", call. = FALSE)
+    }
+    as.numeric(bounds)
+  }
+
+  if (is.numeric(w) && length(w) == 1L) {
+    if (!is.finite(w) || w <= 0) {
+      stop("Scalar `w` must be positive and finite.", call. = FALSE)
+    }
+    out <- replicate(length(vars), c(-w, w), simplify = FALSE)
+    names(out) <- vars
+    return(out)
+  }
+  if (is.numeric(w) && length(w) == 2L) {
+    bounds <- check_bounds(w, "`w`")
+    out <- replicate(length(vars), bounds, simplify = FALSE)
+    names(out) <- vars
+    return(out)
+  }
+  if (!is.list(w) || is.null(names(w))) {
+    stop("`w` must be a positive scalar, a length-2 interval, or a named list.", call. = FALSE)
+  }
+  missing_vars <- setdiff(vars, names(w))
+  if (length(missing_vars) > 0L) {
+    stop(
+      "`w` is missing bounds for: ",
+      paste(missing_vars, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  out <- lapply(vars, function(var) check_bounds(w[[var]], paste0("`w$", var, "`")))
+  names(out) <- vars
+  out
+}
+
+rejection_validate_scale <- function(sd, poly, homo, dist, n_vars) {
+  if (!is.numeric(sd) || any(!is.finite(sd))) {
+    stop("`sd` must be finite numeric.", call. = FALSE)
+  }
+  if (dist == "unif" && !(is.null(dim(sd)) && length(sd) == 1L)) {
+    stop("`dist = \"unif\"` requires scalar `sd`.", call. = FALSE)
+  }
+
+  if (is.mpoly(poly)) {
+    if (!is.null(dim(sd)) || length(sd) != 1L) {
+      stop("When `poly` is an `mpoly`, `sd` must be a positive scalar.", call. = FALSE)
+    }
+    if (sd <= 0) stop("`sd` must be positive.", call. = FALSE)
+    return(as.numeric(sd))
+  }
+
+  n_polys <- length(poly)
+  target_dim <- if (homo) n_vars else n_polys
+  target_label <- if (homo) "`length(vars)`" else "`length(poly)`"
+
+  if (is.matrix(sd)) {
+    if (!all(dim(sd) == c(target_dim, target_dim))) {
+      stop(
+        "When `poly` is an `mpolyList`, matrix `sd` must be ",
+        target_label,
+        " by ",
+        target_label,
+        ".",
+        call. = FALSE
+      )
+    }
+    tryCatch(
+      chol(sd),
+      error = function(e) {
+        stop("Matrix `sd` must be positive definite.", call. = FALSE)
+      }
+    )
+    return(sd)
+  }
+
+  if (any(sd <= 0)) stop("`sd` must be positive.", call. = FALSE)
+  if (length(sd) == 1L || length(sd) == target_dim) {
+    return(as.numeric(sd))
+  }
+
+  stop(
+    "When `poly` is an `mpolyList` and `homo = ",
+    homo,
+    "`, length(`sd`) must be 1 or ",
+    target_label,
+    ".",
+    call. = FALSE
+  )
 }

@@ -73,6 +73,36 @@ test_that("project_onto_variety validates required inputs and patch vector", {
     project_onto_variety(c(1, 0), p, al = c(NA_real_, 1)),
     "`al` must be a numeric vector"
   )
+  expect_error(
+    project_onto_variety(c(1, 0), p, dt = 0),
+    "`dt` must be a positive"
+  )
+  expect_error(
+    project_onto_variety(c(1, 0), p, n_correct = 1.5),
+    "`n_correct` must be a non-negative integer"
+  )
+  expect_error(
+    project_onto_variety(data.frame(x = "a", y = "b"), p),
+    "`x0` must be finite numeric"
+  )
+  expect_error(
+    project_onto_variety(c(1, 0, 2), p),
+    "one entry per variable"
+  )
+})
+
+test_that("project_onto_variety errors instead of hanging at dt_min", {
+  p <- mp("x^2 + y^2 - 1")
+  expect_error(
+    project_onto_variety(
+      c(1, 1), p,
+      dt = 0.01,
+      dt_min = 0.01,
+      error_tol = .Machine$double.eps,
+      al = c(1, 1)
+    ),
+    "failed to meet `error_tol`"
+  )
 })
 
 test_that("project_onto_variety supports fixed-step path with messages", {

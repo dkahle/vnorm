@@ -2,8 +2,8 @@
 
 Compile and cache a Stan model template for a polynomial shape so
 repeated calls to
-[`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md) can
-reuse the compiled binary.
+[`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md) can reuse
+the compiled binary.
 
 ## Usage
 
@@ -39,9 +39,8 @@ compile_stan_code(
   distribution. Defaults to `TRUE`.
 
   The compiled model metadata is stored in an internal package cache
-  used by
-  [`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md) with
-  `user_compiled = TRUE`.
+  used by [`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md)
+  with `user_compiled = TRUE`.
 
 ## Examples
 

@@ -70,24 +70,47 @@ model {{
     n_vars <- length(vars)
     printed_polys <- mpolyList_to_stan(poly)
 
-    # Jacobian setup
-    printed_jac <- array("", dim = c(n_eqs, n_vars))
-    for (i in seq_len(n_eqs)) {
-      for (j in seq_len(n_vars)) {
-        printed_jac[i, j] <- if (homo) {
-          mpoly_to_stan(d(poly[[i]], vars[j]))
-        } else if (i == j) {
-          "1"
-        } else {
-          "0"
+    target_dim <- if (homo) n_vars else n_eqs
+    data_string <- if (length(sd) == 1) {
+      "real<lower=0> si"
+    } else {
+      paste0("cov_matrix[", target_dim, "] si")
+    }
+    model_string <- if (length(sd) == 1) {
+      "normal_lpdf("
+    } else {
+      "multi_normal_lpdf("
+    }
+    mu_string <- if (length(sd) == 1) {
+      "0.00"
+    } else {
+      paste0("[", paste(rep(0.00, target_dim), collapse = ","), "]'")
+    }
+    gbar_string <- "g"
+
+    if (homo) {
+      # Jacobian setup for homoskedastic pseudoinverse normalization
+      printed_jac <- array("", dim = c(n_eqs, n_vars))
+      for (i in seq_len(n_eqs)) {
+        for (j in seq_len(n_vars)) {
+          printed_jac[i, j] <- mpoly_to_stan(d(poly[[i]], vars[j]))
         }
       }
-    }
 
-    # format Jacobian rows as Stan matrix literal
-    printed_jac <- apply(printed_jac, 1, paste, collapse = ", ")
-    printed_jac <- paste("      [", printed_jac, "]", collapse = ", \n")
-    printed_jac <- paste0("[\n", printed_jac, "\n    ]")
+      # format Jacobian rows as Stan matrix literal
+      printed_jac <- apply(printed_jac, 1, paste, collapse = ", ")
+      printed_jac <- paste("      [", printed_jac, "]", collapse = ", \n")
+      printed_jac <- paste0("[\n", printed_jac, "\n    ]")
+
+      # pseudoinverse form depends on system shape (square, over, under)
+      gbar_string <- if (n_vars == n_eqs) {
+        "J \\ g"
+      } else if (n_vars > n_eqs) {
+        "J' * ((J*J') \\ g)"
+      } else {
+        "(J'*J) \\ (J'*g)"
+      }
+    }
 
     if (missing(w)) {
       parms <- paste(sprintf("real %s;", vars), collapse = "\n  ")
@@ -109,29 +132,13 @@ model {{
       })
       parms <- paste(parms, collapse = "\n  ")
     }
-    data_string <- if (length(sd) == 1) {
-      "real<lower=0> si"
+    transformed_parameters <- if (homo) {
+      glue::glue(
+        "  vector[{n_eqs}] g = [{printed_polys}]';
+  matrix[{n_eqs},{n_vars}] J = {printed_jac};"
+      )
     } else {
-      paste0("cov_matrix[", n_vars, "] si")
-    }
-    model_string <- if (length(sd) == 1) {
-      "normal_lpdf("
-    } else {
-      "multi_normal_lpdf("
-    }
-    mu_string <- if (length(sd) == 1) {
-      "0.00"
-    } else {
-      paste0("[", paste(rep(0.00, n_vars), collapse = ","), "]'")
-    }
-
-    # pseudoinverse form depends on system shape (square, over, under)
-    gbar_string <- if (n_vars == n_eqs) {
-      "J \\ g"
-    } else if (n_vars > n_eqs) {
-      "J' * ((J*J') \\ g)"
-    } else {
-      "(J'*J) \\ (J'*g)"
+      glue::glue("  vector[{n_eqs}] g = [{printed_polys}]';")
     }
 
     stan_code <- glue::glue(
@@ -145,8 +152,7 @@ parameters {{
 }}
 
 transformed parameters {{
-  vector[{n_eqs}] g = [{printed_polys}]';
-  matrix[{n_eqs},{n_vars}] J = {printed_jac};
+{transformed_parameters}
 }}
 
 model {{

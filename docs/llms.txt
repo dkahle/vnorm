@@ -1,6 +1,6 @@
-![](reference/figures/logo.png)
+![vnorm logo](reference/figures/logo.png)
 
-[CRAN status](https://cran.r-project.org/package=vnorm) [![CRAN
+[![CRAN
 status](https://img.shields.io/badge/CRAN-not%20released-lightgrey)](https://cran.r-project.org/package=vnorm)
 [![repo
 status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
@@ -12,8 +12,8 @@ the variety normal distribution using `mpoly` for polynomial
 representations and Stan-based samplers. In addition to sampling with
 [`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md), the
 package includes pseudo-density evaluation via
-[`pdvnorm()`](https://www.kahle.io/vnorm/reference/pdvnorm.md),
-ggplot2 visualization with
+[`pdvnorm()`](https://www.kahle.io/vnorm/reference/pdvnorm.md), ggplot2
+visualization with
 [`geom_variety()`](https://www.kahle.io/vnorm/reference/geom_variety.md),
 and projection onto varieties with
 [`project_onto_variety()`](https://www.kahle.io/vnorm/reference/project-onto-variety.md).
@@ -65,8 +65,8 @@ ggplot(samps1, aes(x, y)) +
 
 ## Main Functions
 
-- [`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md)
-  samples from a variety normal distribution near a polynomial variety.
+- [`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md) samples
+  from a variety normal distribution near a polynomial variety.
 - [`pdvnorm()`](https://www.kahle.io/vnorm/reference/pdvnorm.md)
   evaluates the pseudo-density (up to a normalizing constant).
 - [`geom_variety()`](https://www.kahle.io/vnorm/reference/geom_variety.md)
@@ -79,8 +79,8 @@ ggplot(samps1, aes(x, y)) +
 
 ### `rvnorm()`: the main sampling function
 
-[`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md) is the
-main entry point for sampling near varieties defined by one polynomial
+[`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md) is the main
+entry point for sampling near varieties defined by one polynomial
 (`mpoly`) or a system of polynomials (`mpolyList`). It supports:
 
 - Stan/HMC sampling (default; best for most serious use)
@@ -95,7 +95,11 @@ Common arguments:
 
 - `poly`: the polynomial or polynomial system defining the target
   variety
-- `sd` / `Sigma`: controls concentration around the variety
+- `sd` / `Sigma`: controls concentration around the variety; for
+  [`rvnorm()`](https://www.kahle.io/vnorm/reference/rvnorm.md),
+  single-polynomial sampling supports only scalar `sd` or scalar
+  variance `Sigma`, while polynomial systems also support diagonal/full
+  covariance inputs
 - `output`: output format (for example `"tibble"`)
 - `w`: window size for unbounded varieties (and for rejection sampling)
 - `rejection`: use the rejection sampler instead of Stan/HMC
@@ -140,10 +144,10 @@ rvnorm(2000, mp("x y - 1"), sd = 0.1, w = 2, output = "tibble")
 # Multi-polynomial systems (underdetermined / overdetermined are both supported)
 rvnorm(2000, mp(c("x^2 + y^2 + z^2 - 1", "z")), sd = 0.1, output = "tibble")
 
-# Use Sigma for anisotropic concentration (single polynomial)
-rvnorm(2000, mp("x^2 + y^2 - 1"), Sigma = diag(c(0.02, 0.10)^2), output = "tibble")
+# Use Sigma as a scalar variance for single-polynomial sampling
+rvnorm(2000, mp("x^2 + y^2 - 1"), Sigma = 0.1^2, output = "tibble")
 
-# Use Sigma with polynomial systems as well
+# Use diagonal/full Sigma with polynomial systems
 rvnorm(2000, mp(c("x^2 + y^2 - 1", "x y - 0.25")), Sigma = diag(c(0.05, 0.08)^2))
 ```
 
@@ -172,20 +176,20 @@ ggplot(samps3, aes(x, y)) +
 
 ### `pdvnorm()`: pseudo-density evaluation
 
-[`pdvnorm()`](https://www.kahle.io/vnorm/reference/pdvnorm.md) can
-be used with single polynomials and polynomial systems, and supports
-scalar, vector, or matrix `sigma` inputs depending on the setting.
+[`pdvnorm()`](https://www.kahle.io/vnorm/reference/pdvnorm.md) can be
+used with single polynomials and polynomial systems. Use `sd` for
+standard-deviation scale inputs and `Sigma` for covariance inputs.
 
 ``` r
 
 p4 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
 x1 <- c(0.8, 0.3)
 
-pdvnorm(x1, p4, sigma = 1)
+pdvnorm(x1, p4, sd = 1)
 #> [1] 0.1560083
-pdvnorm(x1, p4, sigma = c(1, 2), homo = FALSE)
-#> [1] 0.1085086
-pdvnorm(x1, p4, sigma = diag(c(1, 4)))
+pdvnorm(x1, p4, sd = c(1, 2), homo = FALSE)
+#> [1] 0.07672814
+pdvnorm(x1, p4, Sigma = diag(c(1, 4)))
 #> [1] 0.07810636
 ```
 

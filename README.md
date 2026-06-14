@@ -3,7 +3,7 @@
 
 # vnorm
 
-<img src="man/figures/logo.png" align="right" width="180" />
+<img src="man/figures/logo.png" align="right" width="180" alt="vnorm logo" />
 
 [![CRAN
 status](https://img.shields.io/badge/CRAN-not%20released-lightgrey)](https://cran.r-project.org/package=vnorm)
@@ -88,7 +88,10 @@ Common arguments:
 
 - `poly`: the polynomial or polynomial system defining the target
   variety
-- `sd` / `Sigma`: controls concentration around the variety
+- `sd` / `Sigma`: controls concentration around the variety; for
+  `rvnorm()`, single-polynomial sampling supports only scalar `sd` or
+  scalar variance `Sigma`, while polynomial systems also support
+  diagonal/full covariance inputs
 - `output`: output format (for example `"tibble"`)
 - `w`: window size for unbounded varieties (and for rejection sampling)
 - `rejection`: use the rejection sampler instead of Stan/HMC
@@ -128,10 +131,10 @@ rvnorm(2000, mp("x y - 1"), sd = 0.1, w = 2, output = "tibble")
 # Multi-polynomial systems (underdetermined / overdetermined are both supported)
 rvnorm(2000, mp(c("x^2 + y^2 + z^2 - 1", "z")), sd = 0.1, output = "tibble")
 
-# Use Sigma for anisotropic concentration (single polynomial)
-rvnorm(2000, mp("x^2 + y^2 - 1"), Sigma = diag(c(0.02, 0.10)^2), output = "tibble")
+# Use Sigma as a scalar variance for single-polynomial sampling
+rvnorm(2000, mp("x^2 + y^2 - 1"), Sigma = 0.1^2, output = "tibble")
 
-# Use Sigma with polynomial systems as well
+# Use diagonal/full Sigma with polynomial systems
 rvnorm(2000, mp(c("x^2 + y^2 - 1", "x y - 0.25")), Sigma = diag(c(0.05, 0.08)^2))
 ```
 

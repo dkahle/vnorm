@@ -12,7 +12,7 @@
 "_PACKAGE"
 
 utils::globalVariables(c(
-  "Polynomial",
+  "polynomial",
   "group",
   "coef",
   "deriv",

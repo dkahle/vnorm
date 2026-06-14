@@ -32,3 +32,4 @@ inst/setup.R
 ^src/stan/[0-9][0-9]*_[0-9][0-9]*_hvn_w[.]exe$
 ^src/stan/[0-9][0-9]*_[0-9][0-9]*_vn[.]exe$
 ^src/stan/[0-9][0-9]*_[0-9][0-9]*_vn_w[.]exe$
+^\.claude$

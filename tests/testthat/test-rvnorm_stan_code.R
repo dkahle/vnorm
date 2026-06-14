@@ -37,7 +37,8 @@ test_that("create_stan_code builds multi-polynomial Stan code", {
 
   expect_match(code_matrix, "cov_matrix\\[2\\] si")
   expect_match(code_matrix, "multi_normal_lpdf\\(")
-  expect_match(code_matrix, "matrix\\[2,2\\] J =")
+  expect_false(grepl("matrix[2,2] J", code_matrix, fixed = TRUE))
+  expect_match(code_matrix, "vector\\[2\\] g =")
 })
 
 test_that("create_stan_code single-variable polynomial", {
@@ -71,6 +72,16 @@ test_that("create_stan_code heteroskedastic multivariate with matrix sd", {
   code <- create_stan_code(p, sd = diag(c(1, 2)), n_eqs = 2L, homo = FALSE)
   expect_match(code, "cov_matrix\\[2\\] si")
   expect_match(code, "multi_normal_lpdf")
+  expect_false(grepl(" J =", code, fixed = TRUE))
+})
+
+test_that("create_stan_code heteroskedastic non-square system uses equation dimension", {
+  p <- mp(c("x", "y", "x + y"))
+  code <- create_stan_code(p, sd = diag(3), n_eqs = 3L, homo = FALSE)
+  expect_match(code, "cov_matrix\\[3\\] si")
+  expect_match(code, "vector\\[3\\] g")
+  expect_match(code, "multi_normal_lpdf")
+  expect_false(grepl("matrix[3,2] J", code, fixed = TRUE))
 })
 
 test_that("create_stan_code w as named list for multivariate case", {

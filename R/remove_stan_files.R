@@ -4,12 +4,18 @@
 #' cache created by [compile_stan_code()].
 #'
 #' @param path Directory used in [compile_stan_code()].
-#'   Defaults to the current working directory.
+#'   Deprecated and ignored; compiled files are removed from the internal cache.
 #'
 #'
 #' @export
 remove_stan_files <- function(path = getwd()) {
   # remove cached .Stan files and corresponding executables, then clear cache
+  if (!missing(path)) {
+    warning(
+      "`path` is deprecated and ignored; removing files tracked in the internal cache.",
+      call. = FALSE
+    )
+  }
   compiled_stan_info <- get_compiled_stan_info()
 
   if (nrow(compiled_stan_info) > 0) {

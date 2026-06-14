@@ -48,7 +48,9 @@ rvnorm(
 - sd:
 
   Scale parameter for the normal kernel. If `Sigma` is supplied, `sd` is
-  replaced by `Sigma`.
+  replaced by `Sigma`. For single-polynomial sampling, `sd` must be a
+  positive scalar. For polynomial-list sampling, `sd` may be a positive
+  scalar or a positive vector matching the Stan target dimension.
 
 - output:
 
@@ -56,7 +58,11 @@ rvnorm(
 
 - Sigma:
 
-  Full covariance matrix or a diagonal vector of covariance terms.
+  Covariance parameter. For single-polynomial sampling, only a positive
+  scalar variance is supported. For polynomial-list sampling, `Sigma`
+  may be a positive scalar variance, a positive diagonal vector, or a
+  positive-definite covariance matrix matching the Stan target
+  dimension.
 
 - rejection:
 
@@ -144,9 +150,9 @@ rvnorm(
 
 Either (1) matrix whose rows are the individual draws from the
 distribution, (2) a
-[tibble::tbl_df](https://tibble.tidyverse.org/reference/tbl_df-class.html)
-object with the draws along with additional information, or (3) an
-object of class `stanfit`.
+[tbl_df](https://rdrr.io/pkg/tibble/man/tbl_df-class.html) object with
+the draws along with additional information, or (3) an object of class
+`stanfit`.
 
 ## Details
 

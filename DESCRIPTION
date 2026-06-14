@@ -5,6 +5,8 @@ Authors@R: c(
     person("Sonish", "Lamsal", email = "sonish_lamsal1@baylor.edu", role = "aut"),
     person("David", "Kahle", email = "david@kahle.io", role = c("aut", "cre"))
   )
+Author: Sonish Lamsal [aut],
+    David Kahle [aut, cre]
 Maintainer: David Kahle <david@kahle.io>
 Description: Samples, projects, and visualizes variety normal distributions.
 License: MIT + file LICENSE
@@ -13,7 +15,6 @@ URL: https://www.kahle.io/vnorm/, https://github.com/dkahle/vnorm
 BugReports: https://github.com/dkahle/vnorm/issues
 Additional_repositories: https://mc-stan.org/r-packages/
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Depends:
     R (>= 4.1.0)
 Imports:
@@ -40,3 +41,4 @@ Suggests:
     here,
     readr
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

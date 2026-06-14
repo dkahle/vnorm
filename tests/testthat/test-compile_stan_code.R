@@ -20,7 +20,7 @@ test_that("Compiles model correctly for an mpoly object", {
     result$code(),
     c(
       "data {",
-      "  real si;",
+      "  real<lower=0> si;",
       "  real bx2;   real by2;   real b1;",
       "}",
       "parameters {",
@@ -61,7 +61,7 @@ test_that("Compiles model correctly for an mpolyList object", {
     result$code(),
     c(
       "data {",
-      "  real si;",
+      "  real<lower=0> si;",
       "  real bx_1;   real by_1;   real bx2_2;   real by2_2;   real b1_2;",
       "}",
       "",
@@ -104,7 +104,7 @@ test_that("Compiles model with box constraints (windowed)", {
     result$code(),
     c(
       "data {",
-      "  real si;",
+      "  real<lower=0> si;",
       "  real bx2;   real by2;   real b1;  real w;",
       "}",
       "parameters {",
@@ -134,7 +134,7 @@ test_that("Compiles model with homoskedastic option", {
     result$code(),
     c(
       "data {",
-      "  real si;",
+      "  real<lower=0> si;",
       "  real bx2;   real by2;   real b1;",
       "}",
       "parameters {",
@@ -181,10 +181,11 @@ test_that("compile_stan_code emits 'already contained' on duplicate compile", {
   )
 })
 
-test_that("get_custom_stan_code homo=FALSE for mpolyList uses identity Jacobian", {
+test_that("get_custom_stan_code homo=FALSE for mpolyList models g directly", {
   code <- vnorm:::get_custom_stan_code(
     mp(c("x^2 + y^2 - 1", "y - x")), windowed = FALSE, homo = FALSE
   )
-  expect_match(code, "1, 0", fixed = TRUE)
-  expect_match(code, "0, 1", fixed = TRUE)
+  expect_match(code, "vector\\[2\\] g")
+  expect_false(grepl(" J =", code, fixed = TRUE))
+  expect_match(code, "normal_lpdf\\(0\\.00 \\|g, si\\)")
 })

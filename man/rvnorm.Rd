@@ -37,11 +37,16 @@ rvnorm(
 \item{poly}{An \code{mpoly} object.}
 
 \item{sd}{Scale parameter for the normal kernel. If \code{Sigma} is supplied,
-\code{sd} is replaced by \code{Sigma}.}
+\code{sd} is replaced by \code{Sigma}. For single-polynomial sampling, \code{sd} must be
+a positive scalar. For polynomial-list sampling, \code{sd} may be a positive
+scalar or a positive vector matching the Stan target dimension.}
 
 \item{output}{One of \code{"simple"}, \code{"tibble"}, or \code{"stanfit"}.}
 
-\item{Sigma}{Full covariance matrix or a diagonal vector of covariance terms.}
+\item{Sigma}{Covariance parameter. For single-polynomial sampling, only a
+positive scalar variance is supported. For polynomial-list sampling,
+\code{Sigma} may be a positive scalar variance, a positive diagonal vector, or a
+positive-definite covariance matrix matching the Stan target dimension.}
 
 \item{rejection}{If \code{TRUE}, rejection sampling is used.}
 
@@ -93,7 +98,7 @@ reproducibility. Note that R's \code{set.seed()} does not control Stan's RNG.}
 }
 \value{
 Either (1) matrix whose rows are the individual draws from the
-distribution, (2) a \link[tibble:tbl_df-class]{tibble::tbl_df} object with the draws along with
+distribution, (2) a \link[tibble:tbl_df-class]{tbl_df} object with the draws along with
 additional information, or (3) an object of class \code{stanfit}.
 }
 \description{

@@ -116,6 +116,14 @@ test_that("pdvnorm errors for wrong x dimensions (single poly)", {
   expect_error(pdvnorm(matrix(1:9, ncol = 3), mp("x^2 + y^2 - 1"), sd = 1), "length n or a matrix")
 })
 
+test_that("pdvnorm errors for non-numeric or non-finite x in single-polynomial case", {
+  expect_error(pdvnorm(Inf, mp("x"), sd = 1), "'x' must be finite")
+  expect_error(
+    pdvnorm(data.frame(x = c("a", "b")), mp("x"), sd = 1),
+    "'x' must be finite"
+  )
+})
+
 test_that("pdvnorm errors for non-finite x in multivariate case", {
   expect_error(pdvnorm(c(1, NaN), mp(c("x", "y")), sd = 1), "'x' must be finite")
 })

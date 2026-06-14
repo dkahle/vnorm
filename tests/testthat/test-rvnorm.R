@@ -356,7 +356,7 @@ test_that("rvnorm() validates Sigma dimensions before sampling", {
       Sigma = c(1, 2, 3),
       code_only = TRUE
     ),
-    "`Sigma` should be a scalar"
+    "single positive variance"
   )
 })
 
@@ -420,7 +420,7 @@ test_that("rvnorm() preserves user-supplied refresh value", {
   expect_equal(capture$args$refresh, 500)
 })
 
-test_that("rvnorm() accepts character poly and valid Sigma shapes in code_only mode", {
+test_that("rvnorm() accepts character poly and narrows single-polynomial Sigma", {
   expect_type(
     rvnorm(
       n = 10,
@@ -435,6 +435,40 @@ test_that("rvnorm() accepts character poly and valid Sigma shapes in code_only m
     rvnorm(
       n = 10,
       poly = mp("x^2 + y^2 - 1"),
+      Sigma = 0.25,
+      code_only = TRUE
+    ),
+    "character"
+  )
+
+  expect_error(
+    rvnorm(
+      n = 10,
+      poly = mp("x^2 + y^2 - 1"),
+      sd = 0.05,
+      Sigma = c(1, 2),
+      code_only = TRUE
+    ),
+    "single positive variance"
+  )
+
+  expect_error(
+    rvnorm(
+      n = 10,
+      poly = mp("x^2 + y^2 - 1"),
+      sd = 0.05,
+      Sigma = diag(c(1, 2)),
+      code_only = TRUE
+    ),
+    "single positive variance"
+  )
+})
+
+test_that("rvnorm() accepts mpolyList Sigma shapes in code_only mode", {
+  expect_type(
+    rvnorm(
+      n = 10,
+      poly = mp(c("x^2 + y^2 - 1", "y")),
       sd = 0.05,
       Sigma = c(1, 2),
       code_only = TRUE
@@ -445,7 +479,7 @@ test_that("rvnorm() accepts character poly and valid Sigma shapes in code_only m
   expect_type(
     rvnorm(
       n = 10,
-      poly = mp("x^2 + y^2 - 1"),
+      poly = mp(c("x^2 + y^2 - 1", "y")),
       sd = 0.05,
       Sigma = diag(c(1, 2)),
       code_only = TRUE
@@ -561,7 +595,30 @@ test_that("rvnorm() errors for non-integer n", {
 test_that("rvnorm() Sigma dimension mismatch with matrix", {
   expect_error(
     rvnorm(n = 10, poly = mp("x^2 + y^2 - 1"), sd = 0.05, Sigma = matrix(1:9, 3, 3)),
-    "`Sigma` should be a scalar"
+    "single positive variance"
+  )
+})
+
+test_that("rvnorm() validates output, missing scale, chains, warmup, and thin", {
+  expect_error(
+    rvnorm(n = 2, poly = mp("x"), sd = 0.1, output = "bad", code_only = TRUE),
+    "'arg' should be one of"
+  )
+  expect_error(
+    rvnorm(n = 2, poly = mp("x"), code_only = TRUE),
+    "`sd` must be supplied"
+  )
+  expect_error(
+    rvnorm(n = 2, poly = mp("x"), sd = 0.1, chains = 0, code_only = TRUE),
+    "`chains` must be a positive integer"
+  )
+  expect_error(
+    rvnorm(n = 2, poly = mp("x"), sd = 0.1, warmup = -1, code_only = TRUE),
+    "`warmup` must be a non-negative integer"
+  )
+  expect_error(
+    rvnorm(n = 2, poly = mp("x"), sd = 0.1, thin = 0, code_only = TRUE),
+    "`thin` must be a positive integer"
   )
 })
 
@@ -584,6 +641,27 @@ test_that("rvnorm() seed parameter is forwarded to Stan sampler", {
     pre_compiled = TRUE, chains = 1, cores = 1, seed = 42
   )
   expect_equal(capture$args$seed, 42)
+})
+
+test_that("rvnorm() thin parameter is forwarded to Stan sampler", {
+  draws_df <- data.frame(
+    lp__ = seq_len(4), x = seq(0.1, 0.4, length.out = 4),
+    y = seq(0.2, 0.5, length.out = 4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "vnorm"
+  )
+
+  rvnorm(
+    n = 4, poly = mp(c("x^2 + y^2 - 1", "y")), sd = 0.05,
+    pre_compiled = TRUE, chains = 1, cores = 1, thin = 2
+  )
+  expect_equal(capture$args$thin, 2)
 })
 
 test_that("rvnorm() extra ... args are forwarded to Stan sampler", {
@@ -731,4 +809,41 @@ test_that("rvnorm() Sigma as diagonal vector is converted to matrix", {
   )
   expect_true(is.matrix(capture$args$data$si))
   expect_equal(capture$args$data$si, diag(c(0.5, 0.5)))
+})
+
+test_that("rvnorm() heteroskedastic mpolyList Sigma uses equation dimension", {
+  code <- rvnorm(
+    n = 2,
+    poly = mp(c("x", "y", "x + y")),
+    sd = c(0.1, 0.2, 0.3),
+    homo = FALSE,
+    code_only = TRUE
+  )
+  expect_match(code, "cov_matrix\\[3\\] si")
+  expect_match(code, "vector\\[3\\] g")
+  expect_false(grepl("matrix[3,2] J", code, fixed = TRUE))
+
+  expect_error(
+    rvnorm(
+      n = 2,
+      poly = mp(c("x", "y", "x + y")),
+      Sigma = diag(2),
+      homo = FALSE,
+      code_only = TRUE
+    ),
+    "number of polynomials"
+  )
+})
+
+test_that("rvnorm() rejection path rejects Sigma explicitly", {
+  expect_error(
+    rvnorm(
+      n = 2,
+      poly = mp("x"),
+      sd = 0.1,
+      Sigma = 1,
+      rejection = TRUE
+    ),
+    "supports `sd`, not `Sigma`"
+  )
 })

@@ -212,6 +212,46 @@ project_onto_variety <- function(
   if (!is.numeric(al) || length(al) < 2 || any(!is.finite(al[1:2]))) {
     stop("`al` must be a numeric vector with at least two finite entries.")
   }
+  if (!is.numeric(dt) || length(dt) != 1L || !is.finite(dt) || dt <= 0) {
+    stop("`dt` must be a positive finite numeric scalar.", call. = FALSE)
+  }
+  if (
+    !is.numeric(n_correct) || length(n_correct) != 1L ||
+      !is.finite(n_correct) || n_correct < 0 || n_correct != as.integer(n_correct)
+  ) {
+    stop("`n_correct` must be a non-negative integer.", call. = FALSE)
+  }
+  n_correct <- as.integer(n_correct)
+  if (!is.logical(message) || length(message) != 1L || is.na(message)) {
+    stop("`message` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (!is.numeric(tol) || length(tol) != 1L || !is.finite(tol) || tol <= 0) {
+    stop("`tol` must be a positive finite numeric scalar.", call. = FALSE)
+  }
+  if (!is.numeric(bias) || length(bias) != 1L || !is.finite(bias)) {
+    stop("`bias` must be a finite numeric scalar.", call. = FALSE)
+  }
+  if (!is.logical(adaptive) || length(adaptive) != 1L || is.na(adaptive)) {
+    stop("`adaptive` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (
+    !is.numeric(dt_min) || length(dt_min) != 1L ||
+      !is.finite(dt_min) || dt_min <= 0
+  ) {
+    stop("`dt_min` must be a positive finite numeric scalar.", call. = FALSE)
+  }
+  if (
+    !is.numeric(dt_max) || length(dt_max) != 1L ||
+      !is.finite(dt_max) || dt_max < dt_min
+  ) {
+    stop("`dt_max` must be finite and greater than or equal to `dt_min`.", call. = FALSE)
+  }
+  if (
+    !is.numeric(error_tol) || length(error_tol) != 1L ||
+      !is.finite(error_tol) || error_tol <= 0
+  ) {
+    stop("`error_tol` must be a positive finite numeric scalar.", call. = FALSE)
+  }
 
 
   # build polynomial, Jacobian, and Hessian function handles when not supplied
@@ -244,8 +284,15 @@ project_onto_variety <- function(
 
   # vectorized convenience path for row-wise projection of matrices/data frames
   if (is.matrix(x0) || is.data.frame(x0)) {
+    x0_mat <- as.matrix(x0)
+    if (!is.numeric(x0_mat) || any(!is.finite(x0_mat))) {
+      stop("`x0` must be finite numeric.", call. = FALSE)
+    }
+    if (ncol(x0_mat) != length(varorder)) {
+      stop("`x0` must have one column per variable in `varorder`.", call. = FALSE)
+    }
     out <- apply(
-      x0, 1, project_onto_variety,
+      x0_mat, 1, project_onto_variety,
       poly = poly, dt = dt, varorder = varorder, n_correct = n_correct,
       al = al, message = message, tol = tol,
       gfunc = gfunc, dgfunc = dgfunc, ddgfunc = ddgfunc,
@@ -260,6 +307,9 @@ project_onto_variety <- function(
 
   # main computation for one starting point x0
   n_vars <- length(varorder)
+  if (!is.numeric(x0) || length(x0) != n_vars || any(!is.finite(x0))) {
+    stop("`x0` must be a finite numeric vector with one entry per variable.", call. = FALSE)
+  }
 
   ts <- seq(1, 0, -dt)
   vn <- c(x0, al[1], 0)
@@ -326,6 +376,12 @@ project_onto_variety <- function(
         dt <- min(dt_max, h * min(2, (error_tol / err)^0.5))
       } else {
         # reject step and shrink dt
+        if (h <= dt_min || dt <= dt_min) {
+          stop(
+            "Adaptive projection failed to meet `error_tol` at `dt_min`.",
+            call. = FALSE
+          )
+        }
         dt <- max(dt_min, h * max(0.1, (error_tol / err)^0.5))
         if (message) message("  Rejected step. Reducing dt to ", round(dt, 6))
       }

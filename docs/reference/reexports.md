@@ -5,4 +5,4 @@ to see their documentation.
 
 - mpoly:
 
-  [`mp`](https://rdrr.io/pkg/mpoly/man/mp.html)
+  [`mp()`](https://rdrr.io/pkg/mpoly/man/mp.html)

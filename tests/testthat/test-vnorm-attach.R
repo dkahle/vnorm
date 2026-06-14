@@ -3,7 +3,7 @@ test_that(".onLoad sets cmdstanr version-check option", {
   withr::defer(options(cmdstanr_no_ver_check = old))
 
   options(cmdstanr_no_ver_check = NULL)
-  .onLoad("vnorm", "vnorm")
+  get(".onLoad", asNamespace("vnorm"), inherits = FALSE)("vnorm", "vnorm")
 
   expect_true(isTRUE(getOption("cmdstanr_no_ver_check")))
 })

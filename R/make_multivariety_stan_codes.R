@@ -41,7 +41,7 @@ make_multivariety_stan_codes <- function(num_of_vars,
     data_block <- paste0(data_block, "\n  real w;")
   }
 
-  data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
+  data_block <- paste0("data {\n  real<lower=0> si;\n", data_block, "\n}\n")
 
   # parameter declarations for the union of variables across equations
   vars_for_params <- unique(unlist(vars))
@@ -102,6 +102,7 @@ make_multivariety_stan_codes <- function(num_of_vars,
     paste(g, collapse = ","),
     "]';"
   )
+  gbar_string <- "g"
   if (homo) {
     # homoskedastic case uses symbolic Jacobian entries
     for (i in seq_len(num_of_poly)) {
@@ -119,33 +120,33 @@ make_multivariety_stan_codes <- function(num_of_vars,
       ),
       collapse = ",\n"
     )
-  } else {
-    # heteroskedastic path uses identity Jacobian surrogate
     n_eqs <- num_of_poly
     n_vars <- max(num_of_vars)
-    jac <- array("", dim = c(n_eqs, n_vars))
-    for (i in seq_len(n_eqs)) {
-      for (j in seq_len(n_vars)) {
-        jac[i, j] <- if (i == j) "1" else "0"
-      }
+    gbar_string <- if (n_vars == n_eqs) {
+      "J \\ g"
+    } else if (n_vars > n_eqs) {
+      "J' * ((J*J') \\ g)"
+    } else {
+      "(J'*J) \\ (J'*g)"
     }
-    jac <- apply(jac, 1L, paste, collapse = ", ")
-    jac <- paste("      [", jac, "]", collapse = ", \n")
+    dg <- paste0(
+      "  matrix[",
+      num_of_poly,
+      ",",
+      max(num_of_vars),
+      "] J = [ \n",
+      jac,
+      "\n    ];"
+    )
+    trans_block <- paste0("\ntransformed parameters {\n", g, "\n", dg, "\n}\n")
+  } else {
+    # heteroskedastic case models the equation vector directly
+    trans_block <- paste0("\ntransformed parameters {\n", g, "\n}\n")
   }
-  dg <- paste0(
-    "  matrix[",
-    num_of_poly,
-    ",",
-    max(num_of_vars),
-    "] J = [ \n",
-    jac,
-    "\n    ];"
-  )
-  trans_block <- paste0("\ntransformed parameters {\n", g, "\n", dg, "\n}\n")
 
   # assemble full Stan program text
   model_block <- paste0(
-    "\nmodel {\ntarget += normal_lpdf(0.00 | J' * ((J*J') \\ g), si);\n}"
+    "\nmodel {\ntarget += normal_lpdf(0.00 | ", gbar_string, ", si);\n}"
   )
   stan_code <- paste0(data_block, params_block, trans_block, model_block)
   stan_code
