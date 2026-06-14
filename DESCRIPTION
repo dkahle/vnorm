@@ -36,9 +36,12 @@ Suggests:
     vdiffr,
     purrr,
     ggdensity,
+    ggfunction,
     tidyverse,
     covr,
     here,
+    latex2exp,
+    patchwork,
     readr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0

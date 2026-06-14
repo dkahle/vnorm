@@ -24,31 +24,264 @@
 #'
 #' @examples
 #'
-#' ## Single polynomial in one variable
-#' p1 <- mp("x")
-#' pdvnorm(c(-1, 0, 1), p1, sd = 1)
-#' pdvnorm(0, p1, sd = 2, log = TRUE)
+#' # m = 1 polynomial in n = 1 variable, 0d variety
+#' p <- mp("x")
 #'
-#' ## Single polynomial in two variables
-#' p2 <- mp("x^2 + y^2 - 1")
-#' x2 <- rbind(c(1, 0), c(0, 1), c(1, 1))
-#' pdvnorm(x2, p2, sd = 0.1)
-#' pdvnorm(as.data.frame(x2), p2, sd = 0.1)
-#' pdvnorm(c(1, 1), p2, Sigma = diag(c(1, 4)))
+#' pdvnorm(c(-1, 0, 1), poly = p, sd = 1)
+#' pdvnorm(c(-1, 0, 1), poly = p, sd = 1, log = TRUE)
 #'
-#' ## Polynomial systems
-#' p3 <- mp(c("x", "y"))
-#' x3 <- rbind(c(0, 0), c(1, 2), c(-1, 3))
-#' pdvnorm(x3, p3, sd = 1)
-#' pdvnorm(x3, p3, sd = c(1, 2))
-#' pdvnorm(x3, p3, Sigma = diag(c(1, 4)))
 #'
-#' ## Overdetermined systems use the variable dimension when homo = TRUE
-#' ## and the equation dimension when homo = FALSE.
-#' p4 <- mp(c("x", "y", "x + y"))
-#' x4 <- rbind(c(1, 2), c(0, -1), c(2, 2))
-#' pdvnorm(x4, p4, Sigma = diag(2), homo = TRUE)
-#' pdvnorm(x4, p4, sd = c(1, 2, 3), homo = FALSE)
+#'
+#' # m = 2 polynomials in n = 2 variables (square system), 0d variety
+#' p <- mp(c("x", "y"))
+#'
+#' X <- rbind(c(-.25, 0), c(1, 2), c(-1, 3))
+#' pdvnorm(X, poly = p, sd = 1)
+#'
+#'
+#'
+#' # m = 1 polynomial in n = 2 variables, 1d variety
+#' p <- mp("x^2 + y^2 - 1")
+#'
+#' X <- rbind(c(-.25, 0), c(1, 2), c(-1, 3))
+#' pdvnorm(X, poly = p, sd = 1)
+#'
+#'
+#'
+#' ## Different dispersion forms
+#' p <- mp(c("x", "y"))
+#' X <- rbind(c(0, 0), c(1, 2), c(-1, 3))
+#' pdvnorm(X, p, sd = 1)
+#' pdvnorm(X, p, sd = c(1, 2))
+#' pdvnorm(X, p, Sigma = diag(c(1, 4)))
+#'
+#'
+#'
+#' ## Multivariate (underdetermined): one polynomial in two variables
+#' p <- mp("x^2 + y^2 - 1")
+#' X <- rbind(c(1, 1), c(2, -1), c(0, 3))
+#' pdvnorm(X, p, sd = 1)
+#' pdvnorm(as.data.frame(X), p, sd = 1)
+#' pdvnorm(c(1, 1), p, Sigma = diag(c(1, 4)))
+#'
+#'
+#'
+#' ## Multivariate (overdetermined): three polynomials in two variables
+#' p <- mp(c("x", "y", "x + y"))
+#' X <- rbind(c(1, 2), c(0, -1), c(2, 2))
+#' pdvnorm(X, p, Sigma = diag(2), homo = TRUE)
+#' pdvnorm(X, p, sd = c(1, 2, 3), homo = FALSE)
+#'
+#'
+#'
+#' \dontrun{
+#'
+#' library("ggplot2")
+#' library("ggfunction")
+#'
+#'
+#'
+#' # m = 1 polynomial in n = 1 variable, 0d variety
+#' p <- mp("x")
+#'
+#' ggplot() +
+#'   geom_pdf(fun = pdvnorm, args = list(poly = p, sd = 1), xlim = c(-5, 5))
+#'
+#'
+#'
+#' # m = 2 polynomials in n = 2 variables (square system), 0d variety
+#' p <- mp(c("x", "y"))
+#'
+#' ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = p, sd = 1),
+#'     xlim = c(-5, 5), ylim = c(-5, 5)
+#'   ) +
+#'   coord_equal()
+#'
+#'
+#'
+#' # m = 1 polynomial in n = 2 variables, 1d variety
+#' p <- mp("x^2 + y^2 - 1")
+#'
+#' ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = p, sd = .1),
+#'     xlim = c(-1.5, 1.5), ylim = c(-1.5, 1.5)
+#'   ) +
+#'   coord_equal()
+#'
+#'
+#'
+#' # m = 1 polynomial in n = 2 variables, 1d variety
+#' p <- mp("-1 x^2 (x + 1) + y^2", varorder = c("x", "y"))
+#'
+#' ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = p, sd = .1),
+#'     xlim = c(-1.5, 1.5), ylim = c(-1.5, 1.5)
+#'   ) +
+#'   coord_equal()
+#'
+#' ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = p, sd = .1, homo = FALSE),
+#'     xlim = c(-1.5, 1.5), ylim = c(-1.5, 1.5)
+#'   ) +
+#'   coord_equal()
+#'
+#'
+#'
+#' # m = 1 polynomial in n = 2 variables, 1d varieties
+#' si <- .025
+#' w <- 1.5
+#'
+#' p1 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp("x^2 + (4 y)^2 - 1"), sd = si),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w))
+#'
+#' p2 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp("-1 (x - y) (x + y)"), sd = si),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w))
+#'
+#' p3 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp("(x^2 + y^2)^3 - 4 x^2 y^2"), sd = si),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w))
+#'
+#' p4 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp("(x^2 + y^2 - 1)^3 - x^2 y^3"), sd = si),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w))
+#'
+#' library("patchwork")
+#' p1 + p2 + p3 + p4 +
+#'   plot_layout(nrow = 1, widths = 1, guides = "collect")
+#'
+#'
+#'
+#' # m = 2 polynomials in n = 2 variables, 0d varieties
+#' # different representations and "covariances"
+#'
+#' Sigma <- .2^2
+#' w <- 1.5
+#'
+#' p1 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp(c("x", "y")), Sigma = Sigma),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
+#'   labs(title = latex2exp::TeX(r"(V(x, y))"))
+#'
+#' p2 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp(c("-1 (x - y)", "(x + y)")), Sigma = Sigma),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
+#'   labs(title = latex2exp::TeX(r"(V(y - x, y + x))"))
+#'
+#' p3 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp(c("(-1 (x - y))^2", "(x + y)^2")), Sigma = Sigma),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
+#'   labs(title = latex2exp::TeX(r"(V((y - x)^2, (y + x)^2))"))
+#'
+#' p4 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp(c("x y^3 - x^3 y", "x^2 + y^2 - 1")), Sigma = Sigma),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
+#'   labs(title = latex2exp::TeX(r"(V(x y^3 - x^3 y, x^2 + y^2 - 1))"))
+#'
+#' p1 + p2 + p3 + p4 +
+#'   plot_layout(nrow = 1, widths = 1, guides = "collect")
+#'
+#'
+#'
+#' S <- (.20 * diag(c(1, 1)))
+#' R <- matrix(c(1, .90, .90, 1), nrow = 2)
+#' Sigma <- S %*% R %*% S
+#' w <- 1.5
+#'
+#' p1 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp(c("x", "y")), Sigma = Sigma),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
+#'   labs(title = latex2exp::TeX(r"(V(x, y))"))
+#'
+#' p2 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp(c("-1 (x - y)", "(x + y)")), Sigma = Sigma),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
+#'   labs(title = latex2exp::TeX(r"(V(y - x, y + x))"))
+#'
+#' p3 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp(c("(-1 (x - y))^2", "(x + y)^2")), Sigma = Sigma),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
+#'   labs(title = latex2exp::TeX(r"(V((y - x)^2, (y + x)^2))"))
+#'
+#' p4 <- ggplot() +
+#'   geom_pdf_2d(
+#'     fun = pdvnorm, args = list(poly = mp(c("x y^3 - x^3 y", "x^2 + y^2 - 1")), Sigma = Sigma),
+#'     xlim = c(-w, w), ylim = c(-w, w)
+#'   ) +
+#'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
+#'   labs(title = latex2exp::TeX(r"(V(x y^3 - x^3 y, x^2 + y^2 - 1))"))
+#'
+#' p1 + p2 + p3 + p4 +
+#'   plot_layout(nrow = 1, widths = 1, guides = "collect")
+#'
+#'
+#'
+#' # geom_hdr_fun accepts functions f(x, y) with vectors x and y,
+#' # but pdvnorm accepts the packed f(matrix), so a wrapper is needed.
+#' library("ggdensity")
+#'
+#' p <- mp("x^2 + y^2 - 1")
+#' f <- function(x, y, ...) pdvnorm(cbind(x, y), ...)
+#'
+#' f(1, 2, poly = p, sd = .05)
+#' f(1:2, 2:3, poly = p, sd = .05)
+#'
+#' ggplot() +
+#'   geom_hdr_fun(
+#'     fun = f, xlim = c(-1.25, 1.25), ylim = c(-1.25, 1.25),
+#'     args = list(poly = p, sd = .10)
+#'   ) +
+#'   coord_equal()
+#'
+#' S <- (.10 * diag(c(1, 1)))
+#' R <- matrix(c(1, .95, .95, 1), nrow = 2)
+#'
+#' ggplot() +
+#'   geom_hdr_fun(
+#'     fun = f, xlim = c(-1.25, 1.25), ylim = c(-1.25, 1.25),
+#'     args = list(poly = p, Sigma = S %*% R %*% S), n = 250
+#'   ) +
+#'   coord_equal()
+#' }
 #'
 #' @export
 pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
