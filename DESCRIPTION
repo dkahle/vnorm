@@ -2,7 +2,7 @@ Package: vnorm
 Title: Variety Normal Distribution
 Version: 0.1.0
 Authors@R: c(
-    person("Sonish", "Lamsal", email = "sonish_lamsal1@baylor.edu", role = "aut"),
+    person("Sonish", "Lamsal", email = "lamsal.sonish@gmail.com", role = "aut"),
     person("David", "Kahle", email = "david@kahle.io", role = c("aut", "cre"))
   )
 Author: Sonish Lamsal [aut],
@@ -27,7 +27,6 @@ Imports:
     mpoly,
     cmdstanr,
     dplyr,
-    MASS,
     digest,
     scales
 Suggests:
@@ -45,3 +44,4 @@ Suggests:
     readr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0
+RoxygenNote: 7.3.3

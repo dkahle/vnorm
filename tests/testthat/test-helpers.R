@@ -62,6 +62,18 @@ test_that("Stan string helpers return expected formats", {
   expect_true(nchar(d_str) > 0)
 })
 
+test_that("ginv returns a Moore-Penrose inverse", {
+  x <- matrix(c(1, 2, 3, 2, 4, 6), nrow = 2, byrow = TRUE)
+  x_inv <- ginv(x)
+
+  expect_equal(dim(x_inv), c(3L, 2L))
+  expect_equal(x %*% x_inv %*% x, x, tolerance = 1e-10)
+  expect_equal(x_inv %*% x %*% x_inv, x_inv, tolerance = 1e-10)
+
+  z <- matrix(0, nrow = 2, ncol = 3)
+  expect_equal(ginv(z), matrix(0, nrow = 3, ncol = 2))
+})
+
 test_that("get_derivative works for 'y' variable", {
   d_str <- get_derivative("y", num_of_vars = 2, deg = 2)
   expect_type(d_str, "character")

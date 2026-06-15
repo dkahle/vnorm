@@ -74,7 +74,7 @@ matrix/data frame whose rows are points to be projected.}
 \item{dt}{The t-mesh size for the homotopy.}
 
 \item{varorder}{A character vector specifying the variable order to pass to
-\code{\link[mpoly:as.function.mpoly]{mpoly::as.function.mpoly()}}.}
+\code{\link[mpoly:as-function]{mpoly::as.function.mpoly()}}.}
 
 \item{n_correct}{The number of Newton correction iterations to use.}
 

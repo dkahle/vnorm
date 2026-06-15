@@ -143,7 +143,7 @@ rejection_sampler <- function(n,
             if (n_vars == n_polys) {
               J_inv <- solve(J)
             } else {
-              J_inv <- MASS::ginv(J)
+              J_inv <- ginv(J)
             }
             v <- (J_inv %*% g) / sd
             as.numeric(crossprod(v))
@@ -190,7 +190,7 @@ rejection_sampler <- function(n,
           if (n_vars == n_polys) {
             J_inv <- solve(J)
           } else {
-            J_inv <- MASS::ginv(J)
+            J_inv <- ginv(J)
           }
           as.numeric(crossprod(sqrt_sd_inv %*% J_inv %*% g))
         }

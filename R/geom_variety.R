@@ -209,7 +209,6 @@ stat_variety <- function(
 }
 
 #' @rdname geom_variety
-#' @format NULL
 #' @usage NULL
 #' @export
 StatVariety <- ggproto(
@@ -317,7 +316,6 @@ StatVariety <- ggproto(
 )
 
 #' @rdname geom_variety
-#' @format NULL
 #' @usage NULL
 #' @export
 GeomVariety <- ggproto(

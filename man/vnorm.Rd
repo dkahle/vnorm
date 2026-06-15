@@ -25,7 +25,7 @@ Useful links:
 Authors:
 \itemize{
   \item David Kahle \email{david@kahle.io}
-  \item Sonish Lamsal \email{sonish_lamsal1@baylor.edu}
+  \item Sonish Lamsal \email{lamsal.sonish@gmail.com}
 }
 
 }

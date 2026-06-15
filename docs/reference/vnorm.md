@@ -20,4 +20,4 @@ Authors:
 
 - David Kahle <david@kahle.io>
 
-- Sonish Lamsal <sonish_lamsal1@baylor.edu>
+- Sonish Lamsal <lamsal.sonish@gmail.com>

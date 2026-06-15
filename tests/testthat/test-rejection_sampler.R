@@ -230,6 +230,18 @@ test_that("rejection_sampler mpolyList with scalar sd and homo=TRUE", {
   expect_equal(nrow(samps), 10)
 })
 
+test_that("rejection_sampler handles rectangular mpolyList jacobians", {
+  set.seed(15)
+  p <- mpolyList(mp("x^2 + y^2 - 1"))
+  samps <- rejection_sampler(
+    n = 6, poly = p, sd = c(0.05, 0.05), w = 1.5,
+    homo = TRUE, message = FALSE
+  )
+
+  expect_equal(nrow(samps), 6)
+  expect_true(all(c("x", "y") %in% colnames(samps)))
+})
+
 test_that("rejection_sampler single-variable mpolyList", {
   set.seed(14)
   p <- mp(c("x"))

@@ -33,6 +33,26 @@ mpolyList_to_stan <- function(mpolyList) {
   result
 }
 
+ginv <- function(X, tol = sqrt(.Machine$double.eps)) {
+  if (length(dim(X)) > 2L || !(is.numeric(X) || is.complex(X))) {
+    stop("'X' must be a numeric or complex matrix", call. = FALSE)
+  }
+  if (!is.matrix(X)) X <- as.matrix(X)
+
+  X_svd <- svd(X)
+  if (is.complex(X)) X_svd$u <- Conj(X_svd$u)
+
+  positive <- X_svd$d > max(tol * X_svd$d[1L], 0)
+  if (all(positive)) {
+    X_svd$v %*% ((1 / X_svd$d) * t(X_svd$u))
+  } else if (!any(positive)) {
+    array(0, dim(X)[2L:1L])
+  } else {
+    X_svd$v[, positive, drop = FALSE] %*%
+      ((1 / X_svd$d[positive]) * t(X_svd$u[, positive, drop = FALSE]))
+  }
+}
+
 get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
   # construct symbolic derivative in Stan syntax for generated template models
   d <- get("deriv.mpoly", asNamespace("mpoly"))

@@ -64,8 +64,6 @@
 #' options("mc.cores" = parallel::detectCores() - 1)
 #'
 #' \dontrun{
-#' # basic usage
-#'
 #'
 #' # single polynomial
 #' p <- mp("x^2 + y^2 - 1")
@@ -105,7 +103,8 @@
 #' f <- function(x, y) pdvnorm(cbind(x, y), poly = p, sd = .05)
 #'
 #' ggplot(samps, aes(x, y)) +
-#'   geom_hdr(xlim = c(-2,2), ylim = c(-2,2), method = method_kde(adjust = c(0.2, 0.2))) +
+#'   geom_hdr(xlim = c(-2,2), ylim = c(-2,2)) +
+#'   # geom_hdr(xlim = c(-2,2), ylim = c(-2,2), method = method_kde(adjust = c(0.2, 0.2))) +
 #'   geom_hdr_lines_fun(fun = f, xlim = c(-2,2), ylim = c(-2,2), color = "cyan", linewidth = .25) +
 #'   # geom_point(aes(x, y), size = .25, data = samps) +
 #'   geom_variety(poly = p) +
