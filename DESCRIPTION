@@ -5,9 +5,6 @@ Authors@R: c(
     person("Sonish", "Lamsal", email = "lamsal.sonish@gmail.com", role = "aut"),
     person("David", "Kahle", email = "david@kahle.io", role = c("aut", "cre"))
   )
-Author: Sonish Lamsal [aut],
-    David Kahle [aut, cre]
-Maintainer: David Kahle <david@kahle.io>
 Description: Samples, projects, and visualizes variety normal distributions.
 License: MIT + file LICENSE
 Encoding: UTF-8
