@@ -65,13 +65,15 @@
 #'
 #' library("ggplot2")
 #'
-#' # 1) Ellipse
+#' # 1) ellipse
 #' p1 <- mp("x^2 + 4 y^2 - 1")
 #' ggplot() +
 #'   geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal()
 #'
-#' # Works with standard ggplot2 styling
+#'
+#'
+#' # works with standard ggplot2 styling
 #' ggplot() +
 #'   geom_variety(
 #'     poly = p1, xlim = c(-2, 2), ylim = c(-2, 2),
@@ -80,33 +82,43 @@
 #'   coord_equal() +
 #'   theme_minimal()
 #'
-#' # 2) Folium of Descartes (singular variety)
+#'
+#'
+#' # 2) folium of Descartes (singular variety)
 #' p2 <- mp("x^3 + y^3 - 3 x y")
 #' ggplot() +
 #'   geom_variety(poly = p2, xlim = c(-2, 3), ylim = c(-2, 3)) +
 #'   coord_equal()
 #'
-#' # 3) "Heart" curve (classic implicit heart)
+#'
+#'
+#' # 3) "heart" curve (classic implicit heart)
 #' p3 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
 #' ggplot() +
 #'   geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal() +
 #'   theme(legend.position = "top")
 #'
-#' # 4) A 2-polynomial system (mpolyList): circle and xy = 0.25
+#'
+#'
+#' # 4) a 2-polynomial system (mpolyList): circle and xy = 0.25
 #' p4 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
-#' # By default, polynomials differ by linetype (not color).
+#' # by default, polynomials differ by linetype (not color)
 #' ggplot() +
 #'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal()
 #'
-#' # With different colors (optional)
+#'
+#'
+#' # with different colors (optional)
 #' ggplot() +
 #'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), vary_colour = TRUE) +
 #'   coord_equal() +
 #'   scale_colour_manual(values = c("steelblue", "firebrick"))
 #'
-#' # You can also customize linetypes and legend placement with ggplot2 scales/themes
+#'
+#'
+#' # customize linetypes and legend placement with ggplot2 scales/themes
 #' ggplot() +
 #'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), vary_colour = TRUE) +
 #'   coord_equal() +
@@ -114,22 +126,28 @@
 #'   scale_linetype_manual(values = c("solid", "22"), guide = "none") +
 #'   theme(legend.position = "top")
 #'
-#' ## common contouring situations
-#' ########################################
 #'
-#' # 5) Squared polynomial (same zero set, but no sign change on the grid)
-#' # geom_variety() will suggest a negative shift when no contour is found.
+#'
+#' # common contouring situations
+#'
+#'
+#' # 5) squared polynomial (same zero set, but no sign change on the grid)
+#' # geom_variety() suggests a negative shift when no contour is found
 #' p5 <- mp("x^2 + y^2 - 1")
 #' ggplot() +
 #'   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal()
 #'
-#' # Use the suggested shift (your printed value may differ slightly).
+#'
+#'
+#' # use the suggested shift (your printed value may differ slightly)
 #' ggplot() +
 #'   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001) +
 #'   coord_equal()
 #'
-#' # Inspect the raw shifted level set versus the default projected recovery.
+#'
+#'
+#' # inspect the raw shifted level set versus the default projected recovery
 #' p6 <- mp("y^2 - x^2")
 #' ggplot() +
 #'   geom_variety(
@@ -163,7 +181,7 @@ stat_variety <- function(
     show.legend = NA,
     inherit.aes = TRUE
 ) {
-  # Thin wrapper that wires StatVariety into ggplot2::layer().
+  # thin wrapper that wires StatVariety into ggplot2::layer()
   if (is.null(data)) data <- ensure_nonempty_data
   projection <- match.arg(projection)
 
@@ -329,7 +347,7 @@ geom_variety <- function(
     show.legend = NA,
     inherit.aes = TRUE
 ) {
-  # Default to linetype differences; colour mapping is opt-in via vary_colour.
+  # default to linetype differences; colour mapping is opt-in via vary_colour
   projection <- match.arg(projection)
   if (is.null(data)) {
     data <- ensure_nonempty_data

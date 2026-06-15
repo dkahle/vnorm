@@ -79,10 +79,12 @@ library(mpoly)
 if (FALSE) { # \dontrun{
 polylist <- mp(c("x^2 - y", "x^2 + y"))
 
-# Posterior-mean solution only
+# posterior-mean solution only
 variety_solve(polylist, n = 2e4, sd = 0.01, sig_digit = 3)
 
-# Return Stan fit and solution
+
+
+# return Stan fit and solution
 variety_solve(polylist, n = 1e4, stanfit = TRUE)
 
 } # }

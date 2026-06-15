@@ -31,3 +31,14 @@ test_that("R CMD INSTALL succeeds with an unwritable user cache", {
   if (is.null(status)) status <- 0L
   expect_equal(status, 0L)
 })
+
+test_that("Stan precompilation defaults to auto during installation", {
+  install_script_path <- test_path("../../src/install.libs.R")
+  skip_if_not(
+    file.exists(install_script_path),
+    "src/install.libs.R is only available in source-tree tests."
+  )
+
+  install_script <- readLines(install_script_path, warn = FALSE)
+  expect_true(any(grepl('Sys.getenv\\("VNORM_PRECOMPILE_STAN", "auto"\\)', install_script)))
+})

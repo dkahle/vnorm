@@ -220,8 +220,8 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span><span class="st">"mc.cores"</span> <span class="op">=</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co">## basic usage</span></span></span>
-<span class="r-in"><span><span class="co">########################################</span></span></span>
+<span class="r-in"><span><span class="co"># basic usage</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># single polynomial</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span><span class="op">)</span></span></span>
@@ -230,8 +230,10 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">samps</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">samps</span>, asp <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># returning a data frame</span></span></span>
-<span class="r-in"><span><span class="op">(</span><span class="va">samps</span> <span class="op">&lt;-</span> <span class="fu">rvnorm</span><span class="op">(</span><span class="fl">5000</span>, <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.05</span>, w <span class="op">=</span> <span class="fl">2</span>, output <span class="op">=</span> <span class="st">"tibble"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">(</span><span class="va">samps</span> <span class="op">&lt;-</span> <span class="fu">rvnorm</span><span class="op">(</span><span class="fl">1e5</span>, <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.05</span>, output <span class="op">=</span> <span class="st">"tibble"</span>, chains <span class="op">=</span> <span class="fl">8</span>, cores <span class="op">=</span> <span class="fl">8</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samps</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">.5</span><span class="op">)</span> <span class="op">+</span></span></span>
@@ -256,14 +258,27 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://jamesotto852.github.io/ggdensity/" class="external-link">"ggdensity"</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span> <span class="fu"><a href="pdvnorm.html">pdvnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span>, poly <span class="op">=</span> <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.05</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samps</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggdensity/man/geom_hdr.html" class="external-link">geom_hdr</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggdensity/man/geom_hdr.html" class="external-link">geom_hdr</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">)</span>, method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/ggdensity/man/method_kde.html" class="external-link">method_kde</a></span><span class="op">(</span>adjust <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">0.2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggdensity/man/geom_hdr_fun.html" class="external-link">geom_hdr_lines_fun</a></span><span class="op">(</span>fun <span class="op">=</span> <span class="va">f</span>, xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">)</span>, color <span class="op">=</span> <span class="st">"cyan"</span>, linewidth <span class="op">=</span> <span class="fl">.25</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="co"># geom_point(aes(x, y), size = .25, data = samps) +</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="geom_variety.html">geom_variety</a></span><span class="op">(</span>poly <span class="op">=</span> <span class="va">p</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggdensity/man/geom_hdr_fun.html" class="external-link">geom_hdr_fun</a></span><span class="op">(</span>fun <span class="op">=</span> <span class="va">f</span>, xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="co"># geom_point(aes(x, y), size = .25, data = samps) +</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="geom_variety.html">geom_variety</a></span><span class="op">(</span>poly <span class="op">=</span> <span class="va">p</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># in three variables</span></span></span>
 <span class="r-in"><span><span class="op">(</span><span class="va">samps</span> <span class="op">&lt;-</span> <span class="fu">rvnorm</span><span class="op">(</span><span class="fl">20</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + y^2 + z^2 - 1"</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">.05</span>, w <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">samps</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">v</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># more than one polynomial, # vars &gt; # eqns, underdetermined system</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x^2 + y^2 + z^2 - 1"</span>, <span class="st">"z"</span><span class="op">)</span><span class="op">)</span></span></span>
@@ -278,6 +293,8 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samps</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">z</span>, color <span class="op">=</span> <span class="va">`g[1]`</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/scale_gradient.html" class="external-link">scale_color_gradient2</a></span><span class="op">(</span>mid <span class="op">=</span> <span class="st">"gray80"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># more than one polynomial, # vars &lt; # eqns, overdetermined system</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"3 x"</span>, <span class="st">"3 y"</span>, <span class="st">"2 x + 2 y"</span>, <span class="st">"3 (x^2 + y)"</span>, <span class="st">"3 (x^2 - y)"</span><span class="op">)</span><span class="op">)</span></span></span>
@@ -294,16 +311,20 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/scale_gradient.html" class="external-link">scale_color_gradient2</a></span><span class="op">(</span>mid <span class="op">=</span> <span class="st">"gray80"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">equation</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## using refresh to get more info</span></span></span>
-<span class="r-in"><span><span class="co">########################################</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># using refresh to get more info</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">rvnorm</span><span class="op">(</span><span class="fl">2000</span>, <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.1</span>, <span class="st">"tibble"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">rvnorm</span><span class="op">(</span><span class="fl">2000</span>, <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.1</span>, <span class="st">"tibble"</span>, refresh <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">rvnorm</span><span class="op">(</span><span class="fl">2000</span>, <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.1</span>, <span class="st">"tibble"</span>, refresh <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="co"># default</span></span></span>
 <span class="r-in"><span><span class="fu">rvnorm</span><span class="op">(</span><span class="fl">2000</span>, <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.1</span>, <span class="st">"tibble"</span>, refresh <span class="op">=</span> <span class="op">-</span><span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## many chains in parallel</span></span></span>
-<span class="r-in"><span><span class="co">########################################</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># many chains in parallel</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>mc.cores <span class="op">=</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + (4 y)^2 - 1"</span><span class="op">)</span></span></span>
@@ -311,8 +332,12 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samps</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_bin_2d.html" class="external-link">geom_bin2d</a></span><span class="op">(</span>binwidth <span class="op">=</span> <span class="fl">.01</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># decrease sd to get more uniform sampling</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## windowing for unbounded varieties</span></span></span>
-<span class="r-in"><span><span class="co">########################################</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># windowing for unbounded varieties</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># windowing is needed for unbounded varieties</span></span></span>
 <span class="r-in"><span><span class="co"># in the following, look at the parameters block</span></span></span>
 <span class="r-in"><span></span></span>
@@ -325,10 +350,12 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span><span class="va">window</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"x"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.5</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">rvnorm</span><span class="op">(</span><span class="fl">1e3</span>, <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.01</span>, <span class="st">"tibble"</span>,  w <span class="op">=</span> <span class="va">window</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## the importance of normalizing</span></span></span>
-<span class="r-in"><span><span class="co">########################################</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># the importance of normalizing</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># one of the effects of the normalizing is to stabilize variances, making</span></span></span>
-<span class="r-in"><span><span class="co"># them roughly equivalent globally over the variety.</span></span></span>
+<span class="r-in"><span><span class="co"># them roughly equivalent globally over the variety</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># lemniscate of bernoulli</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"(x^2 + y^2)^2 - 2 (x^2 - y^2)"</span><span class="op">)</span></span></span>
@@ -343,12 +370,14 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samps</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samps</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_bin_2d.html" class="external-link">geom_bin2d</a></span><span class="op">(</span>binwidth <span class="op">=</span> <span class="fl">.05</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## semi-algebraic sets</span></span></span>
-<span class="r-in"><span><span class="co">########################################</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># semi-algebraic sets</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># inside the semialgebraic set x^2 + y^2 &lt;= 1</span></span></span>
 <span class="r-in"><span><span class="co"># this is the same as x^2 + y^2 - 1 &lt;= 0, so that</span></span></span>
 <span class="r-in"><span><span class="co"># x^2 + y^2 - 1 + s^2 == 0 for some slack variable s</span></span></span>
-<span class="r-in"><span><span class="co"># this is the projection of the sphere into the xy-plane.</span></span></span>
+<span class="r-in"><span><span class="co"># this is the projection of the sphere into the xy-plane</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"1 - (x^2 + y^2) - s^2"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">samps</span> <span class="op">&lt;-</span> <span class="fu">rvnorm</span><span class="op">(</span><span class="fl">1e4</span>, <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.1</span>, <span class="st">"tibble"</span>, chains <span class="op">=</span> <span class="fl">8</span>, refresh <span class="op">=</span> <span class="fl">1e3</span><span class="op">)</span></span></span>
@@ -359,15 +388,19 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/scale_gradient.html" class="external-link">scale_color_gradient2</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># alternative representation</span></span></span>
 <span class="r-in"><span><span class="co"># x^2 + y^2 - 1 &lt;= 0 iff s^2 (x^2 + y^2 - 1) + 1 == 0</span></span></span>
-<span class="r-in"><span><span class="co"># note that it's gradient is more complicated.</span></span></span>
+<span class="r-in"><span><span class="co"># note that its gradient is more complicated</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"s^2 (x^2 + y^2 - 1) + 1"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">samps</span> <span class="op">&lt;-</span> <span class="fu">rvnorm</span><span class="op">(</span><span class="fl">1e4</span>, <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.1</span>, <span class="st">"tibble"</span>, chains <span class="op">=</span> <span class="fl">8</span>, w <span class="op">=</span> <span class="fl">2</span>, refresh <span class="op">=</span> <span class="fl">1e3</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samps</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_bin_2d.html" class="external-link">geom_bin2d</a></span><span class="op">(</span>binwidth <span class="op">=</span> <span class="fl">.05</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## keeping the warmup / the importance of multiple chains</span></span></span>
-<span class="r-in"><span><span class="co">########################################</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># keeping the warmup / the importance of multiple chains</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"((x + 1.5)^2 + y^2 - 1) ((x - 1.5)^2 + y^2 - 1)"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
@@ -379,8 +412,10 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span><span class="co"># (it helps to make the graphic large on your screen)</span></span></span>
 <span class="r-in"><span><span class="va">samps</span> <span class="op">&lt;-</span> <span class="fu">rvnorm</span><span class="op">(</span><span class="fl">500</span>, <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.05</span>, <span class="st">"tibble"</span>, chains <span class="op">=</span> <span class="fl">8</span>, inc_warmup <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## ideal-variety correspondence considerations</span></span></span>
-<span class="r-in"><span><span class="co">########################################</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># ideal-variety correspondence considerations</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
@@ -396,8 +431,10 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">3</span>,<span class="fl">3</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">3</span>,<span class="fl">3</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">power</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## neat examples</span></span></span>
-<span class="r-in"><span><span class="co">########################################</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># neat examples</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># an implicit Lissajous region, view in separate window large</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># x = cos(m t + p)</span></span></span>
@@ -416,6 +453,8 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/plug.html" class="external-link">plug</a></span><span class="op">(</span><span class="va">p</span>, <span class="st">"x"</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">".5 x"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/plug.html" class="external-link">plug</a></span><span class="op">(</span><span class="va">p</span>, <span class="st">"y"</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">".5 y"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># algebraic set</span></span></span>
 <span class="r-in"><span><span class="va">samps</span> <span class="op">&lt;-</span> <span class="fu">rvnorm</span><span class="op">(</span><span class="fl">5e3</span>, <span class="va">p</span>, sd <span class="op">=</span> <span class="fl">.01</span>, <span class="st">"tibble"</span>, chains <span class="op">=</span> <span class="fl">8</span>, cores <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samps</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">.chain</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
@@ -428,6 +467,8 @@ varieties of varying dimensions?</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">.5</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">.chain</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># semi-algebraic set</span></span></span>
 <span class="r-in"><span><span class="va">samps_normd</span> <span class="op">&lt;-</span> <span class="fu">rvnorm</span><span class="op">(</span><span class="fl">1e4</span>, <span class="va">p</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"s^2"</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">.01</span>, <span class="st">"tibble"</span>, chains <span class="op">=</span> <span class="fl">8</span>,</span></span>

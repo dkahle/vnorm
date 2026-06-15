@@ -34,7 +34,7 @@ callr::r(
     }
     running_r_cmd_check <- isTRUE(running_r_cmd_check_parent) ||
       nzchar(Sys.getenv("_R_CHECK_PACKAGE_NAME_"))
-    precompile_opt <- tolower(Sys.getenv("VNORM_PRECOMPILE_STAN", "false"))
+    precompile_opt <- tolower(Sys.getenv("VNORM_PRECOMPILE_STAN", "auto"))
     if (!precompile_opt %in% c("auto", "true", "false")) precompile_opt <- "auto"
     enable_stan_binaries <- switch(
       precompile_opt,

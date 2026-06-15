@@ -142,19 +142,19 @@
 <span>  <span class="fu">coord_equal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Additional common <code><a href="reference/rvnorm.html">rvnorm()</a></code> usage patterns:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Use a packaged pre-compiled Stan model when available (small degree/variable cases)</span></span>
+<code class="sourceCode R"><span><span class="co"># use a packaged pre-compiled Stan model when available (small degree/variable cases)</span></span>
 <span><span class="fu"><a href="reference/rvnorm.html">rvnorm</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + y^2 + z^2 - 1"</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">0.1</span>, pre_compiled <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Unbounded varieties typically need a window parameter w</span></span>
+<span><span class="co"># unbounded varieties typically need a window parameter w</span></span>
 <span><span class="fu"><a href="reference/rvnorm.html">rvnorm</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x y - 1"</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">0.1</span>, w <span class="op">=</span> <span class="fl">2</span>, output <span class="op">=</span> <span class="st">"tibble"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Multi-polynomial systems (underdetermined / overdetermined are both supported)</span></span>
+<span><span class="co"># multi-polynomial systems (underdetermined / overdetermined are both supported)</span></span>
 <span><span class="fu"><a href="reference/rvnorm.html">rvnorm</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x^2 + y^2 + z^2 - 1"</span>, <span class="st">"z"</span><span class="op">)</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">0.1</span>, output <span class="op">=</span> <span class="st">"tibble"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Use Sigma as a scalar variance for single-polynomial sampling</span></span>
+<span><span class="co"># use Sigma as a scalar variance for single-polynomial sampling</span></span>
 <span><span class="fu"><a href="reference/rvnorm.html">rvnorm</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span><span class="op">)</span>, Sigma <span class="op">=</span> <span class="fl">0.1</span><span class="op">^</span><span class="fl">2</span>, output <span class="op">=</span> <span class="st">"tibble"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Use diagonal/full Sigma with polynomial systems</span></span>
+<span><span class="co"># use diagonal/full Sigma with polynomial systems</span></span>
 <span><span class="fu"><a href="reference/rvnorm.html">rvnorm</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span>, <span class="st">"x y - 0.25"</span><span class="op">)</span><span class="op">)</span>, Sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.05</span>, <span class="fl">0.08</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Rejection sampler usage (alternative path; currently the wrapper supports scalar <code>sd</code>):</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">

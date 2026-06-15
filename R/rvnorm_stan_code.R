@@ -89,7 +89,7 @@ model {{
     gbar_string <- "g"
 
     if (homo) {
-      # Jacobian setup for homoskedastic pseudoinverse normalization
+      # jacobian setup for homoskedastic pseudoinverse normalization
       printed_jac <- array("", dim = c(n_eqs, n_vars))
       for (i in seq_len(n_eqs)) {
         for (j in seq_len(n_vars)) {
@@ -97,7 +97,7 @@ model {{
         }
       }
 
-      # format Jacobian rows as Stan matrix literal
+      # format jacobian rows as Stan matrix literal
       printed_jac <- apply(printed_jac, 1, paste, collapse = ", ")
       printed_jac <- paste("      [", printed_jac, "]", collapse = ", \n")
       printed_jac <- paste0("[\n", printed_jac, "\n    ]")

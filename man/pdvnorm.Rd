@@ -64,7 +64,7 @@ pdvnorm(X, poly = p, sd = 1)
 
 
 
-## Different dispersion forms
+# different dispersion forms
 p <- mp(c("x", "y"))
 X <- rbind(c(0, 0), c(1, 2), c(-1, 3))
 pdvnorm(X, p, sd = 1)
@@ -73,7 +73,7 @@ pdvnorm(X, p, Sigma = diag(c(1, 4)))
 
 
 
-## Multivariate (underdetermined): one polynomial in two variables
+# multivariate (underdetermined): one polynomial in two variables
 p <- mp("x^2 + y^2 - 1")
 X <- rbind(c(1, 1), c(2, -1), c(0, 3))
 pdvnorm(X, p, sd = 1)
@@ -82,7 +82,7 @@ pdvnorm(c(1, 1), p, Sigma = diag(c(1, 4)))
 
 
 
-## Multivariate (overdetermined): three polynomials in two variables
+# multivariate (overdetermined): three polynomials in two variables
 p <- mp(c("x", "y", "x + y"))
 X <- rbind(c(1, 2), c(0, -1), c(2, 2))
 pdvnorm(X, p, Sigma = diag(2), homo = TRUE)
@@ -272,7 +272,7 @@ p1 + p2 + p3 + p4 +
 
 
 # geom_hdr_fun accepts functions f(x, y) with vectors x and y,
-# but pdvnorm accepts the packed f(matrix), so a wrapper is needed.
+# but pdvnorm accepts the packed f(matrix), so a wrapper is needed
 library("ggdensity")
 
 p <- mp("x^2 + y^2 - 1")

@@ -48,7 +48,7 @@
 #'
 #'
 #'
-#' ## Different dispersion forms
+#' # different dispersion forms
 #' p <- mp(c("x", "y"))
 #' X <- rbind(c(0, 0), c(1, 2), c(-1, 3))
 #' pdvnorm(X, p, sd = 1)
@@ -57,7 +57,7 @@
 #'
 #'
 #'
-#' ## Multivariate (underdetermined): one polynomial in two variables
+#' # multivariate (underdetermined): one polynomial in two variables
 #' p <- mp("x^2 + y^2 - 1")
 #' X <- rbind(c(1, 1), c(2, -1), c(0, 3))
 #' pdvnorm(X, p, sd = 1)
@@ -66,7 +66,7 @@
 #'
 #'
 #'
-#' ## Multivariate (overdetermined): three polynomials in two variables
+#' # multivariate (overdetermined): three polynomials in two variables
 #' p <- mp(c("x", "y", "x + y"))
 #' X <- rbind(c(1, 2), c(0, -1), c(2, 2))
 #' pdvnorm(X, p, Sigma = diag(2), homo = TRUE)
@@ -256,7 +256,7 @@
 #'
 #'
 #' # geom_hdr_fun accepts functions f(x, y) with vectors x and y,
-#' # but pdvnorm accepts the packed f(matrix), so a wrapper is needed.
+#' # but pdvnorm accepts the packed f(matrix), so a wrapper is needed
 #' library("ggdensity")
 #'
 #' p <- mp("x^2 + y^2 - 1")
@@ -489,7 +489,7 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
     }
   }
 
-  # Cholesky factor for efficient Mahalanobis distance
+  # cholesky factor for efficient Mahalanobis distance
   L <- tryCatch(
     chol(Sigma),
     error = function(e) {
@@ -504,7 +504,7 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
     g_vals <- as.numeric(g_vals_mat[i, ])
 
     if (homo) {
-      # Jacobian of g(x): rows are equations, columns are variables
+      # jacobian of g(x): rows are equations, columns are variables
       J <- matrix(NA_real_, nrow = m, ncol = n)
       for (j in seq_len(m)) {
         J[j, ] <- grad_fun[[j]](xi)

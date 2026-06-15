@@ -79,7 +79,7 @@ test_that("mpolyList_to_stan handles 3+ polynomials", {
   p1 <- mp("x"); p2 <- mp("y"); p3 <- mp("x + y - 1")
   ml <- structure(list(p1, p2, p3), class = "mpolyList")
   s <- mpolyList_to_stan(ml)
-  # Should have 3 comma-separated entries
+  # should have 3 comma-separated entries
   parts <- strsplit(s, ",")[[1]]
   expect_equal(length(parts), 3)
 })
@@ -118,7 +118,7 @@ test_that("generate_model_name is deterministic and differentiates structure", {
   name1_w <- generate_model_name(p1, homo = TRUE, windowed = TRUE)
   expect_false(name1a == name1_w)
 
-  # Different structure -> different hash
+  # different structure -> different hash
   p3 <- mp("x^3 + y^2 - 1")
   name3 <- generate_model_name(p3, homo = TRUE, windowed = FALSE)
   expect_false(name1a == name3)

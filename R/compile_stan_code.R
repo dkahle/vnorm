@@ -146,7 +146,7 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
 
     stan_code <- paste0(data_block, params_block, model_block, sep = "")
   } else if (is.mpolyList(poly)) {
-    # multi-polynomial program: vector g and matrix Jacobian J
+    # multi-polynomial program: vector g and matrix jacobian J
     poly <- canonicalize_mpolylist(poly)
     poly <- sort_mpolylist_lexicographically(poly)
     n_eqs <- length(poly)

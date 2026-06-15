@@ -168,13 +168,13 @@ test_that("pdvnorm log=TRUE works for multivariate case", {
 })
 
 test_that("pdvnorm handles underdetermined and overdetermined systems", {
-  # Underdetermined: 1 poly in 2 vars
+  # underdetermined: 1 poly in 2 vars
   p_under <- mp("x + y")
   d1 <- pdvnorm(c(1, 1), p_under, sd = 1, homo = TRUE)
   expect_true(is.finite(d1))
   expect_true(d1 > 0)
 
-  # Overdetermined: 3 polys in 2 vars
+  # overdetermined: 3 polys in 2 vars
   p_over <- mp(c("x", "y", "x + y"))
   d2 <- pdvnorm(c(0, 0), p_over, Sigma = diag(2), homo = TRUE)
   expect_true(is.finite(d2))

@@ -56,7 +56,7 @@ make_multivariety_stan_codes <- function(num_of_vars,
   }
   params_block <- paste0("\nparameters {\n", params_block, "\n}\n")
 
-  # build vector g and Jacobian entries used by the model
+  # build vector g and jacobian entries used by the model
   g <- list()
   g_coef <- list()
   g_terms <- list()
@@ -104,7 +104,7 @@ make_multivariety_stan_codes <- function(num_of_vars,
   )
   gbar_string <- "g"
   if (homo) {
-    # homoskedastic case uses symbolic Jacobian entries
+    # homoskedastic case uses symbolic jacobian entries
     for (i in seq_len(num_of_poly)) {
       derivatives[[i]] <- unlist(derivatives_pre[[i]])
     }

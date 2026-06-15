@@ -182,8 +182,8 @@ library("tidyverse")
 options("mc.cores" = parallel::detectCores() - 1)
 
 if (FALSE) { # \dontrun{
-## basic usage
-########################################
+# basic usage
+
 
 # single polynomial
 p <- mp("x^2 + y^2 - 1")
@@ -192,8 +192,10 @@ head(samps)
 str(samps)
 plot(samps, asp = 1)
 
+
+
 # returning a data frame
-(samps <- rvnorm(5000, p, sd = .05, w = 2, output = "tibble"))
+(samps <- rvnorm(1e5, p, sd = .05, output = "tibble", chains = 8, cores = 8))
 
 ggplot(samps, aes(x, y)) +
   geom_point(size = .5) +
@@ -218,14 +220,27 @@ ggplot(samps, aes(x, y)) +
   coord_equal()
 
 library("ggdensity")
+f <- function(x, y) pdvnorm(cbind(x, y), poly = p, sd = .05)
+
 ggplot(samps, aes(x, y)) +
-  geom_hdr(xlim = c(-2,2), ylim = c(-2,2)) +
+  geom_hdr(xlim = c(-2,2), ylim = c(-2,2), method = method_kde(adjust = c(0.2, 0.2))) +
+  geom_hdr_lines_fun(fun = f, xlim = c(-2,2), ylim = c(-2,2), color = "cyan", linewidth = .25) +
+  # geom_point(aes(x, y), size = .25, data = samps) +
   geom_variety(poly = p) +
   coord_equal()
+
+ggplot() +
+  geom_hdr_fun(fun = f, xlim = c(-2,2), ylim = c(-2,2)) +
+  # geom_point(aes(x, y), size = .25, data = samps) +
+  geom_variety(poly = p) +
+  coord_equal()
+
 
 # in three variables
 (samps <- rvnorm(20, mp("x^2 + y^2 + z^2 - 1"), sd = .05, w = 2))
 apply(samps, 1, function(v) sqrt(sum(v^2)))
+
+
 
 # more than one polynomial, # vars > # eqns, underdetermined system
 p <- mp(c("x^2 + y^2 + z^2 - 1", "z"))
@@ -240,6 +255,8 @@ ggplot(samps, aes(x, y, color = `g[2]`)) + geom_point() +
 
 ggplot(samps, aes(x, z, color = `g[1]`)) + geom_point() +
   scale_color_gradient2(mid = "gray80") + coord_equal()
+
+
 
 # more than one polynomial, # vars < # eqns, overdetermined system
 p <- mp(c("3 x", "3 y", "2 x + 2 y", "3 (x^2 + y)", "3 (x^2 - y)"))
@@ -256,16 +273,20 @@ samps |>
     scale_color_gradient2(mid = "gray80") + coord_equal() +
     facet_wrap(~ equation)
 
-## using refresh to get more info
-########################################
+
+
+# using refresh to get more info
+
 
 rvnorm(2000, p, sd = .1, "tibble", verbose = TRUE)
 rvnorm(2000, p, sd = .1, "tibble", refresh = 500)
 rvnorm(2000, p, sd = .1, "tibble", refresh = 0) # default
 rvnorm(2000, p, sd = .1, "tibble", refresh = -1)
 
-## many chains in parallel
-########################################
+
+
+# many chains in parallel
+
 
 options(mc.cores = parallel::detectCores())
 p <- mp("x^2 + (4 y)^2 - 1")
@@ -273,8 +294,12 @@ p <- mp("x^2 + (4 y)^2 - 1")
 ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .01*c(1,1)) + coord_equal()
 # decrease sd to get more uniform sampling
 
-## windowing for unbounded varieties
-########################################
+
+
+# windowing for unbounded varieties
+
+
+
 # windowing is needed for unbounded varieties
 # in the following, look at the parameters block
 
@@ -287,10 +312,12 @@ rvnorm(1e3, p, sd = .01, "tibble",  w = 1.15)
 window <- list("x" = c(-1.5, 1.5))
 rvnorm(1e3, p, sd = .01, "tibble",  w = window)
 
-## the importance of normalizing
-########################################
+
+
+# the importance of normalizing
+
 # one of the effects of the normalizing is to stabilize variances, making
-# them roughly equivalent globally over the variety.
+# them roughly equivalent globally over the variety
 
 # lemniscate of bernoulli
 p <- mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
@@ -305,12 +332,14 @@ ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
 ggplot(samps, aes(x, y)) + geom_point(size = .5) + coord_equal()
 ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
 
-## semi-algebraic sets
-########################################
+
+
+# semi-algebraic sets
+
 # inside the semialgebraic set x^2 + y^2 <= 1
 # this is the same as x^2 + y^2 - 1 <= 0, so that
 # x^2 + y^2 - 1 + s^2 == 0 for some slack variable s
-# this is the projection of the sphere into the xy-plane.
+# this is the projection of the sphere into the xy-plane
 
 p <- mp("1 - (x^2 + y^2) - s^2")
 samps <- rvnorm(1e4, p, sd = .1, "tibble", chains = 8, refresh = 1e3)
@@ -321,15 +350,19 @@ ggplot(sample_n(samps, 2e3), aes(x, y, color = s)) +
   scale_color_gradient2() +
   coord_equal()
 
+
+
 # alternative representation
 # x^2 + y^2 - 1 <= 0 iff s^2 (x^2 + y^2 - 1) + 1 == 0
-# note that it's gradient is more complicated.
+# note that its gradient is more complicated
 p <- mp("s^2 (x^2 + y^2 - 1) + 1")
 samps <- rvnorm(1e4, p, sd = .1, "tibble", chains = 8, w = 2, refresh = 1e3)
 ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
 
-## keeping the warmup / the importance of multiple chains
-########################################
+
+
+# keeping the warmup / the importance of multiple chains
+
 
 p <- mp("((x + 1.5)^2 + y^2 - 1) ((x - 1.5)^2 + y^2 - 1)")
 ggplot() +
@@ -341,8 +374,10 @@ ggplot() +
 # (it helps to make the graphic large on your screen)
 samps <- rvnorm(500, p, sd = .05, "tibble", chains = 8, inc_warmup = TRUE)
 
-## ideal-variety correspondence considerations
-########################################
+
+
+# ideal-variety correspondence considerations
+
 
 p <- mp("x^2 + y^2 - 1")
 
@@ -358,8 +393,10 @@ ggplot(samps, aes(x, y, color = g < 0)) +
   coord_equal(xlim = c(-3,3), ylim = c(-3,3)) +
   facet_wrap(~ power)
 
-## neat examples
-########################################
+
+
+# neat examples
+
 # an implicit Lissajous region, view in separate window large
 
 # x = cos(m t + p)
@@ -378,6 +415,8 @@ ggplot() +
 p <- plug(p, "x", mp(".5 x"))
 p <- plug(p, "y", mp(".5 y"))
 
+
+
 # algebraic set
 samps <- rvnorm(5e3, p, sd = .01, "tibble", chains = 8, cores = 8)
 ggplot(samps, aes(x, y, color = factor(.chain))) +
@@ -390,6 +429,8 @@ ggplot(samps, aes(x, y, color = factor(.chain))) +
   geom_point(size = .5) +
   coord_equal() +
   facet_wrap(~ factor(.chain))
+
+
 
 # semi-algebraic set
 samps_normd <- rvnorm(1e4, p + mp("s^2"), sd = .01, "tibble", chains = 8,

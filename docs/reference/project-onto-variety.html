@@ -232,13 +232,13 @@ Numerically Solving Polynomial Systems with Bertini. SIAM. pp.34–35.</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>     vars</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co">## basic usage</span></span></span>
+<span class="r-in"><span><span class="co"># basic usage</span></span></span>
 <span class="r-in"><span><span class="va">x0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + y^2 - 1"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">x1_proj</span> <span class="op">&lt;-</span> <span class="fu">project_onto_variety</span><span class="op">(</span><span class="va">x0</span>, <span class="va">p1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">x1_proj</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Residual on the variety should be near zero</span></span></span>
+<span class="r-in"><span><span class="co"># residual on the variety should be near zero</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/as.function.html" class="external-link">as.function</a></span><span class="op">(</span><span class="va">p1</span><span class="op">)</span><span class="op">(</span><span class="va">x1_proj</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">df1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
@@ -250,7 +250,9 @@ Numerically Solving Polynomial Systems with Bertini. SIAM. pp.34–35.</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_segment.html" class="external-link">geom_segment</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, xend <span class="op">=</span> <span class="va">x_proj</span>, yend <span class="op">=</span> <span class="va">y_proj</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">df1</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## adaptive time stepping (default) versus fixed step size</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># adaptive time stepping (default) versus fixed step size</span></span></span>
 <span class="r-in"><span><span class="va">x2_adapt</span> <span class="op">&lt;-</span> <span class="fu">project_onto_variety</span><span class="op">(</span><span class="va">x0</span>, <span class="va">p1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">x2_fixed</span> <span class="op">&lt;-</span> <span class="fu">project_onto_variety</span><span class="op">(</span><span class="va">x0</span>, <span class="va">p1</span>, adaptive <span class="op">=</span> <span class="cn">FALSE</span>, dt <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">x2_strict</span> <span class="op">&lt;-</span> <span class="fu">project_onto_variety</span><span class="op">(</span><span class="va">x0</span>, <span class="va">p1</span>, error_tol <span class="op">=</span> <span class="fl">0.001</span><span class="op">)</span></span></span>
@@ -261,10 +263,14 @@ Numerically Solving Polynomial Systems with Bertini. SIAM. pp.34–35.</p>
 <span class="r-in"><span>  adaptive_strict <span class="op">=</span> <span class="va">x2_strict</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Optional: inspect adaptive step messages</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># optionally inspect adaptive step messages</span></span></span>
 <span class="r-in"><span><span class="fu">project_onto_variety</span><span class="op">(</span><span class="va">x0</span>, <span class="va">p1</span>, message <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## precomputing polynomial/gradient/Hessian functions</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># precomputing polynomial/gradient/hessian functions</span></span></span>
 <span class="r-in"><span><span class="va">varorder</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"y"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">gfunc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.function.html" class="external-link">as.function</a></span><span class="op">(</span><span class="va">p1</span>, varorder <span class="op">=</span> <span class="va">varorder</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">dg</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/deriv.html" class="external-link">deriv</a></span><span class="op">(</span><span class="va">p1</span>, var <span class="op">=</span> <span class="va">varorder</span><span class="op">)</span></span></span>
@@ -274,19 +280,25 @@ Numerically Solving Polynomial Systems with Bertini. SIAM. pp.34–35.</p>
 <span class="r-in"><span><span class="va">ddgfunc</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">ddgfunc_list</span>, <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="fu">f</span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">project_onto_variety</span><span class="op">(</span><span class="va">x0</span>, <span class="va">p1</span>, gfunc <span class="op">=</span> <span class="va">gfunc</span>, dgfunc <span class="op">=</span> <span class="va">dgfunc</span>, ddgfunc <span class="op">=</span> <span class="va">ddgfunc</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## projecting multiple points (matrix or data frame input)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># projecting multiple points (matrix or data frame input)</span></span></span>
 <span class="r-in"><span><span class="va">x2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">0.3</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="op">-</span><span class="fl">1.3</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">project_onto_variety</span><span class="op">(</span><span class="va">x2</span>, <span class="va">p1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">project_onto_variety</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">x2</span><span class="op">)</span>, <span class="va">p1</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## alternative projection methods</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># alternative projection methods</span></span></span>
 <span class="r-in"><span><span class="fu">project_onto_variety_lagrange</span><span class="op">(</span><span class="va">x0</span>, <span class="va">p1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">project_onto_variety_newton</span><span class="op">(</span><span class="va">x0</span>, <span class="va">p1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">project_onto_variety_gradient_descent</span><span class="op">(</span><span class="va">x0</span>, <span class="va">p1</span>, method <span class="op">=</span> <span class="st">"line"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">project_onto_variety_gradient_descent</span><span class="op">(</span><span class="va">x0</span>, <span class="va">p1</span>, method <span class="op">=</span> <span class="st">"optimal"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">project_onto_variety_gradient_descent</span><span class="op">(</span><span class="va">x0</span>, <span class="va">p1</span>, method <span class="op">=</span> <span class="st">"fixed"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## naive usages / method comparison on a small grid</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># naive usages / method comparison on a small grid</span></span></span>
 <span class="r-in"><span><span class="co"># (gradient descent methods minimize g(x)^2 directly)</span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://dplyr.tidyverse.org" class="external-link">"dplyr"</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></span>
@@ -318,7 +330,9 @@ Numerically Solving Polynomial Systems with Bertini. SIAM. pp.34–35.</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">method</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## changing adaptive control parameters</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># changing adaptive control parameters</span></span></span>
 <span class="r-in"><span><span class="fu">project_onto_variety</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">x0</span>, <span class="va">p1</span>,</span></span>
 <span class="r-in"><span>  adaptive <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
@@ -329,7 +343,9 @@ Numerically Solving Polynomial Systems with Bertini. SIAM. pp.34–35.</p>
 <span class="r-in"><span>  message <span class="op">=</span> <span class="cn">TRUE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## more complex curve</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># more complex curve</span></span></span>
 <span class="r-in"><span><span class="va">p_complex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"(x^2 + y^2)^2 - 2 * (x^2 - y^2)"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">x_complex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">x_complex_proj</span> <span class="op">&lt;-</span> <span class="fu">project_onto_variety</span><span class="op">(</span><span class="va">x_complex</span>, <span class="va">p_complex</span><span class="op">)</span></span></span>
@@ -342,7 +358,9 @@ Numerically Solving Polynomial Systems with Bertini. SIAM. pp.34–35.</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_segment.html" class="external-link">geom_segment</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, xend <span class="op">=</span> <span class="va">x_proj</span>, yend <span class="op">=</span> <span class="va">y_proj</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">df_complex</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## projecting a sample from rvnorm (batch usage)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># projecting a sample from rvnorm (batch usage)</span></span></span>
 <span class="r-in"><span><span class="co"># cut down on draws for example runtime</span></span></span>
 <span class="r-in"><span><span class="va">samps</span> <span class="op">&lt;-</span> <span class="fu"><a href="rvnorm.html">rvnorm</a></span><span class="op">(</span><span class="fl">500</span>, <span class="va">p1</span>, sd <span class="op">=</span> <span class="fl">0.05</span>, output <span class="op">=</span> <span class="st">"tibble"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">samps</span><span class="op">)</span><span class="op">)</span>, size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">75</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">samps</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
@@ -357,7 +375,9 @@ Numerically Solving Polynomial Systems with Bertini. SIAM. pp.34–35.</p>
 <span class="r-in"><span>  <span class="fu"><a href="geom_variety.html">geom_variety</a></span><span class="op">(</span>poly <span class="op">=</span> <span class="va">p1</span>, xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, inherit.aes <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## higher-dimensional example</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># higher-dimensional example</span></span></span>
 <span class="r-in"><span><span class="va">x3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mpoly/man/mp.html" class="external-link">mp</a></span><span class="op">(</span><span class="st">"x^2 + y^2 + z^2 - 1"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">project_onto_variety</span><span class="op">(</span><span class="va">x3</span>, <span class="va">p2</span><span class="op">)</span></span></span>

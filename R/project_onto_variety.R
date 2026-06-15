@@ -60,13 +60,13 @@
 #' library("mpoly")
 #'
 #' \dontrun{
-#' ## basic usage
+#' # basic usage
 #' x0 <- c(1, 1)
 #' p1 <- mp("x^2 + y^2 - 1")
 #' x1_proj <- project_onto_variety(x0, p1)
 #' x1_proj
 #'
-#' # Residual on the variety should be near zero
+#' # residual on the variety should be near zero
 #' as.function(p1)(x1_proj)
 #'
 #' df1 <- data.frame(
@@ -78,7 +78,9 @@
 #'   geom_segment(aes(x, y, xend = x_proj, yend = y_proj), data = df1) +
 #'   coord_equal()
 #'
-#' ## adaptive time stepping (default) versus fixed step size
+#'
+#'
+#' # adaptive time stepping (default) versus fixed step size
 #' x2_adapt <- project_onto_variety(x0, p1)
 #' x2_fixed <- project_onto_variety(x0, p1, adaptive = FALSE, dt = 0.01)
 #' x2_strict <- project_onto_variety(x0, p1, error_tol = 0.001)
@@ -89,10 +91,14 @@
 #'   adaptive_strict = x2_strict
 #' )
 #'
-#' # Optional: inspect adaptive step messages
+#'
+#'
+#' # optionally inspect adaptive step messages
 #' project_onto_variety(x0, p1, message = TRUE)
 #'
-#' ## precomputing polynomial/gradient/Hessian functions
+#'
+#'
+#' # precomputing polynomial/gradient/hessian functions
 #' varorder <- c("x", "y")
 #' gfunc <- as.function(p1, varorder = varorder)
 #' dg <- stats::deriv(p1, var = varorder)
@@ -102,19 +108,25 @@
 #' ddgfunc <- function(x) sapply(ddgfunc_list, function(f) f(x))
 #' project_onto_variety(x0, p1, gfunc = gfunc, dgfunc = dgfunc, ddgfunc = ddgfunc)
 #'
-#' ## projecting multiple points (matrix or data frame input)
+#'
+#'
+#' # projecting multiple points (matrix or data frame input)
 #' x2 <- rbind(c(1, 1), c(-1, 0.3), c(0.2, -1.3))
 #' project_onto_variety(x2, p1)
 #' project_onto_variety(as.data.frame(x2), p1)
 #'
-#' ## alternative projection methods
+#'
+#'
+#' # alternative projection methods
 #' project_onto_variety_lagrange(x0, p1)
 #' project_onto_variety_newton(x0, p1)
 #' project_onto_variety_gradient_descent(x0, p1, method = "line")
 #' project_onto_variety_gradient_descent(x0, p1, method = "optimal")
 #' project_onto_variety_gradient_descent(x0, p1, method = "fixed")
 #'
-#' ## naive usages / method comparison on a small grid
+#'
+#'
+#' # naive usages / method comparison on a small grid
 #' # (gradient descent methods minimize g(x)^2 directly)
 #' library("dplyr")
 #' set.seed(1)
@@ -146,7 +158,9 @@
 #'   coord_equal() +
 #'   facet_wrap(~ method)
 #'
-#' ## changing adaptive control parameters
+#'
+#'
+#' # changing adaptive control parameters
 #' project_onto_variety(
 #'   x0, p1,
 #'   adaptive = TRUE,
@@ -157,7 +171,9 @@
 #'   message = TRUE
 #' )
 #'
-#' ## more complex curve
+#'
+#'
+#' # more complex curve
 #' p_complex <- mp("(x^2 + y^2)^2 - 2 * (x^2 - y^2)")
 #' x_complex <- c(1, 1)
 #' x_complex_proj <- project_onto_variety(x_complex, p_complex)
@@ -170,7 +186,9 @@
 #'   geom_segment(aes(x, y, xend = x_proj, yend = y_proj), data = df_complex) +
 #'   coord_equal()
 #'
-#' ## projecting a sample from rvnorm (batch usage)
+#'
+#'
+#' # projecting a sample from rvnorm (batch usage)
 #' # cut down on draws for example runtime
 #' samps <- rvnorm(500, p1, sd = 0.05, output = "tibble")
 #' idx <- sample(seq_len(nrow(samps)), size = min(75, nrow(samps)))
@@ -185,7 +203,9 @@
 #'   geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2), inherit.aes = FALSE) +
 #'   coord_equal()
 #'
-#' ## higher-dimensional example
+#'
+#'
+#' # higher-dimensional example
 #' x3 <- c(1, 1, 1)
 #' p2 <- mp("x^2 + y^2 + z^2 - 1")
 #' project_onto_variety(x3, p2)
@@ -254,7 +274,7 @@ project_onto_variety <- function(
   }
 
 
-  # build polynomial, Jacobian, and Hessian function handles when not supplied
+  # build polynomial, jacobian, and hessian function handles when not supplied
   if (missing(gfunc) || missing(dgfunc) || missing(ddgfunc)) {
 
     if (!missing(gfunc) || !missing(dgfunc) || !missing(ddgfunc)) {
@@ -270,11 +290,11 @@ project_onto_variety <- function(
     g <- poly
     gfunc <- as.function(g, varorder = varorder, silent = TRUE)
 
-    # Jacobian
+    # jacobian
     dg <- deriv(g, var = varorder)
     dgfunc <- as.function(dg, varorder = varorder, silent = TRUE)
 
-    # Hessian
+    # hessian
     ddg <- lapply(dg, deriv, var = varorder)
     ddgfunc_list <- lapply(ddg, as.function, varorder = varorder, silent = TRUE)
     ddgfunc <- function(x) sapply(ddgfunc_list, function(f) f(x))
@@ -546,7 +566,7 @@ project_onto_variety_gradient_descent <- function(
   # validate and dispatch descent strategy
   method <- match.arg(method)
 
-  # build objective, gradient, and Hessian helpers for g(x)^2
+  # build objective, gradient, and hessian helpers for g(x)^2
   pf  <- as.function(poly, varorder = varorder, silent = TRUE)
   p2f <- as.function(poly^2, varorder = varorder, silent = TRUE)
   dp2 <- stats::deriv(poly^2, var = varorder)
@@ -588,7 +608,7 @@ project_onto_variety_gradient_descent <- function(
       xn_1 <- xn
       direction_2 <- dp2f(xn_2)
       direction_1 <- dp2f(xn_1)
-      # Barzilai-Borwein step size from successive gradient difference
+      # step size from successive Barzilai-Borwein gradient differences
       denom <- sum((direction_1 - direction_2)^2)
       ga <- if (denom > 0) {
         abs(sum((xn_1 - xn_2) * (direction_1 - direction_2))) / denom
@@ -691,7 +711,7 @@ project_onto_variety_newton <- function(
   # validate method option
   method <- match.arg(method)
 
-  # build objective, gradient, and Hessian helpers for g(x)^2
+  # build objective, gradient, and hessian helpers for g(x)^2
   pf  <- as.function(poly, varorder = varorder, silent = TRUE)
   p2f <- as.function(poly^2, varorder = varorder, silent = TRUE)
   dp2 <- stats::deriv(poly^2, var = varorder)

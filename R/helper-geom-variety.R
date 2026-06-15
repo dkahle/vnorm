@@ -1,6 +1,6 @@
-## geom_variety-specific helpers
-## keep generic ggplot/contour conversion utilities in helpers-ggplot2.R
-## (e.g., xyz_to_isolines(), iso_to_path(), ensure_nonempty_data())
+# geom_variety-specific helpers
+# keep generic ggplot/contour conversion utilities in helpers-ggplot2.R
+# (e.g., xyz_to_isolines(), iso_to_path(), ensure_nonempty_data())
 
 poly_to_df <- function(poly, xlim, ylim, nx, ny, shift = 0) {
   # evaluate polynomial on a regular x/y grid for contour extraction
@@ -198,8 +198,8 @@ cluster_endpoint_indices <- function(endpoints, gap_tol) {
 }
 
 close_singular_endpoint_gaps <- function(df, poly, tol) {
-  # Reconnect split branches when several path endpoints cluster around the
-  # same true zero, which is common near repeated singular crossings.
+  # reconnect split branches when several path endpoints cluster around the
+  # same true zero, which is common near repeated singular crossings
   if (nrow(df) == 0 || !"group" %in% names(df)) return(df)
 
   groups <- split(df, df$group)
@@ -343,8 +343,8 @@ should_project_contours <- function(df, poly, projection, shift, no_sign_change0
 }
 
 should_run_duplicate_collapse <- function(df, shift, no_sign_change0) {
-  # Duplicate collapse is meant for obvious shifted repeated-factor doubles,
-  # not for heavily fragmented projected paths.
+  # duplicate collapse is meant for obvious shifted repeated-factor doubles,
+  # not for heavily fragmented projected paths
   if (nrow(df) == 0) return(FALSE)
   if (!(isTRUE(no_sign_change0) && shift != 0)) return(FALSE)
 
@@ -353,8 +353,8 @@ should_run_duplicate_collapse <- function(df, shift, no_sign_change0) {
 }
 
 should_close_singular_gaps <- function(df, shift, no_sign_change0) {
-  # Singular gap closing is useful for repeated-factor crossings when several
-  # projected path ends land near the same true zero.
+  # singular gap closing is useful for repeated-factor crossings when several
+  # projected path ends land near the same true zero
   if (nrow(df) == 0) return(FALSE)
   if (!(isTRUE(no_sign_change0) && shift != 0)) return(FALSE)
 
@@ -363,8 +363,8 @@ should_close_singular_gaps <- function(df, shift, no_sign_change0) {
 }
 
 should_prune_projected_fragments <- function(df, shift, no_sign_change0) {
-  # Tiny-fragment pruning is for heavily fragmented repeated-factor projections
-  # where many small groups ride directly on top of a dominant branch.
+  # tiny-fragment pruning is for heavily fragmented repeated-factor projections
+  # where many small groups ride directly on top of a dominant branch
   if (nrow(df) == 0) return(FALSE)
   if (!(isTRUE(no_sign_change0) && shift != 0)) return(FALSE)
 
@@ -373,9 +373,9 @@ should_prune_projected_fragments <- function(df, shift, no_sign_change0) {
 }
 
 prune_nearby_short_fragments <- function(df, tol) {
-  # Drop very short groups that sit almost entirely on top of much larger
-  # projected branches. This targets dotted debris without collapsing whole
-  # multi-branch geometries.
+  # drop very short groups that sit almost entirely on top of much larger
+  # projected branches, targeting dotted debris without collapsing whole
+  # multi-branch geometries
   if (nrow(df) == 0 || !"group" %in% names(df)) return(df)
 
   groups <- split(df, df$group)
@@ -411,8 +411,8 @@ prune_nearby_short_fragments <- function(df, tol) {
 postprocess_projected_paths <- function(
     df, poly, rangex, rangey, nx, ny, shift, no_sign_change0
   ) {
-  # Keep the repeated-factor cleanup policy in one place so mpoly and
-  # mpolyList paths stay in sync.
+  # keep the repeated-factor cleanup policy in one place so mpoly and
+  # mpolyList paths stay in sync
   if (nrow(df) == 0) return(df)
 
   dx <- (rangex[2] - rangex[1]) / max(nx - 1, 1)
@@ -430,9 +430,9 @@ postprocess_projected_paths <- function(
 }
 
 emit_shifted_recovery_disclaimer <- function(shift, projection, no_sign_change0) {
-  # A shifted contour for a repeated-factor polynomial is only a nearby level
-  # set. Projection often helps, but complex cases can still
-  # miss branches, so warn explicitly.
+  # a shifted contour for a repeated-factor polynomial is only a nearby level
+  # set; projection often helps, but complex cases can still
+  # miss branches, so warn explicitly
   projection <- match.arg(projection, c("auto", "on", "off"))
   if (projection == "off") return()
   if (!(isTRUE(no_sign_change0) && shift != 0)) return()
@@ -447,8 +447,8 @@ emit_shifted_recovery_disclaimer <- function(shift, projection, no_sign_change0)
 }
 
 effective_variety_grid <- function(nx, ny, shift, no_sign_change0) {
-  # Hard shifted/no-sign-change cases benefit much more from contour resolution
-  # than ordinary curves, so use a higher internal floor there.
+  # hard shifted/no-sign-change cases benefit much more from contour resolution
+  # than ordinary curves, so use a higher internal floor there
   if (shift != 0 && isTRUE(no_sign_change0)) {
     return(list(nx = max(as.integer(nx), 401L), ny = max(as.integer(ny), 401L)))
   }
@@ -459,9 +459,9 @@ effective_variety_grid <- function(nx, ny, shift, no_sign_change0) {
 }
 
 snap_shifted_contours_to_variety <- function(df, poly) {
-  # Project contour points back onto poly = 0. This improves ordinary contours
-  # and is also the main repair for shifted no-sign-change cases that only
-  # expose a nearby level set.
+  # project contour points back onto poly = 0, improving ordinary contours
+  # and repairing shifted no-sign-change cases that only
+  # expose a nearby level set
   if (nrow(df) == 0) return(df)
   if (!all(c("x", "y") %in% names(df))) return(df)
 
@@ -478,8 +478,8 @@ snap_shifted_contours_to_variety <- function(df, poly) {
     dseg <- dseg[is.finite(dseg) & dseg > 0]
     base_step <- if (length(dseg) > 0) stats::median(dseg) else 0.05
     if (!is.finite(base_step) || base_step <= 0) base_step <- 0.05
-    # Repeated factors are usually underpowered near singularities; allow larger
-    # but still bounded steps.
+    # repeated factors are usually underpowered near singularities; allow larger
+    # but still bounded steps
     max_step <- 12 * base_step
     snap_gains <- c(0.5, 1, 2, 4)
 
@@ -556,7 +556,7 @@ snap_shifted_contours_to_variety <- function(df, poly) {
 
 split_large_projected_jumps <- function(df) {
   # projection can collapse different shifted components onto the same variety,
-  # creating jumps within a path. Split those jumps before plotting
+  # creating jumps within a path; split those jumps before plotting
   if (nrow(df) == 0 || !"group" %in% names(df)) return(df)
 
   groups <- split(df, df$group)
@@ -587,7 +587,7 @@ split_large_projected_jumps <- function(df) {
   out
 }
 
-## sign diagnostics for shifted contour guidance in geom_variety()
+# sign diagnostics for shifted contour guidance in geom_variety()
 
 has_strict_sign_change <- function(zvals) {
   # true only when the field takes both positive and negative values,

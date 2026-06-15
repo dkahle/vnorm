@@ -25,18 +25,22 @@
 #' \dontrun{
 #' library("mpoly")
 #'
-#' # Single polynomial (circle)
+#' # single polynomial (circle)
 #' p1 <- mp("x^2 + y^2 - 1")
 #' set.seed(1)
 #' rejection_sampler(100, p1, sd = 0.05, w = 1.5)
 #'
-#' # Uniform band proposal around the variety, returning a tibble
+#'
+#'
+#' # uniform band proposal around the variety, returning a tibble
 #' rejection_sampler(
 #'   100, p1, sd = 0.05, w = c(-1.5, 1.5),
 #'   dist = "unif", output = "tibble"
 #' )
 #'
-#' # Two-polynomial system (upper/lower acceptance geometry differs by `homo`)
+#'
+#'
+#' # two-polynomial system (upper/lower acceptance geometry differs by `homo`)
 #' p2 <- mp(c("x^2 + y^2 - 1", "y"))
 #' rejection_sampler(50, p2, sd = 0.05, w = 1.5, homo = TRUE)
 #' rejection_sampler(50, p2, sd = c(0.05, 0.05), w = 1.5, homo = FALSE)
@@ -96,7 +100,7 @@ rejection_sampler <- function(n,
   if (correct_p_coefficients) poly <- normalize_coefficients(poly)
 
   if (is.mpolyList(poly)) {
-    # mpolyList case: g(x) is vector-valued and uses Jacobian-based scaling
+    # mpolyList case: g(x) is vector-valued and uses jacobian-based scaling
     n_polys <- length(poly)
     pf <- as.function(poly, varorder = vars, silent = TRUE)
     dp <- dpfs <- vector(mode = "list", length = n_polys)
@@ -106,7 +110,7 @@ rejection_sampler <- function(n,
       dpfs[[i]] <- as.function(dp[[i]], varorder = vars, silent = TRUE)
     }
 
-    # assemble Jacobian row-by-row from per-polynomial gradients
+    # assemble jacobian row-by-row from per-polynomial gradients
     dpf <- function(x) {
       mat <- matrix(NA_real_, nrow = n_polys, ncol = n_vars)
       for (i in seq_len(n_polys)) mat[i, ] <- dpfs[[i]](x)

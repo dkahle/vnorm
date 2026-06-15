@@ -81,18 +81,22 @@ A matrix or tibble containing the accepted samples.
 if (FALSE) { # \dontrun{
 library("mpoly")
 
-# Single polynomial (circle)
+# single polynomial (circle)
 p1 <- mp("x^2 + y^2 - 1")
 set.seed(1)
 rejection_sampler(100, p1, sd = 0.05, w = 1.5)
 
-# Uniform band proposal around the variety, returning a tibble
+
+
+# uniform band proposal around the variety, returning a tibble
 rejection_sampler(
   100, p1, sd = 0.05, w = c(-1.5, 1.5),
   dist = "unif", output = "tibble"
 )
 
-# Two-polynomial system (upper/lower acceptance geometry differs by `homo`)
+
+
+# two-polynomial system (upper/lower acceptance geometry differs by `homo`)
 p2 <- mp(c("x^2 + y^2 - 1", "y"))
 rejection_sampler(50, p2, sd = 0.05, w = 1.5, homo = TRUE)
 rejection_sampler(50, p2, sd = c(0.05, 0.05), w = 1.5, homo = FALSE)

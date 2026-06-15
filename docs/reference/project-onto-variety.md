@@ -195,13 +195,13 @@ library("mpoly")
 #>     vars
 
 if (FALSE) { # \dontrun{
-## basic usage
+# basic usage
 x0 <- c(1, 1)
 p1 <- mp("x^2 + y^2 - 1")
 x1_proj <- project_onto_variety(x0, p1)
 x1_proj
 
-# Residual on the variety should be near zero
+# residual on the variety should be near zero
 as.function(p1)(x1_proj)
 
 df1 <- data.frame(
@@ -213,7 +213,9 @@ ggplot() +
   geom_segment(aes(x, y, xend = x_proj, yend = y_proj), data = df1) +
   coord_equal()
 
-## adaptive time stepping (default) versus fixed step size
+
+
+# adaptive time stepping (default) versus fixed step size
 x2_adapt <- project_onto_variety(x0, p1)
 x2_fixed <- project_onto_variety(x0, p1, adaptive = FALSE, dt = 0.01)
 x2_strict <- project_onto_variety(x0, p1, error_tol = 0.001)
@@ -224,10 +226,14 @@ rbind(
   adaptive_strict = x2_strict
 )
 
-# Optional: inspect adaptive step messages
+
+
+# optionally inspect adaptive step messages
 project_onto_variety(x0, p1, message = TRUE)
 
-## precomputing polynomial/gradient/Hessian functions
+
+
+# precomputing polynomial/gradient/hessian functions
 varorder <- c("x", "y")
 gfunc <- as.function(p1, varorder = varorder)
 dg <- stats::deriv(p1, var = varorder)
@@ -237,19 +243,25 @@ ddgfunc_list <- lapply(ddg, as.function, varorder = varorder, silent = TRUE)
 ddgfunc <- function(x) sapply(ddgfunc_list, function(f) f(x))
 project_onto_variety(x0, p1, gfunc = gfunc, dgfunc = dgfunc, ddgfunc = ddgfunc)
 
-## projecting multiple points (matrix or data frame input)
+
+
+# projecting multiple points (matrix or data frame input)
 x2 <- rbind(c(1, 1), c(-1, 0.3), c(0.2, -1.3))
 project_onto_variety(x2, p1)
 project_onto_variety(as.data.frame(x2), p1)
 
-## alternative projection methods
+
+
+# alternative projection methods
 project_onto_variety_lagrange(x0, p1)
 project_onto_variety_newton(x0, p1)
 project_onto_variety_gradient_descent(x0, p1, method = "line")
 project_onto_variety_gradient_descent(x0, p1, method = "optimal")
 project_onto_variety_gradient_descent(x0, p1, method = "fixed")
 
-## naive usages / method comparison on a small grid
+
+
+# naive usages / method comparison on a small grid
 # (gradient descent methods minimize g(x)^2 directly)
 library("dplyr")
 set.seed(1)
@@ -281,7 +293,9 @@ ggplot() +
   coord_equal() +
   facet_wrap(~ method)
 
-## changing adaptive control parameters
+
+
+# changing adaptive control parameters
 project_onto_variety(
   x0, p1,
   adaptive = TRUE,
@@ -292,7 +306,9 @@ project_onto_variety(
   message = TRUE
 )
 
-## more complex curve
+
+
+# more complex curve
 p_complex <- mp("(x^2 + y^2)^2 - 2 * (x^2 - y^2)")
 x_complex <- c(1, 1)
 x_complex_proj <- project_onto_variety(x_complex, p_complex)
@@ -305,7 +321,9 @@ ggplot() +
   geom_segment(aes(x, y, xend = x_proj, yend = y_proj), data = df_complex) +
   coord_equal()
 
-## projecting a sample from rvnorm (batch usage)
+
+
+# projecting a sample from rvnorm (batch usage)
 # cut down on draws for example runtime
 samps <- rvnorm(500, p1, sd = 0.05, output = "tibble")
 idx <- sample(seq_len(nrow(samps)), size = min(75, nrow(samps)))
@@ -320,7 +338,9 @@ ggplot(df_sub, aes(x, y)) +
   geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2), inherit.aes = FALSE) +
   coord_equal()
 
-## higher-dimensional example
+
+
+# higher-dimensional example
 x3 <- c(1, 1, 1)
 p2 <- mp("x^2 + y^2 + z^2 - 1")
 project_onto_variety(x3, p2)
