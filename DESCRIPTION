@@ -24,6 +24,7 @@ Imports:
     mpoly,
     cmdstanr,
     dplyr,
+    MASS,
     digest,
     scales
 Suggests:
