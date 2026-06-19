@@ -467,26 +467,9 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
   dispersion_label <- covariance$label
 
   g_fns <- suppressMessages(as.function(poly))
-  g_vals_mat <- t(apply(X, 1, g_fns))
+  g_vals_mat <- g_fns(X)
   if (m == 1) {
     g_vals_mat <- matrix(g_vals_mat, ncol = 1)
-  }
-
-  grad_fun <- vector("list", m)
-  for (i in seq_len(m)) {
-    grad_fun[[i]] <- deriv(poly[[i]], var = vars)
-    if (mean(is.constant(grad_fun[[i]])) == 1) {
-      const <- unname(unlist(grad_fun[[i]]))
-      grad_fun[[i]] <- local({
-        const_i <- const
-        force(const_i)
-        function(...) const_i
-      })
-    } else {
-      grad_fun[[i]] <- suppressMessages(
-        as.function(deriv(poly[[i]], var = vars), varorder = vars)
-      )
-    }
   }
 
   # cholesky factor for efficient Mahalanobis distance
@@ -498,51 +481,86 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
   )
   log_det_sigma <- 2 * sum(base::log(diag(L)))
 
+  if (!homo) {
+    solved <- backsolve(L, t(g_vals_mat), transpose = TRUE)
+    quad <- colSums(solved^2)
+    out_log <- -0.5 * (m * base::log(2 * base::pi) + log_det_sigma + quad)
+    return(if (log) out_log else base::exp(out_log))
+  }
+
+  grad_fun <- vector("list", m)
+  constant_jacobian <- TRUE
+  constant_J <- matrix(NA_real_, nrow = m, ncol = n)
+  for (i in seq_len(m)) {
+    grad_obj <- deriv(poly[[i]], var = vars)
+    if (mean(is.constant(grad_obj)) == 1) {
+      const <- unname(unlist(grad_obj))
+      constant_J[i, ] <- const
+      grad_fun[[i]] <- local({
+        const_i <- const
+        force(const_i)
+        function(...) const_i
+      })
+    } else {
+      constant_jacobian <- FALSE
+      grad_fun[[i]] <- suppressMessages(
+        as.function(grad_obj, varorder = vars)
+      )
+    }
+  }
+
+  if (constant_jacobian) {
+    Jp <- pdvnorm_pseudoinverse(constant_J)
+    v_mat <- t(Jp %*% t(g_vals_mat))
+    solved <- backsolve(L, t(v_mat), transpose = TRUE)
+    quad <- colSums(solved^2)
+    out_log <- -0.5 * (n * base::log(2 * base::pi) + log_det_sigma + quad)
+    return(if (log) out_log else base::exp(out_log))
+  }
+
   out_log <- numeric(nrow(X))
   for (i in seq_len(nrow(X))) {
     xi <- as.numeric(X[i, ])
     g_vals <- as.numeric(g_vals_mat[i, ])
 
-    if (homo) {
-      # jacobian of g(x): rows are equations, columns are variables
-      J <- matrix(NA_real_, nrow = m, ncol = n)
-      for (j in seq_len(m)) {
-        J[j, ] <- grad_fun[[j]](xi)
-      }
-
-      sv <- svd(J)
-      tol <- max(dim(J)) *
-        .Machine$double.eps *
-        ifelse(length(sv$d) > 0, sv$d[1], 0)
-      r <- sum(sv$d > tol)
-
-      if (n > m && r == m) {
-        # full row rank (underdetermined): right pseudoinverse
-        Jp <- t(J) %*% solve(J %*% t(J))
-      } else if (m > n && r == n) {
-        # full column rank (overdetermined): left pseudoinverse
-        Jp <- solve(t(J) %*% J) %*% t(J)
-      } else if (m == n && r == n) {
-        # square and full rank: exact inverse
-        Jp <- solve(J)
-      } else {
-        # rank-deficient fallback: SVD pseudoinverse with tolerance cutoff
-        dplus <- ifelse(sv$d > tol, 1 / sv$d, 0)
-        Jp <- sv$v %*% (dplus * t(sv$u))
-      }
-
-      v <- Jp %*% g_vals
-      q <- n
-    } else {
-      v <- g_vals
-      q <- m
+    # jacobian of g(x): rows are equations, columns are variables
+    J <- matrix(NA_real_, nrow = m, ncol = n)
+    for (j in seq_len(m)) {
+      J[j, ] <- grad_fun[[j]](xi)
     }
 
+    Jp <- pdvnorm_pseudoinverse(J)
+    v <- Jp %*% g_vals
     quad <- sum(backsolve(L, v, transpose = TRUE)^2)
-    out_log[i] <- -0.5 * (q * base::log(2 * base::pi) + log_det_sigma + quad)
+    out_log[i] <- -0.5 * (n * base::log(2 * base::pi) + log_det_sigma + quad)
   }
 
   if (log) out_log else base::exp(out_log)
+}
+
+pdvnorm_pseudoinverse <- function(J) {
+  m <- nrow(J)
+  n <- ncol(J)
+  sv <- svd(J)
+  tol <- max(dim(J)) *
+    .Machine$double.eps *
+    ifelse(length(sv$d) > 0, sv$d[1], 0)
+  r <- sum(sv$d > tol)
+
+  if (n > m && r == m) {
+    # full row rank (underdetermined): right pseudoinverse
+    t(J) %*% solve(J %*% t(J))
+  } else if (m > n && r == n) {
+    # full column rank (overdetermined): left pseudoinverse
+    solve(t(J) %*% J) %*% t(J)
+  } else if (m == n && r == n) {
+    # square and full rank: exact inverse
+    solve(J)
+  } else {
+    # rank-deficient fallback: SVD pseudoinverse with tolerance cutoff
+    dplus <- ifelse(sv$d > tol, 1 / sv$d, 0)
+    sv$v %*% (dplus * t(sv$u))
+  }
 }
 
 pdvnorm_is_scalar <- function(x) {

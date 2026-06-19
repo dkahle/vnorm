@@ -75,6 +75,59 @@ test_that("pdvnorm handles full non-diagonal Sigma", {
   expect_equal(pdvnorm(x, p, Sigma = Sigma, log = TRUE), expected_log)
 })
 
+test_that("pdvnorm heteroskedastic mpolyList fast path matches manual density", {
+  p <- mp(c("x^2 + y", "x - y^2"))
+  x <- rbind(c(0.5, -0.25), c(1, 2), c(-1, 0.75))
+  Sigma <- matrix(c(1, 0.2, 0.2, 2), 2, 2)
+  g_vals <- cbind(x[, 1]^2 + x[, 2], x[, 1] - x[, 2]^2)
+  log_det <- as.numeric(determinant(Sigma, logarithm = TRUE)$modulus)
+  expected_log <- apply(g_vals, 1, function(g) {
+    quad <- as.numeric(t(g) %*% solve(Sigma, g))
+    -0.5 * (2 * log(2 * pi) + log_det + quad)
+  })
+
+  expect_equal(
+    pdvnorm(x, p, Sigma = Sigma, homo = FALSE, log = TRUE),
+    expected_log
+  )
+  expect_equal(
+    pdvnorm(x, p, Sigma = Sigma, homo = FALSE),
+    exp(expected_log)
+  )
+})
+
+test_that("pdvnorm constant square homoskedastic fast path matches manual density", {
+  p <- mp(c("x", "y"))
+  x <- rbind(c(0.5, -0.25), c(1, 2), c(-1, 0.75))
+  Sigma <- matrix(c(2, 0.3, 0.3, 1), 2, 2)
+  log_det <- as.numeric(determinant(Sigma, logarithm = TRUE)$modulus)
+  expected_log <- apply(x, 1, function(v) {
+    quad <- as.numeric(t(v) %*% solve(Sigma, v))
+    -0.5 * (2 * log(2 * pi) + log_det + quad)
+  })
+
+  expect_equal(pdvnorm(x, p, Sigma = Sigma, log = TRUE), expected_log)
+  expect_equal(pdvnorm(x, p, Sigma = Sigma), exp(expected_log))
+})
+
+test_that("pdvnorm constant overdetermined fast path matches manual density", {
+  p <- mp(c("x", "y", "x + y"))
+  x <- rbind(c(0.5, -0.25), c(1, 2), c(-1, 0.75))
+  Sigma <- matrix(c(2, 0.3, 0.3, 1), 2, 2)
+  J <- rbind(c(1, 0), c(0, 1), c(1, 1))
+  Jp <- solve(t(J) %*% J) %*% t(J)
+  g_vals <- cbind(x[, 1], x[, 2], x[, 1] + x[, 2])
+  v_vals <- t(Jp %*% t(g_vals))
+  log_det <- as.numeric(determinant(Sigma, logarithm = TRUE)$modulus)
+  expected_log <- apply(v_vals, 1, function(v) {
+    quad <- as.numeric(t(v) %*% solve(Sigma, v))
+    -0.5 * (2 * log(2 * pi) + log_det + quad)
+  })
+
+  expect_equal(pdvnorm(x, p, Sigma = Sigma, log = TRUE), expected_log)
+  expect_equal(pdvnorm(x, p, Sigma = Sigma), exp(expected_log))
+})
+
 test_that("pdvnorm validates sd and Sigma shape and positivity", {
   p <- mp(c("x", "y"))
   x <- c(0, 0)
