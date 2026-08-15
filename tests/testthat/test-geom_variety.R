@@ -282,7 +282,7 @@ test_that("no-shift repeated crossing polynomial does not emit bogus point conto
   poly <- mp("y^2 - x^2")^2
   p <- ggplot() + geom_variety(poly = poly, xlim = c(-2, 2), ylim = c(-2, 2))
   built <- NULL
-  expect_message(built <- ggplot2::ggplot_build(p), "Zero contours were generated")
+  expect_message(built <- ggplot2::ggplot_build(p), "No zero contour found")
   dat <- built$data[[1]]
   expect_equal(nrow(dat), 0)
 })

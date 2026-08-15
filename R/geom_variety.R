@@ -265,7 +265,7 @@ StatVariety <- ggproto(
       nx_eff <- grid_eff$nx
       ny_eff <- grid_eff$ny
       if (shift == 0 && no_sign_change0) {
-        message("Zero contours were generated")
+        message_no_zero_contour()
         return(tibble::tibble())
       }
       df <- variety_paths_with_refinement(
@@ -302,7 +302,7 @@ StatVariety <- ggproto(
         no_sign_change0 <- !has_strict_sign_change(df0$z)
         grid_eff <- effective_variety_grid(nx_eff, ny_eff, shift, no_sign_change0)
         if (shift == 0 && no_sign_change0) {
-          message("Zero contours were generated")
+          message_no_zero_contour()
           return(tibble::tibble())
         }
         df <- variety_paths_with_refinement(

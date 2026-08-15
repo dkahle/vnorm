@@ -88,14 +88,32 @@
 #' \dontrun{
 #'
 #' library("ggplot2")
-#' library("ggfunction")
+#'
+#' # ggplot2-only helpers for visualizing pdvnorm in 1d and 2d
+#' pdf_curve <- function(poly, xlim, n = 501, ...) {
+#'   df <- data.frame(x = seq(xlim[1], xlim[2], length.out = n))
+#'   df$density <- pdvnorm(df$x, poly, ...)
+#'   geom_line(aes(x, density), data = df)
+#' }
+#'
+#' pdf_raster <- function(poly, xlim, ylim, n = 201, ...) {
+#'   grid <- expand.grid(
+#'     x = seq(xlim[1], xlim[2], length.out = n),
+#'     y = seq(ylim[1], ylim[2], length.out = n)
+#'   )
+#'   grid$density <- pdvnorm(as.matrix(grid), poly, ...)
+#'   list(
+#'     geom_raster(aes(x, y, fill = density), data = grid),
+#'     scale_fill_viridis_c(option = "magma", guide = "none")
+#'   )
+#' }
 #'
 #'
 #' # m = 1 polynomial in n = 1 variable, 0d variety at x = 0
 #' p <- mp("x")
 #'
 #' ggplot() +
-#'   geom_pdf(fun = pdvnorm, args = list(poly = p, sd = 1), xlim = c(-5, 5))
+#'   pdf_curve(p, xlim = c(-5, 5), sd = 1)
 #'
 #'
 #'
@@ -103,10 +121,7 @@
 #' p <- mp(c("x", "y"))
 #'
 #' ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = p, sd = 1),
-#'     xlim = c(-5, 5), ylim = c(-5, 5)
-#'   ) +
+#'   pdf_raster(p, xlim = c(-5, 5), ylim = c(-5, 5), sd = 1) +
 #'   coord_equal()
 #'
 #'
@@ -115,10 +130,7 @@
 #' p <- mp("x^2 + y^2 - 1")
 #'
 #' ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = p, sd = .1),
-#'     xlim = c(-1.5, 1.5), ylim = c(-1.5, 1.5)
-#'   ) +
+#'   pdf_raster(p, xlim = c(-1.5, 1.5), ylim = c(-1.5, 1.5), sd = .1) +
 #'   coord_equal()
 #'
 #'
@@ -127,17 +139,11 @@
 #' p <- mp("y^2 - x^2 (x + 1)")
 #'
 #' ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = p, sd = .1),
-#'     xlim = c(-1.5, 1.5), ylim = c(-1.5, 1.5)
-#'   ) +
+#'   pdf_raster(p, xlim = c(-1.5, 1.5), ylim = c(-1.5, 1.5), sd = .1) +
 #'   coord_equal()
 #'
 #' ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = p, sd = .1, homo = FALSE),
-#'     xlim = c(-1.5, 1.5), ylim = c(-1.5, 1.5)
-#'   ) +
+#'   pdf_raster(p, xlim = c(-1.5, 1.5), ylim = c(-1.5, 1.5), sd = .1, homo = FALSE) +
 #'   coord_equal()
 #'
 #'
@@ -147,31 +153,19 @@
 #' w <- 1.5
 #'
 #' p1 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp("x^2 + (4 y)^2 - 1"), sd = si),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp("x^2 + (4 y)^2 - 1"), c(-w, w), c(-w, w), sd = si) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w))
 #'
 #' p2 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp("-1 (x - y) (x + y)"), sd = si),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp("-1 (x - y) (x + y)"), c(-w, w), c(-w, w), sd = si) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w))
 #'
 #' p3 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp("(x^2 + y^2)^3 - 4 x^2 y^2"), sd = si),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp("(x^2 + y^2)^3 - 4 x^2 y^2"), c(-w, w), c(-w, w), sd = si) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w))
 #'
 #' p4 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp("(x^2 + y^2 - 1)^3 - x^2 y^3"), sd = si),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp("(x^2 + y^2 - 1)^3 - x^2 y^3"), c(-w, w), c(-w, w), sd = si) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w))
 #'
 #' library("patchwork")
@@ -187,34 +181,22 @@
 #' w <- 1.5
 #'
 #' p1 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp(c("x", "y")), Sigma = Sigma),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp(c("x", "y")), c(-w, w), c(-w, w), Sigma = Sigma) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
 #'   labs(title = latex2exp::TeX(r"(V(x, y))"))
 #'
 #' p2 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp(c("-1 (x - y)", "(x + y)")), Sigma = Sigma),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp(c("-1 (x - y)", "(x + y)")), c(-w, w), c(-w, w), Sigma = Sigma) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
 #'   labs(title = latex2exp::TeX(r"(V(y - x, y + x))"))
 #'
 #' p3 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp(c("(-1 (x - y))^2", "(x + y)^2")), Sigma = Sigma),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp(c("(-1 (x - y))^2", "(x + y)^2")), c(-w, w), c(-w, w), Sigma = Sigma) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
 #'   labs(title = latex2exp::TeX(r"(V((y - x)^2, (y + x)^2))"))
 #'
 #' p4 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp(c("x y^3 - x^3 y", "x^2 + y^2 - 1")), Sigma = Sigma),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp(c("x y^3 - x^3 y", "x^2 + y^2 - 1")), c(-w, w), c(-w, w), Sigma = Sigma) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
 #'   labs(title = latex2exp::TeX(r"(V(x y^3 - x^3 y, x^2 + y^2 - 1))"))
 #'
@@ -229,34 +211,22 @@
 #' w <- 1.5
 #'
 #' p1 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp(c("x", "y")), Sigma = Sigma),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp(c("x", "y")), c(-w, w), c(-w, w), Sigma = Sigma) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
 #'   labs(title = latex2exp::TeX(r"(V(x, y))"))
 #'
 #' p2 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp(c("-1 (x - y)", "(x + y)")), Sigma = Sigma),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp(c("-1 (x - y)", "(x + y)")), c(-w, w), c(-w, w), Sigma = Sigma) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
 #'   labs(title = latex2exp::TeX(r"(V(y - x, y + x))"))
 #'
 #' p3 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp(c("(-1 (x - y))^2", "(x + y)^2")), Sigma = Sigma),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp(c("(-1 (x - y))^2", "(x + y)^2")), c(-w, w), c(-w, w), Sigma = Sigma) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
 #'   labs(title = latex2exp::TeX(r"(V((y - x)^2, (y + x)^2))"))
 #'
 #' p4 <- ggplot() +
-#'   geom_pdf_2d(
-#'     fun = pdvnorm, args = list(poly = mp(c("x y^3 - x^3 y", "x^2 + y^2 - 1")), Sigma = Sigma),
-#'     xlim = c(-w, w), ylim = c(-w, w)
-#'   ) +
+#'   pdf_raster(mp(c("x y^3 - x^3 y", "x^2 + y^2 - 1")), c(-w, w), c(-w, w), Sigma = Sigma) +
 #'   coord_equal(xlim = c(-w, w), ylim = c(-w, w)) +
 #'   labs(title = latex2exp::TeX(r"(V(x y^3 - x^3 y, x^2 + y^2 - 1))"))
 #'

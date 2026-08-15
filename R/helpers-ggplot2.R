@@ -52,7 +52,8 @@ break_contour_ties <- function(z, x, y, breaks) {
   if (!any(ties)) return(z)
 
   # z has rows indexed by y and columns indexed by x
-  # irrational offset (sqrt(2)) ensures no two grid points get the same perturbation sign
+  # the irrational slope (sqrt(2)) makes the tie-break phase deterministic and
+  # nonzero at every grid point
   phase <- outer(y, x, function(yy, xx) xx + sqrt(2) * yy)
   sgn <- sign(phase)
   sgn[sgn == 0] <- 1
@@ -61,10 +62,14 @@ break_contour_ties <- function(z, x, y, breaks) {
   z
 }
 
+message_no_zero_contour <- function() {
+  message("No zero contour found in the plotting window.")
+}
+
 iso_to_path <- function(iso, group = 1) {
   # convert contourLines output into a path tibble for GeomPath
   if (length(iso) == 0) {
-    message("Zero contours were generated")
+    message_no_zero_contour()
     return(tibble0())
   }
 
