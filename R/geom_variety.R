@@ -11,6 +11,12 @@
 #' do not add their own linetype scale, which avoids replacing user scales in
 #' the common one-variety case.
 #'
+#' User-supplied `group`, `linetype`, and (with `vary_color = TRUE`) `colour`
+#' mappings are overridden by the layer's own `after_stat(polynomial)` wiring,
+#' which multi-polynomial rendering depends on. To style per-polynomial lines,
+#' use `vary_color` together with `scale_colour_*()` / `scale_linetype_*()`
+#' rather than `aes()`.
+#'
 #' @section Aesthetics: [geom_variety()] understands the following aesthetics.
 #'   `x` and `y` are computed by the stat, so users typically do not map them
 #'   manually:

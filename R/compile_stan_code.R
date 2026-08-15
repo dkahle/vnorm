@@ -85,7 +85,7 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
     )
     data_block <- paste0(data_block, ";")
     if (windowed) {
-      data_block <- paste0(data_block, "  real w;")
+      data_block <- paste0(data_block, "\n  real w;")
     }
     data_block <- paste0("data {\n  real<lower=0> si;\n", data_block, "\n}\n")
 

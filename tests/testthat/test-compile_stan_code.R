@@ -118,7 +118,8 @@ test_that("Compiles model with box constraints (windowed)", {
     c(
       "data {",
       "  real<lower=0> si;",
-      "  real bx2;   real by2;   real b1;  real w;",
+      "  real bx2;   real by2;   real b1;",
+      "  real w;",
       "}",
       "parameters {",
       "  real<lower=-w, upper=w> x;",

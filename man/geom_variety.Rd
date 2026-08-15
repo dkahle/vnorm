@@ -121,6 +121,12 @@ For an \code{mpolyList}, \code{geom_variety()} maps linetype to the polynomial l
 and adds a linetype scale for parsed legend labels. Single-polynomial layers
 do not add their own linetype scale, which avoids replacing user scales in
 the common one-variety case.
+
+User-supplied \code{group}, \code{linetype}, and (with \code{vary_color = TRUE}) \code{colour}
+mappings are overridden by the layer's own \code{after_stat(polynomial)} wiring,
+which multi-polynomial rendering depends on. To style per-polynomial lines,
+use \code{vary_color} together with \verb{scale_colour_*()} / \verb{scale_linetype_*()}
+rather than \code{aes()}.
 }
 \section{Aesthetics}{
  \code{\link[=geom_variety]{geom_variety()}} understands the following aesthetics.
