@@ -430,7 +430,7 @@ project_onto_variety <- function(
   resid <- gfunc(vn[1:n_vars])
   if (abs(resid) >= tol) {
     warning(
-      sprintf("Tolerance not met (residual = %f).", resid),
+      sprintf("Tolerance not met (residual = %.2e).", resid),
       call. = FALSE
     )
   }
@@ -443,7 +443,7 @@ project_onto_variety <- function(
 #' @rdname project-onto-variety
 #' @export
 project_onto_variety_lagrange <- function(
-    x0, poly, varorder = mpoly::vars(poly), method = "newton", maxit = 1e3,
+    x0, poly, varorder = sort(mpoly::vars(poly)), method = "newton", maxit = 1e3,
     tol = .Machine$double.eps^(1/2), tol_x = .Machine$double.eps^(1/2),
     message = FALSE, ...
   ) {
@@ -523,7 +523,7 @@ project_onto_variety_lagrange <- function(
   resid <- pf(xn)
   if (abs(resid) >= tol) {
     warning(
-      sprintf("Tolerance not met (residual = %f).", resid),
+      sprintf("Tolerance not met (residual = %.2e).", resid),
       call. = FALSE
     )
   }
@@ -541,7 +541,7 @@ project_onto_variety_lagrange <- function(
 #' @rdname project-onto-variety
 #' @export
 project_onto_variety_gradient_descent <- function(
-    x0, poly, varorder = mpoly::vars(poly), ga = .01, max_ga = .1,
+    x0, poly, varorder = sort(mpoly::vars(poly)), ga = .01, max_ga = .1,
     method = c("line", "optimal", "fixed"),
     tol = .Machine$double.eps^(1/2), tol_x = .Machine$double.eps^(1/2),
     maxit = 1e3, message = FALSE
@@ -672,7 +672,7 @@ project_onto_variety_gradient_descent <- function(
   resid <- pf(xn)
   if (abs(resid) >= tol) {
     warning(
-      sprintf("Tolerance not met (residual = %f).", resid),
+      sprintf("Tolerance not met (residual = %.2e).", resid),
       call. = FALSE
     )
   }
@@ -690,7 +690,7 @@ project_onto_variety_gradient_descent <- function(
 #' @rdname project-onto-variety
 #' @export
 project_onto_variety_newton <- function(
-    x0, poly, varorder = mpoly::vars(poly), ga = 1e-4, max_ga = 2,
+    x0, poly, varorder = sort(mpoly::vars(poly)), ga = 1e-4, max_ga = 2,
     method = c("line", "fixed"),
     tol = .Machine$double.eps^(1/2), tol_x = .Machine$double.eps^(1/2),
     maxit = 1e3, message = FALSE
@@ -761,7 +761,7 @@ project_onto_variety_newton <- function(
   resid <- pf(xn)
   if (abs(resid) >= tol) {
     warning(
-      sprintf("Tolerance not met (residual = %f).", resid),
+      sprintf("Tolerance not met (residual = %.2e).", resid),
       call. = FALSE
     )
   }

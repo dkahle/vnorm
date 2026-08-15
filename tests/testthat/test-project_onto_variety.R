@@ -237,3 +237,32 @@ test_that("project_onto_variety emits warning on convergence failure", {
     "Tolerance not met"
   )
 })
+
+test_that("all projection functions use sorted variable order by default", {
+  # vars() appearance order of this polynomial is (y, x); every projector
+  # must interpret x0 in sorted order (x, y)
+  p <- mp("y^2 - x^3 - x")
+  pf <- as.function(p, varorder = c("x", "y"), silent = TRUE)
+  x0 <- c(0.5, 0.9)
+
+  # defaults must agree with an explicit sorted varorder
+  for (f in list(
+    project_onto_variety,
+    project_onto_variety_lagrange,
+    project_onto_variety_newton,
+    project_onto_variety_gradient_descent
+  )) {
+    out <- suppressWarnings(f(x0, p))
+    out_explicit <- suppressWarnings(f(x0, p, varorder = c("x", "y")))
+    expect_equal(out, out_explicit)
+  }
+
+  # convergent methods land on the variety in sorted coordinates
+  for (f in list(
+    project_onto_variety,
+    project_onto_variety_lagrange,
+    project_onto_variety_gradient_descent
+  )) {
+    expect_lt(abs(pf(suppressWarnings(f(x0, p)))), 1e-4)
+  }
+})

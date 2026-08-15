@@ -30,7 +30,7 @@ project_onto_variety(
 project_onto_variety_lagrange(
   x0,
   poly,
-  varorder = mpoly::vars(poly),
+  varorder = sort(mpoly::vars(poly)),
   method = "newton",
   maxit = 1000,
   tol = .Machine$double.eps^(1/2),
@@ -42,7 +42,7 @@ project_onto_variety_lagrange(
 project_onto_variety_gradient_descent(
   x0,
   poly,
-  varorder = mpoly::vars(poly),
+  varorder = sort(mpoly::vars(poly)),
   ga = 0.01,
   max_ga = 0.1,
   method = c("line", "optimal", "fixed"),
@@ -55,7 +55,7 @@ project_onto_variety_gradient_descent(
 project_onto_variety_newton(
   x0,
   poly,
-  varorder = mpoly::vars(poly),
+  varorder = sort(mpoly::vars(poly)),
   ga = 1e-04,
   max_ga = 2,
   method = c("line", "fixed"),
