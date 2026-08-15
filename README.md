@@ -232,7 +232,7 @@ ggplot() +
   geom_variety(poly = p7^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
 #> All values are positive on the plotting grid; try shift = -0.000562449.
-#> Zero contours were generated
+#> No zero contour found in the plotting window.
 ```
 
 ``` r
