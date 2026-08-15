@@ -378,3 +378,14 @@ test_that("Sigma-matrix single-polynomial branch is term-order invariant", {
     pdvnorm(cbind(x = 0.5, y = 0.8), p_yx, Sigma = S)
   )
 })
+
+test_that("pdvnorm vanishes at critical points off the variety", {
+  # x = 0 is a critical point of x^2 - 1 with g(0) = -1: density tends to 0
+  p <- mp("x^2 - 1")
+  expect_equal(pdvnorm(0, p, sd = .1), 0)
+  expect_equal(pdvnorm(0, p, sd = .1, log = TRUE), -Inf)
+
+  # the origin is a singular point ON V(x y): density diverges
+  p_sing <- mp("x y")
+  expect_equal(pdvnorm(c(0, 0), p_sing, sd = .1), Inf)
+})

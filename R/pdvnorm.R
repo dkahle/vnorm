@@ -386,7 +386,9 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
         grad_g_val <- as.numeric(grad_g(row_vec))
         grad_g_norm <- sqrt(sum(grad_g_val^2))
         if (grad_g_norm == 0) {
-          return(Inf)
+          # at a critical point the normalized residual g/||grad g|| diverges
+          # unless the point is on the variety, where the density blows up
+          return(if (g_val == 0) Inf else -Inf)
         }
         normal_direction <- grad_g_val / grad_g_norm
         normal_var <- as.numeric(
@@ -427,7 +429,9 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
       if (homo) {
         grad_g_val <- sqrt(sum(grad_g(row_vec)^2))
         if (grad_g_val == 0) {
-          return(Inf)
+          # at a critical point the normalized residual g/||grad g|| diverges
+          # unless the point is on the variety, where the density blows up
+          return(if (g_val == 0) Inf else -Inf)
         }
         g_val <- g_val / grad_g_val
       }
