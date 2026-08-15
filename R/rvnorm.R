@@ -447,6 +447,9 @@ rvnorm <- function(
     )
   }
   n_vars <- length(mpoly::vars(poly))
+  if (n_vars == 0L) {
+    stop("`poly` must contain at least one variable.", call. = FALSE)
+  }
   w_supplied <- !missing(w)
   if (w_supplied) {
     w_info <- rvnorm_normalize_window(w, mpoly::vars(poly))
@@ -631,7 +634,10 @@ rvnorm <- function(
     df <- as.data.frame(samps$draws(format = "df", inc_warmup = inc_warmup))
     if (!inc_warmup) df <- tail(df, n)
     row.names(df) <- NULL
-    df <- cbind(df[, -1], df[, 1])
+    # move the log-density diagnostic column to the end, by name
+    if ("lp__" %in% names(df)) {
+      df <- df[, c(setdiff(names(df), "lp__"), "lp__"), drop = FALSE]
+    }
     if (output_needs_rewriting) {
       df <- rename_output_df(df, replacement_list = var_info)
     }

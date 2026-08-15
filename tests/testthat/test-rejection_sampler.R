@@ -264,3 +264,7 @@ test_that("rejection_sampler single-variable mpolyList", {
   expect_equal(nrow(samps), 6)
   expect_equal(ncol(samps), 1)
 })
+
+test_that("rejection_sampler rejects constant polynomials", {
+  expect_error(rejection_sampler(5, mp("3"), sd = .1), "at least one variable")
+})

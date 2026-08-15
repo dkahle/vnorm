@@ -1,3 +1,5 @@
+library("ggplot2")
+
 test_that("geom_variety works with mpoly objects", {
   poly <- mp("y - x")
   p <- ggplot() + geom_variety(poly = poly, xlim = c(-2, 2), ylim = c(-2, 2))
@@ -294,4 +296,8 @@ test_that("shift suggestion for repeated crossing polynomial is nonzero", {
   suggestion <- msgs[grepl("try shift =", msgs, fixed = TRUE)]
   expect_true(length(suggestion) >= 1)
   expect_false(any(grepl("try shift = 0\\.?$", suggestion)))
+})
+
+test_that("stat_variety errors clearly when poly is not supplied", {
+  expect_error(stat_variety(), "`poly` must be supplied")
 })

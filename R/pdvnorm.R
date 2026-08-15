@@ -277,6 +277,10 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
     )
   }
 
+  if (length(mpoly::vars(poly)) == 0L) {
+    stop("`poly` must contain at least one variable.", call. = FALSE)
+  }
+
   has_sd <- !missing(sd)
   legacy_sigma <- NULL
   legacy_sigma_supplied <- FALSE

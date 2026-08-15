@@ -389,3 +389,7 @@ test_that("pdvnorm vanishes at critical points off the variety", {
   p_sing <- mp("x y")
   expect_equal(pdvnorm(c(0, 0), p_sing, sd = .1), Inf)
 })
+
+test_that("pdvnorm rejects constant polynomials", {
+  expect_error(pdvnorm(1, mp("3"), sd = 1), "at least one variable")
+})

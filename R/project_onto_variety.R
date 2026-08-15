@@ -229,6 +229,9 @@ project_onto_variety <- function(
   t_end <- 0
   if (missing(x0)) stop("`x0` must be supplied.")
   if (missing(poly)) stop("`poly` must be supplied.")
+  if (length(mpoly::vars(poly)) == 0L) {
+    stop("`poly` must contain at least one variable.", call. = FALSE)
+  }
   if (!is.numeric(al) || length(al) < 2 || any(!is.finite(al[1:2]))) {
     stop("`al` must be a numeric vector with at least two finite entries.")
   }
@@ -448,6 +451,9 @@ project_onto_variety_lagrange <- function(
     message = FALSE, ...
   ) {
   # solve KKT stationarity system for closest-point projection
+  if (length(mpoly::vars(poly)) == 0L) {
+    stop("`poly` must contain at least one variable.", call. = FALSE)
+  }
 
   # vectorized convenience path for row-wise projection
   if (is.matrix(x0) || is.data.frame(x0)) {
@@ -547,6 +553,9 @@ project_onto_variety_gradient_descent <- function(
     maxit = 1e3, message = FALSE
 ) {
   # minimize g(x)^2 using gradient descent variants
+  if (length(mpoly::vars(poly)) == 0L) {
+    stop("`poly` must contain at least one variable.", call. = FALSE)
+  }
 
   # vectorized convenience path for row-wise projection
   if (is.matrix(x0) || is.data.frame(x0)) {
@@ -696,6 +705,9 @@ project_onto_variety_newton <- function(
     maxit = 1e3, message = FALSE
 ) {
   # minimize g(x)^2 with Newton updates and optional line search
+  if (length(mpoly::vars(poly)) == 0L) {
+    stop("`poly` must contain at least one variable.", call. = FALSE)
+  }
 
   # vectorized convenience path for row-wise projection
   if (is.matrix(x0) || is.data.frame(x0)) {

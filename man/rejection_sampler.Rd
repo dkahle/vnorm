@@ -80,4 +80,5 @@ p2 <- mp(c("x^2 + y^2 - 1", "y"))
 rejection_sampler(50, p2, sd = 0.05, w = 1.5, homo = TRUE)
 rejection_sampler(50, p2, sd = c(0.05, 0.05), w = 1.5, homo = FALSE)
 }
+
 }

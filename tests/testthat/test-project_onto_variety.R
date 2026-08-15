@@ -266,3 +266,19 @@ test_that("all projection functions use sorted variable order by default", {
     expect_lt(abs(pf(suppressWarnings(f(x0, p)))), 1e-4)
   }
 })
+
+test_that("projection functions reject constant polynomials", {
+  expect_error(project_onto_variety(c(1, 1), mp("3")), "at least one variable")
+  expect_error(
+    project_onto_variety_lagrange(c(1, 1), mp("3")),
+    "at least one variable"
+  )
+  expect_error(
+    project_onto_variety_gradient_descent(c(1, 1), mp("3")),
+    "at least one variable"
+  )
+  expect_error(
+    project_onto_variety_newton(c(1, 1), mp("3")),
+    "at least one variable"
+  )
+})

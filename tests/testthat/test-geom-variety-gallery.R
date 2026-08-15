@@ -1,3 +1,5 @@
+library("ggplot2")
+
 test_that("geom_variety gallery cases build for projection off and auto", {
   cases <- list(
     list(name = "circle", poly = mp("x^2 + y^2 - 1"), xlim = c(-2, 2), ylim = c(-2, 2), shift = 0),

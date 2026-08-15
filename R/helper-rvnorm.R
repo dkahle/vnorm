@@ -53,7 +53,7 @@ check_and_replace_vars <- function(p) {
   )
 
   if (num_vars > 3) {
-    stop("The polynomial has more than 3 indeterminates.")
+    stop("The polynomial has more than 3 indeterminates.", call. = FALSE)
   }
 
   expected_vars <- target_vars[[num_vars]]

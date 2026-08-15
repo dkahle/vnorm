@@ -202,6 +202,9 @@ stat_variety <- function(
     inherit.aes = TRUE
 ) {
   # thin wrapper that wires StatVariety into ggplot2::layer()
+  if (is.null(poly)) {
+    stop("`poly` must be supplied.", call. = FALSE)
+  }
   if (is.null(data)) data <- ensure_nonempty_data
   projection <- match.arg(projection)
 

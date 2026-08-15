@@ -47,7 +47,7 @@
 #' rejection_sampler(50, p2, sd = 0.05, w = 1.5, homo = TRUE)
 #' rejection_sampler(50, p2, sd = c(0.05, 0.05), w = 1.5, homo = FALSE)
 #' }
-
+#'
 #' @export
 rejection_sampler <- function(n,
                               poly,
@@ -71,7 +71,9 @@ rejection_sampler <- function(n,
   if (!(is.mpoly(poly) || is.mpolyList(poly))) {
     stop("`poly` should be a `mpoly` or `mpolyList` object.", call. = FALSE)
   }
-  if (missing(vars)) vars <- sort(mpoly::vars(poly))
+  if (length(mpoly::vars(poly)) == 0L) {
+    stop("`poly` must contain at least one variable.", call. = FALSE)
+  }
   if (!is.character(vars) || any(!nzchar(vars)) || anyDuplicated(vars)) {
     stop("`vars` must be a character vector of unique variable names.", call. = FALSE)
   }
@@ -138,7 +140,6 @@ rejection_sampler <- function(n,
             as.numeric(g %*% solve(tcrossprod(J), g))
           }
           log_ptilde <- function(x) -pbar(x) / (2 * sd^2)
-          ptilde <- function(x) exp(-pbar(x) / (2 * sd^2))
         } else {
           if (length(sd) != n_vars) {
             stop(
@@ -159,7 +160,6 @@ rejection_sampler <- function(n,
             as.numeric(crossprod(v))
           }
           log_ptilde <- function(x) -pbar(x) / 2
-          ptilde <- function(x) exp(-pbar(x) / 2)
         }
       } else {
         if (length(sd) == 1) {
@@ -168,7 +168,6 @@ rejection_sampler <- function(n,
             sum(g^2)
           }
           log_ptilde <- function(x) -pbar(x) / (2 * sd^2)
-          ptilde <- function(x) exp(-pbar(x) / (2 * sd^2))
         } else {
           if (length(sd) != n_polys) {
             stop(
@@ -182,7 +181,6 @@ rejection_sampler <- function(n,
             sum((g / sd)^2)
           }
           log_ptilde <- function(x) -pbar(x) / 2
-          ptilde <- function(x) exp(-pbar(x) / 2)
         }
       }
     } else if (is.matrix(sd)) {
@@ -212,7 +210,6 @@ rejection_sampler <- function(n,
       }
 
       log_ptilde <- function(x) -pbar(x) / 2
-      ptilde <- function(x) exp(-pbar(x) / 2)
     }
   } else if (is.mpoly(poly)) {
     # single-polynomial case
@@ -250,7 +247,6 @@ rejection_sampler <- function(n,
         -exp((2 * log(abs(pf(x)))) - log(2) - 2 * log(sd))
       }
     }
-    ptilde <- function(x) exp(-pbar(x)^2 / (2 * sd^2))
   } else {
     stop("`poly` should be a `mpoly` or `mpolyList` object.", call. = FALSE)
   }

@@ -979,3 +979,32 @@ test_that("rvnorm() rejection path rejects Sigma explicitly", {
     "supports `sd`, not `Sigma`"
   )
 })
+
+test_that("rvnorm() rejects constant polynomials", {
+  expect_error(rvnorm(10, mp("3"), sd = .1), "at least one variable")
+})
+
+test_that("tibble output moves lp__ to the last column by name", {
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
+  )
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "// stan code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df),
+    .package = "vnorm"
+  )
+
+  out <- rvnorm(
+    n = 2,
+    poly = mp("x^2 + y^2 - 1"),
+    sd = 0.05,
+    output = "tibble",
+    pre_compiled = FALSE,
+    chains = 1,
+    cores = 1
+  )
+
+  expect_equal(names(out), c("x", "y", "lp__"))
+})
