@@ -57,6 +57,17 @@
 #' @param show_messages If `TRUE`, Stan sampler messages are shown.
 #' @param seed Optional integer seed passed to CmdStan's sampler for
 #'   reproducibility. Note that R's `set.seed()` does not control Stan's RNG.
+#' @details Variable columns in `"simple"` and `"tibble"` output appear in
+#'   sorted variable order (`sort(mpoly::vars(poly))`), regardless of the
+#'   order in which variables appear in the polynomial's terms.
+#'
+#'   When the variety has several disconnected components, HMC chains cannot
+#'   cross the low-density regions between them, so the share of draws in
+#'   each component reflects how many chains initialized near it rather than
+#'   the components' relative mass. For such varieties, consider increasing
+#'   `chains`, or use `rejection = TRUE`, which samples components in
+#'   proportion to their mass.
+#'
 #' @name rvnorm
 #' @return Either (1) a data frame whose rows are the individual draws from the
 #'   distribution, (2) a [tbl_df-class] object with the draws along with
@@ -627,6 +638,8 @@ rvnorm <- function(
     if (output_needs_rewriting) {
       df <- rename_output_df(df, replacement_list = var_info)
     }
+    # match the package-wide sorted variable-order convention
+    df <- df[, sort(names(df)), drop = FALSE]
     return(df)
   }
 
@@ -641,6 +654,10 @@ rvnorm <- function(
     if (output_needs_rewriting) {
       df <- rename_output_df(df, replacement_list = var_info)
     }
+    # variable columns first in sorted order, then sampler diagnostics
+    diag_cols <- intersect(names(df), c(".chain", ".iteration", ".draw", "lp__"))
+    var_cols <- sort(setdiff(names(df), diag_cols))
+    df <- df[, c(var_cols, diag_cols), drop = FALSE]
     return(tibble::as_tibble(df))
   }
 

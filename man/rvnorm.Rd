@@ -121,6 +121,17 @@ others.
 Question: what is the relative likelihood of each component, or an equal unit
 of length, on different components? How does this generalize to more
 varieties of varying dimensions?
+
+Variable columns in \code{"simple"} and \code{"tibble"} output appear in
+sorted variable order (\code{sort(mpoly::vars(poly))}), regardless of the
+order in which variables appear in the polynomial's terms.
+
+When the variety has several disconnected components, HMC chains cannot
+cross the low-density regions between them, so the share of draws in
+each component reflects how many chains initialized near it rather than
+the components' relative mass. For such varieties, consider increasing
+\code{chains}, or use \code{rejection = TRUE}, which samples components in
+proportion to their mass.
 }
 \examples{
 

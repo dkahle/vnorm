@@ -1008,3 +1008,28 @@ test_that("tibble output moves lp__ to the last column by name", {
 
   expect_equal(names(out), c("x", "y", "lp__"))
 })
+
+test_that("Stan-path output columns follow sorted variable order", {
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), y = c(0.3, 0.4), x = c(0.1, 0.2), check.names = FALSE
+  )
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "// stan code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df),
+    .package = "vnorm"
+  )
+
+  out_simple <- rvnorm(
+    n = 2, poly = mp("y^2 - x"), sd = .1,
+    pre_compiled = FALSE, chains = 1, cores = 1
+  )
+  expect_equal(names(out_simple), c("x", "y"))
+
+  out_tbl <- rvnorm(
+    n = 2, poly = mp("y^2 - x"), sd = .1, output = "tibble",
+    pre_compiled = FALSE, chains = 1, cores = 1
+  )
+  expect_equal(names(out_tbl), c("x", "y", "lp__"))
+})
