@@ -7,16 +7,26 @@
 #'   the polynomial value, after optional homoskedastic gradient normalization.
 #'   A length-one `mpolyList` is treated identically to the same single `mpoly`.
 #'
+#'   Coordinates are interpreted in sorted variable order,
+#'   `sort(mpoly::vars(poly))`, regardless of the order in which variables
+#'   appear in the polynomial's terms. If `x` has names (vector) or column
+#'   names (matrix/data frame) covering all of the variables, entries are
+#'   matched by name instead.
+#'
 #' @param x A numeric vector of length equal to the number of variables in
 #'   `poly`, or a numeric matrix/data frame with that many columns (one row per
-#'   evaluation point).
+#'   evaluation point). Entries/columns are interpreted in sorted variable
+#'   order (`sort(mpoly::vars(poly))`); if `x` carries names covering all of
+#'   the variables, they are matched by name instead.
 #' @param poly An `mpoly` object (single polynomial) or an `mpolyList` object
 #'   (multiple polynomials).
 #' @param sd Scale parameter for the normal kernel. For polynomial systems,
 #'   a scalar is recycled across the relevant dimension, while a vector supplies
 #'   component-wise standard deviations.
 #' @param Sigma Full covariance matrix, scalar covariance, or a diagonal vector
-#'   of covariance terms. If supplied, `Sigma` replaces `sd`.
+#'   of covariance terms. If supplied, `Sigma` replaces `sd`. When
+#'   `homo = TRUE`, its rows/columns correspond to the variables in sorted
+#'   order (`sort(mpoly::vars(poly))`).
 #' @param homo Logical; default is `TRUE`. If `TRUE`, compute the homoskedastic
 #'   variety normal pseudo-density. If `FALSE`, compute the heteroskedastic
 #'   pseudo-density.
@@ -114,7 +124,7 @@
 #'
 #'
 #' # m = 1 polynomial in n = 2 variables, 1d variety
-#' p <- mp("-1 x^2 (x + 1) + y^2", varorder = c("x", "y"))
+#' p <- mp("y^2 - x^2 (x + 1)")
 #'
 #' ggplot() +
 #'   geom_pdf_2d(
@@ -337,7 +347,9 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
 
   if (is_uni) {
     # univariate/single-polynomial path
-    n <- length(mpoly::vars(poly))
+    # coordinates follow sorted variable order unless x carries variable names
+    vs <- sort(mpoly::vars(poly))
+    n <- length(vs)
     if (is.data.frame(x)) {
       x <- as.matrix(x)
     }
@@ -345,30 +357,36 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
       if (n == 1) {
         x <- matrix(x, ncol = 1)
       } else {
+        x <- pdvnorm_align_x(x, vs)
         if (length(x) != n) {
           stop("x must be length n or a matrix with n columns.")
         }
         x <- matrix(x, nrow = 1)
       }
-    } else if (!(is.matrix(x) && ncol(x) == n)) {
+    } else if (is.matrix(x)) {
+      x <- pdvnorm_align_x(x, vs)
+      if (ncol(x) != n) {
+        stop("x must be length n or a matrix with n columns.")
+      }
+    } else {
       stop("x must be length n or a matrix with n columns.")
     }
     if (!is.numeric(x) || any(!is.finite(x))) {
       stop("'x' must be finite numeric.")
     }
 
-    g_func <- suppressMessages(as.function(poly))
+    g_func <- as.function(poly, varorder = vs, silent = TRUE)
 
     if (homo) {
-      grad_g_obj <- mpoly::gradient(poly)
-      if (mean(is.constant(grad_g_obj)) == 1) {
+      grad_g_obj <- deriv(poly, var = vs)
+      if (all(is.constant(grad_g_obj))) {
         const <- unname(unlist(grad_g_obj))
 
         # force() ensures const is evaluated in this iteration, not lazily
         force(const)
         grad_g <- function(...) const
       } else {
-        grad_g <- suppressMessages(as.function(grad_g_obj))
+        grad_g <- as.function(grad_g_obj, varorder = vs, silent = TRUE)
       }
     }
 
@@ -449,12 +467,17 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
     return(if (log) log_density else base::exp(log_density))
   }
 
-  vars <- mpoly::vars(poly)
+  # multivariate/polynomial-list path
+  # coordinates follow sorted variable order unless x carries variable names
+  vars <- sort(mpoly::vars(poly))
   n <- length(vars)
   m <- length(poly)
 
-  # multivariate/polynomial-list path
-  X <- if (is.null(dim(x))) matrix(as.numeric(x), nrow = 1) else as.matrix(x)
+  X <- if (is.null(dim(x))) {
+    matrix(as.numeric(pdvnorm_align_x(x, vars)), nrow = 1)
+  } else {
+    pdvnorm_align_x(as.matrix(x), vars)
+  }
   if (!is.numeric(X) || any(!is.finite(X))) {
     stop("'x' must be finite numeric.")
   }
@@ -479,7 +502,7 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
   Sigma <- covariance$Sigma
   dispersion_label <- covariance$label
 
-  g_fns <- suppressMessages(as.function(poly))
+  g_fns <- as.function(poly, varorder = vars, silent = TRUE)
   g_vals_mat <- g_fns(X)
   if (m == 1) {
     g_vals_mat <- matrix(g_vals_mat, ncol = 1)
@@ -506,7 +529,7 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
   constant_J <- matrix(NA_real_, nrow = m, ncol = n)
   for (i in seq_len(m)) {
     grad_obj <- deriv(poly[[i]], var = vars)
-    if (mean(is.constant(grad_obj)) == 1) {
+    if (all(is.constant(grad_obj))) {
       const <- unname(unlist(grad_obj))
       constant_J[i, ] <- const
       grad_fun[[i]] <- local({
@@ -516,9 +539,7 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
       })
     } else {
       constant_jacobian <- FALSE
-      grad_fun[[i]] <- suppressMessages(
-        as.function(grad_obj, varorder = vars)
-      )
+      grad_fun[[i]] <- as.function(grad_obj, varorder = vars, silent = TRUE)
     }
   }
 
@@ -574,6 +595,35 @@ pdvnorm_pseudoinverse <- function(J) {
     dplus <- ifelse(sv$d > tol, 1 / sv$d, 0)
     sv$v %*% (dplus * t(sv$u))
   }
+}
+
+pdvnorm_align_x <- function(x, vs) {
+  # match x entries/columns to variables by name when variable names are
+  # present; names disjoint from the variables are treated as positional
+  nms <- if (is.null(dim(x))) names(x) else colnames(x)
+  if (is.null(nms) || length(intersect(nms, vs)) == 0L) {
+    return(x)
+  }
+  if (anyDuplicated(nms) > 0L) {
+    stop("`x` has duplicated column names.", call. = FALSE)
+  }
+  missing_vars <- setdiff(vs, nms)
+  if (length(missing_vars) > 0L) {
+    stop(
+      "`x` names match some but not all variables; missing: ",
+      paste0("`", missing_vars, "`", collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  extra <- setdiff(nms, vs)
+  if (length(extra) > 0L) {
+    stop(
+      "`x` has unexpected column(s): ",
+      paste0("`", extra, "`", collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  if (is.null(dim(x))) x[vs] else x[, vs, drop = FALSE]
 }
 
 pdvnorm_is_scalar <- function(x) {

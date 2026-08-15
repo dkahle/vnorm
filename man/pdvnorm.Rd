@@ -9,7 +9,9 @@ pdvnorm(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...)
 \arguments{
 \item{x}{A numeric vector of length equal to the number of variables in
 \code{poly}, or a numeric matrix/data frame with that many columns (one row per
-evaluation point).}
+evaluation point). Entries/columns are interpreted in sorted variable
+order (\code{sort(mpoly::vars(poly))}); if \code{x} carries names covering all of
+the variables, they are matched by name instead.}
 
 \item{poly}{An \code{mpoly} object (single polynomial) or an \code{mpolyList} object
 (multiple polynomials).}
@@ -25,7 +27,9 @@ pseudo-density.}
 \item{log}{Logical. If \code{TRUE}, returns the log of the density.}
 
 \item{Sigma}{Full covariance matrix, scalar covariance, or a diagonal vector
-of covariance terms. If supplied, \code{Sigma} replaces \code{sd}.}
+of covariance terms. If supplied, \code{Sigma} replaces \code{sd}. When
+\code{homo = TRUE}, its rows/columns correspond to the variables in sorted
+order (\code{sort(mpoly::vars(poly))}).}
 
 \item{...}{Deprecated. A named \code{sigma} argument is accepted for backward
 compatibility.}
@@ -42,34 +46,37 @@ heteroskedastic setting.
 A single \code{mpoly} is normalized as a one-dimensional normal kernel in
 the polynomial value, after optional homoskedastic gradient normalization.
 A length-one \code{mpolyList} is treated identically to the same single \code{mpoly}.
+
+Coordinates are interpreted in sorted variable order,
+\code{sort(mpoly::vars(poly))}, regardless of the order in which variables
+appear in the polynomial's terms. If \code{x} has names (vector) or column
+names (matrix/data frame) covering all of the variables, entries are
+matched by name instead.
 }
 \examples{
 
-# m = 1 polynomial in n = 1 variable, 0d variety
+# m = 1 polynomial in n = 1 variable, 0d variety at x = 0
 p <- mp("x")
-
 pdvnorm(c(-1, 0, 1), poly = p, sd = 1)
 pdvnorm(c(-1, 0, 1), poly = p, sd = 1, log = TRUE)
 
 
 
-# m = 2 polynomials in n = 2 variables (square system), 0d variety
+# m = 2 polynomials in n = 2 variables (square system), 0d variety at (0, 0)
 p <- mp(c("x", "y"))
-
 X <- rbind(c(-.25, 0), c(1, 2), c(-1, 3))
 pdvnorm(X, poly = p, sd = 1)
 
 
 
-# m = 1 polynomial in n = 2 variables, 1d variety
+# m = 1 polynomial in n = 2 variables, 1d variety at unit circle
 p <- mp("x^2 + y^2 - 1")
-
-X <- rbind(c(-.25, 0), c(1, 2), c(-1, 3))
+X <- rbind(c(-.25, 0), c(1, 2), c(-1, 3), sqrt(2)/2 * c(1,1))
 pdvnorm(X, poly = p, sd = 1)
 
 
 
-# different dispersion forms
+# different ways to specify dispersion
 p <- mp(c("x", "y"))
 X <- rbind(c(0, 0), c(1, 2), c(-1, 3))
 pdvnorm(X, p, sd = 1)
@@ -98,25 +105,10 @@ pdvnorm(X, p, sd = c(1, 2, 3), homo = FALSE)
 \dontrun{
 
 library("ggplot2")
-
-geom_pdf <- function(fun, args, xlim, n = 201, ...) {
-  xs <- seq(xlim[1], xlim[2], length.out = n)
-  df <- data.frame(x = xs, density = do.call(fun, c(list(xs), args)))
-  geom_line(aes(x, density), data = df, inherit.aes = FALSE, ...)
-}
-
-geom_pdf_2d <- function(fun, args, xlim, ylim, n = 151, ...) {
-  grid <- expand.grid(
-    x = seq(xlim[1], xlim[2], length.out = n),
-    y = seq(ylim[1], ylim[2], length.out = n)
-  )
-  grid$density <- do.call(fun, c(list(as.matrix(grid[, c("x", "y")])), args))
-  geom_raster(aes(x, y, fill = density), data = grid, inherit.aes = FALSE, ...)
-}
+library("ggfunction")
 
 
-
-# m = 1 polynomial in n = 1 variable, 0d variety
+# m = 1 polynomial in n = 1 variable, 0d variety at x = 0
 p <- mp("x")
 
 ggplot() +
@@ -124,7 +116,7 @@ ggplot() +
 
 
 
-# m = 2 polynomials in n = 2 variables (square system), 0d variety
+# m = 2 polynomials in n = 2 variables (square system), 0d variety at (0, 0)
 p <- mp(c("x", "y"))
 
 ggplot() +
@@ -136,7 +128,7 @@ ggplot() +
 
 
 
-# m = 1 polynomial in n = 2 variables, 1d variety
+# m = 1 polynomial in n = 2 variables, 1d variety at unit circle
 p <- mp("x^2 + y^2 - 1")
 
 ggplot() +
@@ -149,7 +141,7 @@ ggplot() +
 
 
 # m = 1 polynomial in n = 2 variables, 1d variety
-p <- mp("-1 x^2 (x + 1) + y^2", varorder = c("x", "y"))
+p <- mp("y^2 - x^2 (x + 1)")
 
 ggplot() +
   geom_pdf_2d(

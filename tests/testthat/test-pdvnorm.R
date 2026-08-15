@@ -267,3 +267,114 @@ test_that("pdvnorm accepts legacy sigma argument", {
     "Specify only one"
   )
 })
+
+test_that("pdvnorm is invariant to term order in the polynomial", {
+  p_xy <- mp("-1 x^2 (x + 1) + y^2")
+  p_yx <- mp("y^2 - x^2 (x + 1)")
+  x <- rbind(c(0.5, 0.8), c(-0.3, 0.2), c(1, 1))
+
+  expect_equal(pdvnorm(x, p_yx, sd = .1), pdvnorm(x, p_xy, sd = .1))
+  expect_equal(
+    pdvnorm(x, p_yx, sd = .1, homo = FALSE),
+    pdvnorm(x, p_xy, sd = .1, homo = FALSE)
+  )
+  expect_equal(
+    pdvnorm(x, p_yx, sd = .1, log = TRUE),
+    pdvnorm(x, p_xy, sd = .1, log = TRUE)
+  )
+  expect_equal(pdvnorm(x, p_yx, Sigma = .1^2), pdvnorm(x, p_xy, Sigma = .1^2))
+
+  # the previously-correct x-first evaluation must not change
+  expect_equal(
+    pdvnorm(c(0.5, 0.8), p_xy, sd = .1), 2.136453,
+    tolerance = 1e-6
+  )
+})
+
+test_that("constant-gradient fast path respects sorted variable order", {
+  # y appears first in the terms, so vars() order is (y, x); the gradient with
+  # respect to sorted order (x, y) is (-3, 2)
+  p <- mp("2 y - 3 x")
+  x <- rbind(c(0.5, 0.8), c(0, 0), c(-1, 2))
+  g <- 2 * x[, 2] - 3 * x[, 1]
+  expect_equal(pdvnorm(x, p, sd = .1), dnorm(g / sqrt(13), sd = .1))
+})
+
+test_that("gradient evaluation handles components that drop variables", {
+  # gradient of y^2 + x is (1, 2y): the x-component has no variables, which
+  # previously made the gradient closure mis-evaluate points
+  p <- mp("y^2 + x")
+  x <- rbind(c(0.25, 0.5), c(-1, 2))
+  g <- x[, 2]^2 + x[, 1]
+  ndg <- sqrt(1 + (2 * x[, 2])^2)
+  expect_equal(pdvnorm(x, p, sd = .2), dnorm(g / ndg, sd = .2))
+})
+
+test_that("pdvnorm mpolyList path is invariant to term order", {
+  ps_a <- mp(c("y x - 1", "x^2 + y^2 - 4"))
+  ps_b <- mp(c("x y - 1", "x^2 + y^2 - 4"))
+  x <- rbind(c(0.5, 2), c(1, 1))
+
+  expect_equal(pdvnorm(x, ps_a, sd = .1), pdvnorm(x, ps_b, sd = .1))
+  expect_equal(
+    pdvnorm(x, ps_a, sd = c(.1, .2), homo = FALSE),
+    pdvnorm(x, ps_b, sd = c(.1, .2), homo = FALSE)
+  )
+})
+
+test_that("pdvnorm matches x entries to variables by name", {
+  p <- mp("x^2 + y^2 - 1")
+
+  expect_equal(
+    pdvnorm(cbind(y = 0.8, x = 0.5), p, sd = .1),
+    pdvnorm(cbind(x = 0.5, y = 0.8), p, sd = .1)
+  )
+  expect_equal(
+    pdvnorm(cbind(y = 0.8, x = 0.5), p, sd = .1),
+    pdvnorm(c(0.5, 0.8), p, sd = .1)
+  )
+  expect_equal(
+    pdvnorm(c(y = 0.8, x = 0.5), p, sd = .1),
+    pdvnorm(c(0.5, 0.8), p, sd = .1)
+  )
+
+  # mpolyList path
+  ps <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
+  expect_equal(
+    pdvnorm(cbind(y = 0.3, x = 0.8), ps, sd = .1),
+    pdvnorm(c(0.8, 0.3), ps, sd = .1)
+  )
+
+  # names disjoint from the variables (e.g. data frame defaults) are positional
+  X <- rbind(c(1, 1), c(0, 3))
+  expect_equal(pdvnorm(as.data.frame(X), p, sd = 1), pdvnorm(X, p, sd = 1))
+})
+
+test_that("pdvnorm errors on partial or extra variable names", {
+  p <- mp("x^2 + y^2 - 1")
+  expect_error(pdvnorm(cbind(x = 0.5, z = 0.8), p, sd = .1), "`y`")
+  expect_error(pdvnorm(cbind(x = 0.5, y = 0.8, z = 1), p, sd = .1), "`z`")
+})
+
+test_that("pdvnorm density has the symmetry of the variety, not its reflection", {
+  # y^2 = x^2 (x + 1) is symmetric about the x-axis; the historical swapped
+  # evaluation was symmetric about the y-axis instead
+  p_yx <- mp("y^2 - x^2 (x + 1)")
+  pts <- rbind(c(0.5, 0.8), c(0.5, -0.8), c(-0.5, 0.8))
+  d <- pdvnorm(pts, p_yx, sd = .1)
+  expect_equal(d[1], d[2])
+  expect_false(isTRUE(all.equal(d[1], d[3])))
+})
+
+test_that("Sigma-matrix single-polynomial branch is term-order invariant", {
+  p_xy <- mp("-1 x^2 (x + 1) + y^2")
+  p_yx <- mp("y^2 - x^2 (x + 1)")
+  S <- matrix(c(.04, .01, .01, .09), nrow = 2)
+  x <- rbind(c(0.5, 0.8), c(-0.3, 0.2))
+
+  expect_equal(pdvnorm(x, p_yx, Sigma = S), pdvnorm(x, p_xy, Sigma = S))
+  expect_equal(
+    pdvnorm(cbind(y = 0.8, x = 0.5), p_yx, Sigma = S),
+    pdvnorm(cbind(x = 0.5, y = 0.8), p_yx, Sigma = S)
+  )
+})
