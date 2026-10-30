@@ -463,6 +463,8 @@ rvnorm <- function(
   if (n_vars == 0L) {
     stop("`poly` must contain at least one variable.", call. = FALSE)
   }
+  # output variable names, fixed before any x/y/z remapping below
+  poly_vars <- sort(mpoly::vars(poly))
   w_supplied <- !missing(w)
   if (w_supplied) {
     w_info <- rvnorm_normalize_window(w, mpoly::vars(poly))
@@ -656,10 +658,12 @@ rvnorm <- function(
     if (output_needs_rewriting) {
       df <- rename_output_df(df, replacement_list = var_info)
     }
-    # variable columns first in sorted order, then sampler diagnostics
+    # variable columns first in sorted order, then the model's other
+    # quantities (g, ndg, ...) in Stan's order, then sampler diagnostics
     diag_cols <- intersect(names(df), c(".chain", ".iteration", ".draw", "lp__"))
-    var_cols <- sort(setdiff(names(df), diag_cols))
-    df <- df[, c(var_cols, diag_cols), drop = FALSE]
+    var_cols <- intersect(poly_vars, names(df))
+    other_cols <- setdiff(names(df), c(var_cols, diag_cols))
+    df <- df[, c(var_cols, other_cols, diag_cols), drop = FALSE]
     return(tibble::as_tibble(df))
   }
 

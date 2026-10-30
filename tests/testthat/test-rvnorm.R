@@ -260,6 +260,39 @@ test_that("rvnorm() pre_compiled path works with mocked package model", {
   expect_true(is.list(capture$args$data))
 })
 
+test_that("rvnorm() tibble output puts variables before model quantities", {
+  # precompiled templates also return g, dgx, dgy, and ndg, which were sorted
+  # in among (for x/y, ahead of) the variable columns
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), g = c(0, 0),
+    dgx = c(1, 1), dgy = c(1, 1), ndg = c(1, 1),
+    .chain = 1L, .iteration = 1:2, .draw = 1:2, check.names = FALSE
+  )
+
+  testthat::local_mocked_bindings(
+    cmdstan_model = function(...) stop("cmdstan_model should not be called"),
+    make_coefficients_data = function(...) list(fake_coef = 1),
+    .package = "vnorm"
+  )
+  testthat::local_mocked_bindings(
+    stan_package_model = function(...) fake_cmdstan_model(draws_df),
+    .package = "instantiate"
+  )
+
+  model_cols <- c("g", "dgx", "dgy", "ndg", ".chain", ".iteration", ".draw", "lp__")
+  out_xy <- rvnorm(
+    n = 2, poly = mp("x^2 + y^2 - 1"), sd = 0.05, output = "tibble",
+    chains = 1, cores = 1
+  )
+  out_ab <- rvnorm(
+    n = 2, poly = mp("b^2 + a^2 - 1"), sd = 0.05, output = "tibble",
+    chains = 1, cores = 1
+  )
+
+  expect_named(out_xy, c("x", "y", model_cols))
+  expect_named(out_ab, c("a", "b", model_cols))
+})
+
 test_that("rvnorm() keeps scalar w on precompiled path", {
   draws_df <- data.frame(
     lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
