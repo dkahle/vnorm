@@ -34,9 +34,11 @@ rvnorm(
 )
 }
 \arguments{
-\item{n}{Number of draws desired from each chain after warmup.}
+\item{n}{Total number of post-warmup draws to return; they are split
+evenly across \code{chains}.}
 
-\item{poly}{An \code{mpoly} object.}
+\item{poly}{An \code{mpoly} or \code{mpolyList} object, or a character vector that
+\code{\link[mpoly:mp]{mpoly::mp()}} can parse.}
 
 \item{sd}{Scale parameter for the normal kernel. If \code{Sigma} is supplied,
 \code{sd} is replaced by \code{Sigma}. For single-polynomial sampling, \code{sd} must be
@@ -52,16 +54,16 @@ positive-definite covariance matrix matching the Stan target dimension.}
 
 \item{rejection}{If \code{TRUE}, rejection sampling is used.}
 
-\item{chains}{The number of chains to run for the random number generation,
-see \code{stan()}.}
+\item{chains}{The number of Markov chains to run.}
 
-\item{warmup}{Number of warmup iterations in \code{stan()}. By default this is
+\item{warmup}{Number of warmup iterations per chain. By default this is
 conservative and scales with the number of post-warmup draws per chain.}
 
 \item{inc_warmup}{If \code{TRUE}, the MCMC warmup steps are included in the
 output.}
 
-\item{thin}{\code{stan()} \code{thin} parameter.}
+\item{thin}{Thinning interval passed to CmdStan; with \code{thin = k}, about
+\code{n / k} draws are returned.}
 
 \item{adapt_delta, max_treedepth}{Conservative CmdStan sampling defaults.
 Pass smaller values only when you are comfortable with the resulting
@@ -69,8 +71,8 @@ diagnostics.}
 
 \item{verbose}{If \code{TRUE}, print additional progress messages.}
 
-\item{cores}{The number of CPU cores to distribute the chains across, see
-\code{stan()}.}
+\item{cores}{The number of chains to run in parallel (CmdStan's
+\code{parallel_chains}).}
 
 \item{homo}{If \code{TRUE}, sampling is from a homoskedastic variety normal
 distribution.}
@@ -84,8 +86,8 @@ variables.}
 \item{numerator, denominator}{Character scalars containing printed numerator
 and denominator forms.}
 
-\item{refresh}{The \code{refresh} argument of \code{stan()}, which governs how
-much information is provided to the user while sampling.}
+\item{refresh}{CmdStan's \code{refresh}, which governs how often sampling
+progress is reported.}
 
 \item{code_only}{If \code{TRUE}, only formulate and return Stan code.}
 
@@ -101,7 +103,8 @@ for polynomials with three indeterminates and three degrees. Defaults to
 \item{seed}{Optional integer seed passed to CmdStan's sampler for
 reproducibility. Note that R's \code{set.seed()} does not control Stan's RNG.}
 
-\item{...}{Additional parameters passed to \code{stan()}.}
+\item{...}{Additional arguments passed to the CmdStan model's \verb{$sample()}
+method.}
 }
 \value{
 Either (1) a data frame whose rows are the individual draws from the
@@ -109,9 +112,9 @@ distribution, (2) a \link[tibble:tbl_df-class]{tbl_df} object with the draws alo
 additional information, or (3) an object of class \code{CmdStanMCMC}.
 }
 \description{
-Unnormalized density evaluation and random generation for the variety normal
-distribution with mean defined by \code{poly} and scale \code{sd}. See Details for
-caveats.
+Random generation for the variety normal distribution with mean defined by
+\code{poly} and scale \code{sd}; see \code{\link[=pdvnorm]{pdvnorm()}} for density evaluation. See Details
+for caveats.
 }
 \details{
 If the variety you are interested in is connected, this strategy should work

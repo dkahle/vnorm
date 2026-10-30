@@ -1,8 +1,8 @@
 #' The Variety Normal Distribution
 #'
-#' Unnormalized density evaluation and random generation for the variety normal
-#' distribution with mean defined by `poly` and scale `sd`. See Details for
-#' caveats.
+#' Random generation for the variety normal distribution with mean defined by
+#' `poly` and scale `sd`; see [pdvnorm()] for density evaluation. See Details
+#' for caveats.
 #'
 #' If the variety you are interested in is connected, this strategy should work
 #' well out of the box. If it is not, you will likely need multiple chains, and
@@ -12,8 +12,10 @@
 #' of length, on different components? How does this generalize to more
 #' varieties of varying dimensions?
 #'
-#' @param n Number of draws desired from each chain after warmup.
-#' @param poly An `mpoly` object.
+#' @param n Total number of post-warmup draws to return; they are split
+#'   evenly across `chains`.
+#' @param poly An `mpoly` or `mpolyList` object, or a character vector that
+#'   [mpoly::mp()] can parse.
 #' @param sd Scale parameter for the normal kernel. If `Sigma` is supplied,
 #'   `sd` is replaced by `Sigma`. For single-polynomial sampling, `sd` must be
 #'   a positive scalar. For polynomial-list sampling, `sd` may be a positive
@@ -24,15 +26,15 @@
 #'   positive-definite covariance matrix matching the Stan target dimension.
 #' @param output One of `"simple"`, `"tibble"`, or `"stanfit"`.
 #' @param rejection If `TRUE`, rejection sampling is used.
-#' @param chains The number of chains to run for the random number generation,
-#'   see `stan()`.
-#' @param cores The number of CPU cores to distribute the chains across, see
-#'   `stan()`.
-#' @param warmup Number of warmup iterations in `stan()`. By default this is
+#' @param chains The number of Markov chains to run.
+#' @param cores The number of chains to run in parallel (CmdStan's
+#'   `parallel_chains`).
+#' @param warmup Number of warmup iterations per chain. By default this is
 #'   conservative and scales with the number of post-warmup draws per chain.
 #' @param inc_warmup If `TRUE`, the MCMC warmup steps are included in the
 #'   output.
-#' @param thin `stan()` `thin` parameter.
+#' @param thin Thinning interval passed to CmdStan; with `thin = k`, about
+#'   `n / k` draws are returned.
 #' @param adapt_delta,max_treedepth Conservative CmdStan sampling defaults.
 #'   Pass smaller values only when you are comfortable with the resulting
 #'   diagnostics.
@@ -45,13 +47,14 @@
 #' @param w A named list of box constraints for vectors to be passed to Stan,
 #'   see examples. If a single number, a box window `(-w, w)` is applied to all
 #'   variables.
-#' @param refresh The `refresh` argument of `stan()`, which governs how
-#'   much information is provided to the user while sampling.
+#' @param refresh CmdStan's `refresh`, which governs how often sampling
+#'   progress is reported.
 #' @param pre_compiled Whether to use precompiled Stan models. Available
 #'   for polynomials with three indeterminates and three degrees. Defaults to
 #'   `TRUE`.
 #' @param code_only If `TRUE`, only formulate and return Stan code.
-#' @param ... Additional parameters passed to `stan()`.
+#' @param ... Additional arguments passed to the CmdStan model's `$sample()`
+#'   method.
 #' @param user_compiled If `TRUE`, use a user-compiled Stan program produced by
 #'   [compile_stan_code()]. Defaults to `FALSE`.
 #' @param show_messages If `TRUE`, Stan sampler messages are shown.

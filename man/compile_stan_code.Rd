@@ -22,14 +22,18 @@ installation. Defaults to \code{FALSE}.}
 constraint) parameter \code{w} in its data block. Defaults to \code{FALSE}.}
 
 \item{homo}{If \code{TRUE}, sampling is done from a homoskedastic variety
-normal distribution. Defaults to \code{TRUE}.
-
-The compiled model metadata is stored in an internal package cache used by
-\code{\link[=rvnorm]{rvnorm()}} with \code{user_compiled = TRUE}.}
+normal distribution. Defaults to \code{TRUE}.}
+}
+\value{
+The compiled \code{CmdStanModel}.
 }
 \description{
 Compile and cache a Stan model template for a polynomial shape so repeated
 calls to \code{\link[=rvnorm]{rvnorm()}} can reuse the compiled binary.
+}
+\details{
+The compiled model metadata is stored in an internal package cache
+used by \code{\link[=rvnorm]{rvnorm()}} with \code{user_compiled = TRUE}.
 }
 \examples{
 

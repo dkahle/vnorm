@@ -11,9 +11,9 @@
 #'   constraint) parameter `w` in its data block. Defaults to `FALSE`.
 #' @param homo If `TRUE`, sampling is done from a homoskedastic variety
 #'   normal distribution. Defaults to `TRUE`.
-#'
-#' The compiled model metadata is stored in an internal package cache used by
-#' [rvnorm()] with `user_compiled = TRUE`.
+#' @details The compiled model metadata is stored in an internal package cache
+#'   used by [rvnorm()] with `user_compiled = TRUE`.
+#' @return The compiled `CmdStanModel`.
 #'
 #' @export
 #' @examples
