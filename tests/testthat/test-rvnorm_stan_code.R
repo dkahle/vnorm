@@ -84,6 +84,26 @@ test_that("create_stan_code heteroskedastic non-square system uses equation dime
   expect_false(grepl("matrix[3,2] J", code, fixed = TRUE))
 })
 
+test_that("create_stan_code orders mpolyList parameters and jacobian by sorted vars", {
+  # vars() appearance order of this system is (y, x); the parameter vector
+  # and jacobian columns must follow sorted order (x, y), as in pdvnorm(),
+  # so that a vector sd / Sigma under homo = TRUE refers to (x, y)
+  p_yx <- mp(c("y^2 + x^2 - 1", "y - x"))
+  p_xy <- mp(c("x^2 + y^2 - 1", "-1 x + y"))
+
+  code_yx <- create_stan_code(p_yx, sd = diag(c(1, 4)), n_eqs = 2L, homo = TRUE)
+  code_xy <- create_stan_code(p_xy, sd = diag(c(1, 4)), n_eqs = 2L, homo = TRUE)
+
+  params <- function(code) {
+    sub("(?s)^.*?\\nparameters \\{(.*?)\\}.*$", "\\1", code, perl = TRUE)
+  }
+  jacobian <- function(code) sub("(?s)^.*?J = (.*?);.*$", "\\1", code, perl = TRUE)
+
+  expect_match(code_yx, "real x;\\s*real y;")
+  expect_equal(params(code_yx), params(code_xy))
+  expect_equal(jacobian(code_yx), jacobian(code_xy))
+})
+
 test_that("create_stan_code w as named list for multivariate case", {
   p <- mp(c("x^2 + y^2 - 1", "y"))
   w <- list(x = c(-2, 2))

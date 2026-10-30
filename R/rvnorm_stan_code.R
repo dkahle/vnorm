@@ -63,7 +63,10 @@ model {{
     ")
 
   } else {
-    vars <- mpoly::vars(poly)
+    # sorted order fixes the parameter vector and Jacobian columns, so a
+    # vector sd / Sigma over variables (homo = TRUE) means what it does in
+    # pdvnorm() regardless of the order variables appear in the terms
+    vars <- sort(mpoly::vars(poly))
     n_vars <- length(vars)
     printed_polys <- mpolyList_to_stan(poly)
 
