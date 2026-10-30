@@ -412,3 +412,27 @@ test_that("pdvnorm evaluates polynomial coefficients at full precision", {
     tolerance = 1e-12
   )
 })
+
+test_that("pdvnorm mpolyList homo density is 0 off the variety where J loses rank", {
+  # J = diag(2x, 2y) is singular on the axes; the pseudoinverse dropped the
+  # residual component outside its column space, so the off-variety origin
+  # scored the maximal density, the same as the solution (1, 1)
+  p <- mp(c("x^2 - 1", "y^2 - 1"))
+  expect_equal(pdvnorm(c(0, 0), p, sd = 0.1), 0)
+  expect_equal(pdvnorm(c(0, 0.5), p, sd = 0.1, log = TRUE), -Inf)
+  expect_gt(pdvnorm(c(1, 1), p, sd = 0.1), 15)
+
+  # constant rank-deficient jacobians: an inconsistent system has an empty
+  # variety; a dependent but consistent one keeps the pseudoinverse density
+  expect_equal(
+    pdvnorm(rbind(c(0, 0), c(1, 2)), mp(c("x + y", "x + y - 1")), sd = 1),
+    c(0, 0)
+  )
+  expect_gt(pdvnorm(c(0.1, 0.2), mp(c("x + y", "2 x + 2 y")), sd = 1), 0)
+
+  # overdetermined systems keep the least-squares convention, even at a
+  # rank-deficient point (J = 0 at x = 0)
+  expect_true(all(
+    pdvnorm(cbind(x = c(0, 1)), mp(c("x^2 - 1", "x^2 - 4")), sd = 0.3) > 0
+  ))
+})

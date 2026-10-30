@@ -13,6 +13,13 @@
 #'   names (matrix/data frame) covering all of the variables, entries are
 #'   matched by name instead.
 #'
+#'   With `homo = TRUE`, the residual is normalized by the gradient (single
+#'   polynomial) or through the Jacobian pseudoinverse, `J^+ g` (polynomial
+#'   system; least squares when overdetermined). Where the gradient vanishes
+#'   off the variety, or, for square and underdetermined systems, where `J`
+#'   loses rank and `g` leaves its column space, the normalized residual
+#'   diverges and the density is 0.
+#'
 #' @param x A numeric vector of length equal to the number of variables in
 #'   `poly`, or a numeric matrix/data frame with that many columns (one row per
 #'   evaluation point). Entries/columns are interpreted in sorted variable
@@ -521,12 +528,20 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
     }
   }
 
+  # for m <= n, J has full row rank away from its singular locus, so g lies in
+  # its column space; where J loses rank and g leaves that space, J^+ g drops
+  # a residual that diverges nearby (as g / ||grad g|| does at an off-variety
+  # critical point of one polynomial), so the density is 0 there. m > n keeps
+  # the least-squares convention
   if (constant_jacobian) {
     Jp <- pdvnorm_pseudoinverse(constant_J)
     v_mat <- t(Jp %*% t(g_vals_mat))
     solved <- backsolve(L, t(v_mat), transpose = TRUE)
     quad <- colSums(solved^2)
     out_log <- -0.5 * (n * base::log(2 * base::pi) + log_det_sigma + quad)
+    if (m <= n && attr(Jp, "rank") < m) {
+      out_log[pdvnorm_outside_column_space(constant_J, g_vals_mat)] <- -Inf
+    }
     return(if (log) out_log else base::exp(out_log))
   }
 
@@ -542,6 +557,13 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
     }
 
     Jp <- pdvnorm_pseudoinverse(J)
+    if (
+      m <= n && attr(Jp, "rank") < m &&
+        pdvnorm_outside_column_space(J, matrix(g_vals, nrow = 1))
+    ) {
+      out_log[i] <- -Inf
+      next
+    }
     v <- Jp %*% g_vals
     quad <- sum(backsolve(L, v, transpose = TRUE)^2)
     out_log[i] <- -0.5 * (n * base::log(2 * base::pi) + log_det_sigma + quad)
@@ -559,7 +581,7 @@ pdvnorm_pseudoinverse <- function(J) {
     ifelse(length(sv$d) > 0, sv$d[1], 0)
   r <- sum(sv$d > tol)
 
-  if (n > m && r == m) {
+  Jp <- if (n > m && r == m) {
     # full row rank (underdetermined): right pseudoinverse
     t(J) %*% solve(J %*% t(J))
   } else if (m > n && r == n) {
@@ -573,6 +595,22 @@ pdvnorm_pseudoinverse <- function(J) {
     dplus <- ifelse(sv$d > tol, 1 / sv$d, 0)
     sv$v %*% (dplus * t(sv$u))
   }
+  # callers check rank deficiency without a second decomposition
+  attr(Jp, "rank") <- r
+  Jp
+}
+
+pdvnorm_outside_column_space <- function(J, G) {
+  # which rows of G (one residual vector g per point) have a component
+  # outside the column space of J, with pdvnorm_pseudoinverse()'s rank cutoff;
+  # projecting onto the retained left singular vectors keeps this stable
+  sv <- svd(J)
+  tol <- max(dim(J)) *
+    .Machine$double.eps *
+    ifelse(length(sv$d) > 0, sv$d[1], 0)
+  U <- sv$u[, sv$d > tol, drop = FALSE]
+  resid <- G - (G %*% U) %*% t(U)
+  sqrt(rowSums(resid^2)) > sqrt(.Machine$double.eps) * sqrt(rowSums(G^2))
 }
 
 pdvnorm_align_x <- function(x, vs) {

@@ -52,6 +52,13 @@ Coordinates are interpreted in sorted variable order,
 appear in the polynomial's terms. If \code{x} has names (vector) or column
 names (matrix/data frame) covering all of the variables, entries are
 matched by name instead.
+
+With \code{homo = TRUE}, the residual is normalized by the gradient (single
+polynomial) or through the Jacobian pseudoinverse, \code{J^+ g} (polynomial
+system; least squares when overdetermined). Where the gradient vanishes
+off the variety, or, for square and underdetermined systems, where \code{J}
+loses rank and \code{g} leaves its column space, the normalized residual
+diverges and the density is 0.
 }
 \examples{
 
