@@ -328,3 +328,21 @@ test_that("newton projection handles singular hessians of g^2", {
     c(2, 3, -1) - 8 / 6 * c(1, 2, -1)
   )
 })
+
+test_that("project_onto_variety runs no corrector steps when n_correct = 0", {
+  # 1:n_correct iterated over c(1, 0) when n_correct = 0
+  p <- mp("x^2 + y^2 - 1")
+  count_corrections <- function(n_correct) {
+    msgs <- testthat::capture_messages(suppressWarnings(project_onto_variety(
+      c(1, 1), p, n_correct = n_correct, adaptive = FALSE, dt = 0.5,
+      message = TRUE
+    )))
+    # predictor messages start with a coordinate, corrector messages with
+    # two spaces
+    sum(startsWith(msgs, "  "))
+  }
+
+  expect_equal(count_corrections(0), 0)
+  expect_equal(count_corrections(1), 2)
+  expect_equal(count_corrections(3), 6)
+})

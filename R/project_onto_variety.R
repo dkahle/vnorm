@@ -381,7 +381,7 @@ project_onto_variety <- function(
         vn <- v_heun
         t <- t - h
 
-        for (. in 1:n_correct) {
+        for (. in seq_len(n_correct)) {
           vn <- vn - solve(JHa(vn, t) + bias * diag(n_vars + 2), Ha(vn, t))
         }
 
@@ -412,7 +412,7 @@ project_onto_variety <- function(
       vn <- vn + solve(JHa(vn, t = ts[i - 1]), Ht(vn, t = ts[i - 1])) * h
       if (message) message(paste(round(vn, 5), collapse = " "))
 
-      for (. in 1:n_correct) {
+      for (. in seq_len(n_correct)) {
         vn <- vn - solve(
           JHa(vn, t = ts[i]) + bias * diag(n_vars + 2),
           Ha(vn, t = ts[i])
