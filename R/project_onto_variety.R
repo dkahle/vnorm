@@ -289,18 +289,10 @@ project_onto_variety <- function(
       )
     }
 
-    # polynomial as a function
-    g <- poly
-    gfunc <- as.function(g, varorder = varorder, silent = TRUE)
-
-    # jacobian
-    dg <- deriv(g, var = varorder)
-    dgfunc <- as.function(dg, varorder = varorder, silent = TRUE)
-
-    # hessian
-    ddg <- lapply(dg, deriv, var = varorder)
-    ddgfunc_list <- lapply(ddg, as.function, varorder = varorder, silent = TRUE)
-    ddgfunc <- function(x) sapply(ddgfunc_list, function(f) f(x))
+    # polynomial, jacobian, and hessian as functions of a point
+    gfunc <- as.function(poly, varorder = varorder, silent = TRUE)
+    dgfunc <- gradient_function(poly, varorder)
+    ddgfunc <- hessian_function(poly, varorder)
 
   }
 
@@ -578,18 +570,10 @@ project_onto_variety_gradient_descent <- function(
   # validate and dispatch descent strategy
   method <- match.arg(method)
 
-  # build objective, gradient, and hessian helpers for g(x)^2
+  # build objective and gradient helpers for g(x)^2
   pf  <- as.function(poly, varorder = varorder, silent = TRUE)
   p2f <- as.function(poly^2, varorder = varorder, silent = TRUE)
-  dp2 <- stats::deriv(poly^2, var = varorder)
-  dp2f <- as.function(dp2, varorder = varorder, silent = TRUE)
-  ddp2 <- lapply(dp2, function(.) stats::deriv(., var = varorder))
-  ddp2f <- function(v) {
-    sapply(
-      lapply(ddp2, as.function, silent = TRUE),
-      function(f) f(v)
-    )
-  }
+  dp2f <- gradient_function(poly^2, varorder)
 
 
   if (method == "optimal") {
@@ -729,15 +713,8 @@ project_onto_variety_newton <- function(
   # build objective, gradient, and hessian helpers for g(x)^2
   pf  <- as.function(poly, varorder = varorder, silent = TRUE)
   p2f <- as.function(poly^2, varorder = varorder, silent = TRUE)
-  dp2 <- stats::deriv(poly^2, var = varorder)
-  dp2f <- as.function(dp2, varorder = varorder, silent = TRUE)
-  ddp2 <- lapply(dp2, function(.) stats::deriv(., var = varorder))
-  ddp2f <- function(v) {
-    sapply(
-      lapply(ddp2, as.function, silent = TRUE),
-      function(f) f(v)
-    )
-  }
+  dp2f <- gradient_function(poly^2, varorder)
+  ddp2f <- hessian_function(poly^2, varorder)
 
   # iterative Newton updates
   xn_1 <- x0

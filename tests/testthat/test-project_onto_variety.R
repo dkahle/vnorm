@@ -261,6 +261,7 @@ test_that("all projection functions use sorted variable order by default", {
   for (f in list(
     project_onto_variety,
     project_onto_variety_lagrange,
+    project_onto_variety_newton,
     project_onto_variety_gradient_descent
   )) {
     expect_lt(abs(pf(suppressWarnings(f(x0, p)))), 1e-4)
@@ -281,4 +282,27 @@ test_that("projection functions reject constant polynomials", {
     project_onto_variety_newton(c(1, 1), mp("3")),
     "at least one variable"
   )
+})
+
+test_that("projection functions handle one-variable polynomials", {
+  p <- mp("x^2 - 2")
+  for (f in list(
+    project_onto_variety,
+    project_onto_variety_lagrange,
+    project_onto_variety_newton,
+    project_onto_variety_gradient_descent
+  )) {
+    expect_equal(suppressWarnings(f(3, p)), sqrt(2), tolerance = 1e-5)
+  }
+})
+
+test_that("newton projection lands on varieties with mixed-order hessians", {
+  # the hessian rows of g^2 for these have variables in different appearance
+  # orders (or are partly constant), which broke the hessian evaluation
+  for (ps in c("y^2 - x^3 - x", "x y - 1", "x^2 + y")) {
+    p <- mp(ps)
+    pf <- as.function(p, varorder = c("x", "y"), silent = TRUE)
+    x_newt <- suppressWarnings(project_onto_variety_newton(c(0.7, 1.3), p))
+    expect_lt(abs(pf(x_newt)), 1e-4)
+  }
 })

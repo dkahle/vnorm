@@ -139,3 +139,24 @@ test_that("generate_model_name is deterministic and differentiates structure", {
   name3 <- generate_model_name(p3, homo = TRUE, windowed = FALSE)
   expect_false(name1a == name3)
 })
+
+test_that("gradient and hessian functions follow varorder", {
+  # appearance order of every second-derivative row of this polynomial is
+  # (y, x), so building the hessian without varorder swaps coordinates
+  p <- mp("y^2 - x^3 - x")
+  expect_equal(gradient_function(p, c("x", "y"))(c(0.7, 1.3)), c(-3 * 0.49 - 1, 2.6))
+  expect_equal(
+    hessian_function(p, c("x", "y"))(c(0.7, 1.3)),
+    matrix(c(-4.2, 0, 0, 2), 2, 2)
+  )
+
+  # constant and zero entries
+  expect_equal(hessian_function(mp("x y"), c("x", "y"))(c(1, 2)), matrix(c(0, 1, 1, 0), 2, 2))
+  expect_equal(hessian_function(mp("x^2"), c("x", "y"))(c(3, 4)), matrix(c(2, 0, 0, 0), 2, 2))
+})
+
+test_that("gradient and hessian functions handle one-variable polynomials", {
+  expect_equal(gradient_function(mp("x - 1"), "x")(5), 1)
+  expect_equal(gradient_function(mp("x^3"), "x")(2), 12)
+  expect_equal(hessian_function(mp("x^3"), "x")(2), matrix(12, 1, 1))
+})

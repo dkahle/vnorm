@@ -80,6 +80,31 @@ get_listed_coefficients <- function(coefs) {
   as.list(coefs)
 }
 
+gradient_mpolylist <- function(poly, varorder) {
+  # partial derivatives in varorder order, always as an mpolyList: deriv()
+  # returns a bare mpoly for a single variable, and as.function() rejects a
+  # bare constant mpoly when given a varorder
+  dp <- deriv(poly, var = varorder)
+  if (is.mpoly(dp)) dp <- structure(list(dp), class = "mpolyList")
+  dp
+}
+
+gradient_function <- function(poly, varorder) {
+  # gradient of poly as a function of a point, entries in varorder order
+  as.function(gradient_mpolylist(poly, varorder), varorder = varorder, silent = TRUE)
+}
+
+hessian_function <- function(poly, varorder) {
+  # hessian of poly as a function of a point, rows/columns in varorder order
+  n <- length(varorder)
+  row_fns <- lapply(
+    gradient_mpolylist(poly, varorder),
+    gradient_function,
+    varorder = varorder
+  )
+  function(x) matrix(vapply(row_fns, function(f) f(x), numeric(n)), n, n)
+}
+
 mpoly_to_stan <- function(mpoly) {
   # print polynomial in Stan-compatible syntax and parseable legend labels
   result <- print(
