@@ -2,6 +2,11 @@
 # split out from rvnorm.R so coverage for rvnorm() can be assessed separately
 
 create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
+  # mpoly prints coefficients with getOption("digits") (7 by default), which
+  # would round the polynomial baked into the program; print at full precision
+  op <- options(digits = 15)
+  on.exit(options(op), add = TRUE)
+
   if (n_eqs == 1L) {
     if (!is.mpoly(poly)) poly <- mp(poly)
     if (missing(vars)) vars <- mpoly::vars(poly)
@@ -160,5 +165,14 @@ model {{
 }}
       ")
   }
-  stan_code
+  stan_real_literals(stan_code)
+}
+
+stan_real_literals <- function(code) {
+  # Stan integers are 32-bit, so integer-valued coefficients printed without a
+  # decimal point fail to compile past 2^31 - 1; write long ones as reals
+  gsub(
+    "(?<![[:alnum:]_.])([0-9]{10,})(?![[:alnum:]_.])", "\\1.0", code,
+    perl = TRUE
+  )
 }

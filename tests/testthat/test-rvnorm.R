@@ -103,6 +103,17 @@ model {
   expect_equal(stan_code, expected_result)
 })
 
+test_that("rvnorm(): generated code with large integer coefficients compiles", {
+  skip_if_no_cmdstan()
+  stan_code <- rvnorm(
+    10, mp("x^4 + y^4 - 3000000000"), sd = 0.1, code_only = TRUE
+  )
+  model <- cmdstanr::cmdstan_model(
+    cmdstanr::write_stan_file(stan_code), compile = FALSE
+  )
+  expect_true(model$check_syntax(quiet = TRUE))
+})
+
 test_that("rvnorm(): pre_compiled == TRUE works", {
   skip_if_no_cmdstan()
   poly <- mp("x^2 + y^2 - 1")

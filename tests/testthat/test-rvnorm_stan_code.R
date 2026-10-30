@@ -104,6 +104,35 @@ test_that("create_stan_code orders mpolyList parameters and jacobian by sorted v
   expect_equal(jacobian(code_yx), jacobian(code_xy))
 })
 
+test_that("create_stan_code prints coefficients at full precision", {
+  # mpoly prints with getOption("digits"); the generated program must not
+  # round the polynomial it samples from
+  digits_before <- getOption("digits")
+
+  code <- create_stan_code(
+    mp("x^4 + y^4 - 1.23456789012345"), sd = 0.1, n_eqs = 1L, homo = TRUE
+  )
+  code_list <- create_stan_code(
+    mp(c("x^2 + y^2 - 1.23456789012345", "x - 0.333333333333333 y")),
+    sd = 0.1, n_eqs = 2L, homo = TRUE
+  )
+
+  expect_match(code, "1.23456789012345", fixed = TRUE)
+  expect_match(code_list, "1.23456789012345", fixed = TRUE)
+  expect_match(code_list, "0.333333333333333", fixed = TRUE)
+  expect_identical(getOption("digits"), digits_before)
+})
+
+test_that("create_stan_code writes integer coefficients beyond Stan int as reals", {
+  code <- create_stan_code(
+    mp("x^4 + y^4 - 3000000000"), sd = 0.1, n_eqs = 1L, homo = TRUE
+  )
+  expect_match(code, "-3000000000.0;", fixed = TRUE)
+
+  # digits inside identifiers and short integers are left alone
+  expect_identical(stan_real_literals("b1x1234567890 + 2*x^2"), "b1x1234567890 + 2*x^2")
+})
+
 test_that("create_stan_code w as named list for multivariate case", {
   p <- mp(c("x^2 + y^2 - 1", "y"))
   w <- list(x = c(-2, 2))
