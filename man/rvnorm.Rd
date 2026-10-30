@@ -118,14 +118,6 @@ Random generation for the variety normal distribution with mean defined by
 for caveats.
 }
 \details{
-If the variety you are interested in is connected, this strategy should work
-well out of the box. If it is not, you will likely need multiple chains, and
-sampling may become biased toward one or more components while down-sampling
-others.
-Question: what is the relative likelihood of each component, or an equal unit
-of length, on different components? How does this generalize to more
-varieties of varying dimensions?
-
 Variable columns in \code{"simple"} and \code{"tibble"} output appear in
 sorted variable order (\code{sort(mpoly::vars(poly))}), regardless of the
 order in which variables appear in the polynomial's terms.

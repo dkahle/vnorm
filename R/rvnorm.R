@@ -4,14 +4,6 @@
 #' `poly` and scale `sd`; see [pdvnorm()] for density evaluation. See Details
 #' for caveats.
 #'
-#' If the variety you are interested in is connected, this strategy should work
-#' well out of the box. If it is not, you will likely need multiple chains, and
-#' sampling may become biased toward one or more components while down-sampling
-#' others.
-#' Question: what is the relative likelihood of each component, or an equal unit
-#' of length, on different components? How does this generalize to more
-#' varieties of varying dimensions?
-#'
 #' @param n Total number of post-warmup draws to return (after any thinning);
 #'   they are split evenly across `chains`.
 #' @param poly An `mpoly` or `mpolyList` object, or a character vector that
