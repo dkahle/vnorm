@@ -438,6 +438,8 @@ rvnorm <- function(
       homo = homo,
       message = verbose
     )
+    # rejection_sampler() returns a matrix; "simple" output is a data frame
+    if (output == "simple") sample <- as.data.frame(sample)
     return(sample)
   }
 

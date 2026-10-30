@@ -166,6 +166,22 @@ test_that("rvnorm() rejection path returns samples without Stan", {
   expect_true(all(c("x", "y") %in% names(out)))
 })
 
+test_that("rvnorm() rejection path returns a data frame for simple output", {
+  # matches the Stan path and the documented return value
+  set.seed(1)
+  out <- rvnorm(
+    n = 12,
+    poly = mp("x^2 + y^2 - 1"),
+    sd = 0.05,
+    rejection = TRUE,
+    w = 1.25
+  )
+
+  expect_s3_class(out, "data.frame", exact = TRUE)
+  expect_named(out, c("x", "y"))
+  expect_equal(nrow(out), 12)
+})
+
 test_that("rvnorm() rejection path validates sd shape", {
   expect_error(
     rvnorm(
