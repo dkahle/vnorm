@@ -157,3 +157,19 @@ test_that("variety_solve can average a subset of the variables", {
   expect_named(out, "x")
   expect_equal(unname(out), 0)
 })
+
+test_that("variety_solve maps precompiled x/y/z draws back to variable names", {
+  # rvnorm()'s precompiled path returns a fit whose single-polynomial
+  # variables are renamed to x/y/z
+  p <- mp("t^2 - 2 t + 1")
+  fake_df <- data.frame(x = c(1.01, 0.99), lp__ = c(0, 0))
+
+  testthat::local_mocked_bindings(
+    rvnorm = function(...) fake_cmdstan_fit(fake_df),
+    .package = "vnorm"
+  )
+
+  out <- variety_solve(p, n = 2, sig_digit = 2)
+  expect_named(out, "t")
+  expect_equal(unname(out), 1)
+})
