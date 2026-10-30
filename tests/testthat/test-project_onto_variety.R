@@ -296,6 +296,39 @@ test_that("projection functions handle one-variable polynomials", {
   }
 })
 
+test_that("batch projections return one row per point", {
+  # apply() simplifies one-coordinate results to a vector, which t() turned
+  # into a single row holding every point
+  p1 <- mp("x^2 - 2")
+  pts1 <- matrix(c(2, 3, 4), ncol = 1, dimnames = list(NULL, "x"))
+  p2 <- mp("x^2 + y^2 - 1")
+  pts2 <- rbind(c(1.2, 0.1), c(-1.3, 0.4), c(0.2, -1.4))
+
+  for (f in list(
+    project_onto_variety,
+    project_onto_variety_lagrange,
+    project_onto_variety_newton,
+    project_onto_variety_gradient_descent
+  )) {
+    mat_out <- suppressWarnings(f(pts1, p1))
+    expect_equal(dim(mat_out), c(3L, 1L))
+    expect_equal(colnames(mat_out), "x")
+    # each point lands on a root (gradient descent can step past x = sqrt(2))
+    expect_equal(abs(as.numeric(mat_out)), rep(sqrt(2), 3), tolerance = 1e-5)
+
+    df_out <- suppressWarnings(f(as.data.frame(pts1), p1))
+    expect_s3_class(df_out, "data.frame")
+    expect_named(df_out, "x")
+    expect_equal(df_out$x, as.numeric(mat_out))
+
+    out2 <- suppressWarnings(f(pts2, p2))
+    expect_equal(dim(out2), dim(pts2))
+    for (i in seq_len(nrow(pts2))) {
+      expect_equal(out2[i, ], suppressWarnings(f(pts2[i, ], p2)))
+    }
+  }
+})
+
 test_that("newton projection lands on varieties with mixed-order hessians", {
   # the hessian rows of g^2 for these have variables in different appearance
   # orders (or are partly constant), which broke the hessian evaluation

@@ -314,7 +314,7 @@ project_onto_variety <- function(
       bias = bias, adaptive = adaptive,
       dt_min = dt_min, dt_max = dt_max, error_tol = error_tol
     )
-    out <- t(out)
+    out <- projected_rows(out, x0_mat)
     if (is.data.frame(x0)) out <- as.data.frame(out)
     if (inherits(x0, "tbl_df")) class(out) <- c("tbl_df", "tbl", "data.frame")
     return(out)
@@ -455,7 +455,7 @@ project_onto_variety_lagrange <- function(
       tol = tol, tol_x = tol_x,
       message = message, ...
     )
-    out <- t(out)
+    out <- projected_rows(out, x0)
     if (is.data.frame(x0)) out <- as.data.frame(out)
     if (inherits(x0, "tbl_df")) class(out) <- c("tbl_df", "tbl", "data.frame")
     return(out)
@@ -561,7 +561,7 @@ project_onto_variety_gradient_descent <- function(
       tol = tol, tol_x = tol_x,
       maxit = maxit, message = message
     )
-    out <- t(out)
+    out <- projected_rows(out, x0)
     if (is.data.frame(x0)) out <- as.data.frame(out)
     if (inherits(x0, "tbl_df")) class(out) <- c("tbl_df", "tbl", "data.frame")
     return(out)
@@ -701,7 +701,7 @@ project_onto_variety_newton <- function(
       method = method, tol = tol, tol_x = tol_x,
       maxit = maxit, message = message
     )
-    out <- t(out)
+    out <- projected_rows(out, x0)
     if (is.data.frame(x0)) out <- as.data.frame(out)
     if (inherits(x0, "tbl_df")) class(out) <- c("tbl_df", "tbl", "data.frame")
     return(out)
@@ -762,4 +762,17 @@ project_onto_variety_newton <- function(
   }
 
   xn
+}
+
+
+
+
+projected_rows <- function(out, x0) {
+  # apply() returns one column per projected point, or a plain vector when
+  # points have a single coordinate, which t() would make a single row
+  x0 <- as.matrix(x0)
+  matrix(
+    out, nrow = nrow(x0), ncol = ncol(x0), byrow = TRUE,
+    dimnames = dimnames(x0)
+  )
 }
