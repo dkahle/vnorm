@@ -1005,6 +1005,39 @@ test_that("rvnorm() homo=FALSE through sampling path", {
   expect_equal(nrow(out), 2)
 })
 
+test_that("rvnorm() rejects dependent equations before building Stan models", {
+  # the homoskedastic programs solve with J, J*J', or J'*J, which are
+  # singular everywhere for dependent equations: no chain could start
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), z = c(0, 0),
+    check.names = FALSE
+  )
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df),
+    .package = "vnorm"
+  )
+
+  for (p in list(
+    mp(c("x + y + z", "(x + y + z)^2")),
+    mp(c("x + y", "2 x + 2 y")),
+    mp(c("x + y", "2 x + 2 y", "x + y + 1"))
+  )) {
+    expect_error(
+      rvnorm(2, p, sd = 0.1, chains = 1, cores = 1),
+      "loses rank everywhere"
+    )
+  }
+
+  # homo = FALSE never uses J
+  out <- rvnorm(
+    2, mp(c("x + y + z", "(x + y + z)^2")), sd = 0.1, homo = FALSE,
+    chains = 1, cores = 1
+  )
+  expect_equal(nrow(out), 2)
+})
+
 test_that("rvnorm() full non-diagonal Sigma passed to Stan data", {
   draws_df <- data.frame(
     lp__ = c(-1, -2), x = c(0.7, 0.8), y = c(0.7, 0.6), check.names = FALSE

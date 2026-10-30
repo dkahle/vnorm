@@ -128,6 +128,13 @@ each component reflects how many chains initialized near it rather than
 the components' relative mass. For such varieties, consider increasing
 \code{chains}, or use \code{rejection = TRUE}, which samples components in
 proportion to their mass.
+
+With \code{homo = TRUE}, the Stan programs normalize a polynomial system's
+residual through its Jacobian, which must have full rank away from the
+system's singular points, so systems with dependent equations are
+rejected; drop the redundant equations or use \code{homo = FALSE}. With
+\code{rejection = TRUE}, draws follow the density \code{\link[=pdvnorm]{pdvnorm()}} defines, and
+only systems where it is 0 everywhere off the variety are rejected.
 }
 \examples{
 

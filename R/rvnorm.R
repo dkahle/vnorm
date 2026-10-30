@@ -64,6 +64,13 @@
 #'   `chains`, or use `rejection = TRUE`, which samples components in
 #'   proportion to their mass.
 #'
+#'   With `homo = TRUE`, the Stan programs normalize a polynomial system's
+#'   residual through its Jacobian, which must have full rank away from the
+#'   system's singular points, so systems with dependent equations are
+#'   rejected; drop the redundant equations or use `homo = FALSE`. With
+#'   `rejection = TRUE`, draws follow the density [pdvnorm()] defines, and
+#'   only systems where it is 0 everywhere off the variety are rejected.
+#'
 #' @name rvnorm
 #' @return Either (1) a data frame whose rows are the individual draws from the
 #'   distribution, (2) a [tbl_df-class] object with the draws along with
@@ -516,6 +523,17 @@ rvnorm <- function(
       create_stan_code(poly, sigma_stan, n_eqs, homo = homo)
     }
     return(stan_code)
+  }
+
+  # the programs solve with J (J \ g, J*J', or J'*J), which fails everywhere
+  # when the equations are dependent
+  if (homo && n_eqs > 1L && !generic_jacobian_check(poly, poly_vars)$full_rank) {
+    stop(
+      "With `homo = TRUE`, the Jacobian of `poly` must have full rank away ",
+      "from its singular points, but it loses rank everywhere (the equations ",
+      "are dependent). Remove the dependent equations or use `homo = FALSE`.",
+      call. = FALSE
+    )
   }
 
   if (user_compiled) {
