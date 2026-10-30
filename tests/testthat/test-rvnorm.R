@@ -4,15 +4,6 @@ skip_if_no_cmdstan <- function() {
   if (is.null(ver) || identical(ver, "none")) skip("CmdStan is not available")
 }
 
-rvnorm_or_skip <- function(...) {
-  tryCatch(
-    rvnorm(...),
-    error = function(e) {
-      skip(paste("Skipping rvnorm sampling test:", conditionMessage(e)))
-    }
-  )
-}
-
 read_stan_data <- function(path) {
   jsonlite::read_json(path, simplifyVector = TRUE)
 }
@@ -46,11 +37,11 @@ fake_cmdstan_model <- function(draws_df, capture = NULL) {
 test_that("rvnorm() respects RNG seeds", {
   skip_if_no_cmdstan()
   set.seed(123)
-  samps1 <- rvnorm_or_skip(
+  samps1 <- rvnorm(
     250, mp("x^2 + y^2 -1"), sd = 0.1, chains = 1, cores = 1
   )
   set.seed(123)
-  samps2 <- rvnorm_or_skip(
+  samps2 <- rvnorm(
     250, mp("x^2 + y^2 -1"), sd = 0.1, chains = 1, cores = 1
   )
   expect_equal(samps1, samps2)
@@ -58,11 +49,11 @@ test_that("rvnorm() respects RNG seeds", {
 
 test_that("rvnorm() has stated output", {
   skip_if_no_cmdstan()
-  samps1 <- rvnorm_or_skip(
+  samps1 <- rvnorm(
     250, mp("x^2 + y^2 -1"), sd = 0.1, chains = 1, cores = 1
   )
   expect_true(is.data.frame(samps1))
-  samps2 <- rvnorm_or_skip(
+  samps2 <- rvnorm(
     250,
     mp("x^2 + y^2 -1"),
     sd = 0.1,
@@ -71,7 +62,7 @@ test_that("rvnorm() has stated output", {
     cores = 1
   )
   expect_true(tibble::is_tibble(samps2))
-  samps3 <- rvnorm_or_skip(
+  samps3 <- rvnorm(
     250,
     mp("x^2 + y^2 -1"),
     sd = 0.1,
@@ -127,7 +118,7 @@ test_that("rvnorm() generated code and pdvnorm() agree at full precision", {
   # lp__ of the generated program is normal_lpdf(0 | g/ndg, si), which is
   # exactly pdvnorm(log = TRUE) when both use the same (unrounded) polynomial
   p <- mp("x - 1.23456789012345")
-  samps <- rvnorm_or_skip(
+  samps <- rvnorm(
     200, p, sd = 1e-3, output = "tibble", pre_compiled = FALSE,
     chains = 1, cores = 1, seed = 1, sig_figs = 18
   )
@@ -138,7 +129,7 @@ test_that("rvnorm() generated code and pdvnorm() agree at full precision", {
 test_that("rvnorm(): pre_compiled == TRUE works", {
   skip_if_no_cmdstan()
   poly <- mp("x^2 + y^2 - 1")
-  result_precompiled <- rvnorm_or_skip(
+  result_precompiled <- rvnorm(
     n = 10,
     poly = poly,
     sd = 0.05,
@@ -157,7 +148,7 @@ test_that(
   {
   skip_if_no_cmdstan()
   poly <- mp("a^2 + b^2 - 1")
-  result <- rvnorm_or_skip(
+  result <- rvnorm(
     n = 10, poly = poly, sd = 0.05, chains = 1, cores = 1
   )
   expect_true(all(mpoly::vars(poly) %in% colnames(result)))
