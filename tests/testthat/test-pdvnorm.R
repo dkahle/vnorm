@@ -436,3 +436,16 @@ test_that("pdvnorm mpolyList homo density is 0 off the variety where J loses ran
     pdvnorm(cbind(x = c(0, 1)), mp(c("x^2 - 1", "x^2 - 4")), sd = 0.3) > 0
   ))
 })
+
+test_that("pdvnorm evaluates single points of one-variable systems", {
+  # mpoly returns a bare vector (not a 1 x m matrix) for one point of a
+  # one-variable system, which failed with "incorrect number of dimensions"
+  p <- mp(c("x^2 - 1", "x^2 - 4"))
+  both <- pdvnorm(cbind(x = c(0, 1)), p, sd = 0.3)
+  expect_equal(pdvnorm(cbind(x = 0), p, sd = 0.3), both[1])
+  expect_equal(pdvnorm(1, p, sd = 0.3), both[2])
+  expect_equal(
+    pdvnorm(1, p, sd = 0.3, homo = FALSE),
+    pdvnorm(cbind(x = c(0, 1)), p, sd = 0.3, homo = FALSE)[2]
+  )
+})

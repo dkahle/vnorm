@@ -488,10 +488,9 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
   dispersion_label <- covariance$label
 
   g_fns <- poly_function(poly, varorder = vars, silent = TRUE)
-  g_vals_mat <- g_fns(X)
-  if (m == 1) {
-    g_vals_mat <- matrix(g_vals_mat, ncol = 1)
-  }
+  # one row per point, one column per polynomial; mpoly returns a bare vector
+  # for a single point of a one-variable system
+  g_vals_mat <- matrix(g_fns(X), nrow = nrow(X), ncol = m)
 
   # cholesky factor for efficient Mahalanobis distance
   L <- tryCatch(
