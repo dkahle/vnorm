@@ -12,8 +12,8 @@
 #' of length, on different components? How does this generalize to more
 #' varieties of varying dimensions?
 #'
-#' @param n Total number of post-warmup draws to return; they are split
-#'   evenly across `chains`.
+#' @param n Total number of post-warmup draws to return (after any thinning);
+#'   they are split evenly across `chains`.
 #' @param poly An `mpoly` or `mpolyList` object, or a character vector that
 #'   [mpoly::mp()] can parse.
 #' @param sd Scale parameter for the normal kernel. If `Sigma` is supplied,
@@ -33,8 +33,8 @@
 #'   conservative and scales with the number of post-warmup draws per chain.
 #' @param inc_warmup If `TRUE`, the MCMC warmup steps are included in the
 #'   output.
-#' @param thin Thinning interval passed to CmdStan; with `thin = k`, about
-#'   `n / k` draws are returned.
+#' @param thin Thinning interval passed to CmdStan. Sampling runs `thin` times
+#'   as many iterations, so `n` draws are still returned.
 #' @param adapt_delta,max_treedepth Conservative CmdStan sampling defaults.
 #'   Pass smaller values only when you are comfortable with the resulting
 #'   diagnostics.
@@ -623,7 +623,8 @@ rvnorm <- function(
     data = stan_data,
     refresh = refresh,
     iter_warmup = warmup,
-    iter_sampling = ceiling(n / chains),
+    # thin = k keeps every k-th iteration, so run k times as many to return n
+    iter_sampling = ceiling(n * thin / chains),
     chains = chains,
     parallel_chains = cores,
     adapt_delta = adapt_delta,

@@ -816,6 +816,8 @@ test_that("rvnorm() thin parameter is forwarded to Stan sampler", {
     pre_compiled = TRUE, chains = 1, cores = 1, thin = 2
   )
   expect_equal(capture$args$thin, 2)
+  # n counts returned draws, so thinning by 2 doubles the iterations
+  expect_equal(capture$args$iter_sampling, 8)
 })
 
 test_that("rvnorm() extra ... args are forwarded to Stan sampler", {

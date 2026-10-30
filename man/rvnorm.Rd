@@ -34,8 +34,8 @@ rvnorm(
 )
 }
 \arguments{
-\item{n}{Total number of post-warmup draws to return; they are split
-evenly across \code{chains}.}
+\item{n}{Total number of post-warmup draws to return (after any thinning);
+they are split evenly across \code{chains}.}
 
 \item{poly}{An \code{mpoly} or \code{mpolyList} object, or a character vector that
 \code{\link[mpoly:mp]{mpoly::mp()}} can parse.}
@@ -62,8 +62,8 @@ conservative and scales with the number of post-warmup draws per chain.}
 \item{inc_warmup}{If \code{TRUE}, the MCMC warmup steps are included in the
 output.}
 
-\item{thin}{Thinning interval passed to CmdStan; with \code{thin = k}, about
-\code{n / k} draws are returned.}
+\item{thin}{Thinning interval passed to CmdStan. Sampling runs \code{thin} times
+as many iterations, so \code{n} draws are still returned.}
 
 \item{adapt_delta, max_treedepth}{Conservative CmdStan sampling defaults.
 Pass smaller values only when you are comfortable with the resulting
