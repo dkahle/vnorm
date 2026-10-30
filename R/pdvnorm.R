@@ -349,7 +349,7 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
       stop("'x' must be finite numeric.")
     }
 
-    g_func <- as.function(poly, varorder = vs, silent = TRUE)
+    g_func <- poly_function(poly, varorder = vs, silent = TRUE)
 
     if (homo) {
       grad_g_obj <- deriv(poly, var = vs)
@@ -360,7 +360,7 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
         force(const)
         grad_g <- function(...) const
       } else {
-        grad_g <- as.function(grad_g_obj, varorder = vs, silent = TRUE)
+        grad_g <- poly_function(grad_g_obj, varorder = vs, silent = TRUE)
       }
     }
 
@@ -480,7 +480,7 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
   Sigma <- covariance$Sigma
   dispersion_label <- covariance$label
 
-  g_fns <- as.function(poly, varorder = vars, silent = TRUE)
+  g_fns <- poly_function(poly, varorder = vars, silent = TRUE)
   g_vals_mat <- g_fns(X)
   if (m == 1) {
     g_vals_mat <- matrix(g_vals_mat, ncol = 1)
@@ -517,7 +517,7 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
       })
     } else {
       constant_jacobian <- FALSE
-      grad_fun[[i]] <- as.function(grad_obj, varorder = vars, silent = TRUE)
+      grad_fun[[i]] <- poly_function(grad_obj, varorder = vars, silent = TRUE)
     }
   }
 

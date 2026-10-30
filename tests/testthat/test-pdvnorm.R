@@ -393,3 +393,22 @@ test_that("pdvnorm vanishes at critical points off the variety", {
 test_that("pdvnorm rejects constant polynomials", {
   expect_error(pdvnorm(1, mp("3"), sd = 1), "at least one variable")
 })
+
+test_that("pdvnorm evaluates polynomial coefficients at full precision", {
+  # mpoly's as.function() prints coefficients with getOption("digits") (7),
+  # which evaluated x - 1.23456789012345 as x - 1.234568
+  g0 <- -1.23456789012345
+  expect_equal(
+    pdvnorm(0, mp("x - 1.23456789012345"), sd = 1, homo = FALSE, log = TRUE),
+    stats::dnorm(g0, log = TRUE),
+    tolerance = 1e-12
+  )
+  expect_equal(
+    pdvnorm(
+      c(0, 0), mp(c("x - 1.23456789012345", "y")),
+      sd = 1, homo = FALSE, log = TRUE
+    ),
+    sum(stats::dnorm(c(g0, 0), log = TRUE)),
+    tolerance = 1e-12
+  )
+})

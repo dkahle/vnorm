@@ -290,7 +290,7 @@ project_onto_variety <- function(
     }
 
     # polynomial, jacobian, and hessian as functions of a point
-    gfunc <- as.function(poly, varorder = varorder, silent = TRUE)
+    gfunc <- poly_function(poly, varorder = varorder, silent = TRUE)
     dgfunc <- gradient_function(poly, varorder)
     ddgfunc <- hessian_function(poly, varorder)
 
@@ -465,14 +465,14 @@ project_onto_variety_lagrange <- function(
   form <- paste0("(", varorder, " - ", x0, ")^2", collapse = " + ")
   L <- mp(form) + mp("la")*poly
   dL <- stats::deriv(L, var = c(varorder, "la"))
-  dLf <- as.function(dL, varorder = c(varorder, "la"), silent = TRUE)
+  dLf <- poly_function(dL, varorder = c(varorder, "la"), silent = TRUE)
 
   if (method == "newton") {
 
     ddL <- lapply(dL, stats::deriv, var = c(varorder, "la"))
     ddLf <- lapply(
       ddL,
-      as.function,
+      poly_function,
       varorder = c(varorder, "la"),
       silent = TRUE
     )
@@ -517,7 +517,7 @@ project_onto_variety_lagrange <- function(
 
   }
 
-  pf  <- as.function(poly, varorder = varorder, silent = TRUE)
+  pf  <- poly_function(poly, varorder = varorder, silent = TRUE)
   resid <- pf(xn)
   if (abs(resid) >= tol) {
     warning(
@@ -571,8 +571,8 @@ project_onto_variety_gradient_descent <- function(
   method <- match.arg(method)
 
   # build objective and gradient helpers for g(x)^2
-  pf  <- as.function(poly, varorder = varorder, silent = TRUE)
-  p2f <- as.function(poly^2, varorder = varorder, silent = TRUE)
+  pf  <- poly_function(poly, varorder = varorder, silent = TRUE)
+  p2f <- poly_function(poly^2, varorder = varorder, silent = TRUE)
   dp2f <- gradient_function(poly^2, varorder)
 
 
@@ -711,8 +711,8 @@ project_onto_variety_newton <- function(
   method <- match.arg(method)
 
   # build objective, gradient, and hessian helpers for g(x)^2
-  pf  <- as.function(poly, varorder = varorder, silent = TRUE)
-  p2f <- as.function(poly^2, varorder = varorder, silent = TRUE)
+  pf  <- poly_function(poly, varorder = varorder, silent = TRUE)
+  p2f <- poly_function(poly^2, varorder = varorder, silent = TRUE)
   dp2f <- gradient_function(poly^2, varorder)
   ddp2f <- hessian_function(poly^2, varorder)
 

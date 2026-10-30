@@ -80,6 +80,15 @@ get_listed_coefficients <- function(coefs) {
   as.list(coefs)
 }
 
+poly_function <- function(x, ...) {
+  # mpoly's as.function() parses the printed polynomial, whose coefficients
+  # follow getOption("digits") (7 by default); print at full precision so
+  # evaluation uses the actual coefficients, as the generated Stan code does
+  op <- options(digits = 15)
+  on.exit(options(op), add = TRUE)
+  as.function(x, ...)
+}
+
 gradient_mpolylist <- function(poly, varorder) {
   # partial derivatives in varorder order, always as an mpolyList: deriv()
   # returns a bare mpoly for a single variable, and as.function() rejects a
@@ -91,7 +100,7 @@ gradient_mpolylist <- function(poly, varorder) {
 
 gradient_function <- function(poly, varorder) {
   # gradient of poly as a function of a point, entries in varorder order
-  as.function(gradient_mpolylist(poly, varorder), varorder = varorder, silent = TRUE)
+  poly_function(gradient_mpolylist(poly, varorder), varorder = varorder, silent = TRUE)
 }
 
 hessian_function <- function(poly, varorder) {

@@ -177,3 +177,10 @@ test_that("gradient and hessian functions handle one-variable polynomials", {
   expect_equal(gradient_function(mp("x^3"), "x")(2), 12)
   expect_equal(hessian_function(mp("x^3"), "x")(2), matrix(12, 1, 1))
 })
+
+test_that("poly_function evaluates at full coefficient precision", {
+  digits_before <- getOption("digits")
+  f <- poly_function(mp("x - 1.23456789012345"), silent = TRUE)
+  expect_equal(f(0), -1.23456789012345, tolerance = 1e-14)
+  expect_identical(getOption("digits"), digits_before)
+})

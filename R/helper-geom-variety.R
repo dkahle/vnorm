@@ -5,7 +5,7 @@
 poly_to_df <- function(poly, xlim, ylim, nx, ny, shift = 0) {
   # evaluate polynomial on a regular x/y grid for contour extraction
   if (!is.mpoly(poly)) poly <- mp(poly)
-  f <- as.function(x = poly, varorder = c("x", "y"), silent = TRUE)
+  f <- poly_function(x = poly, varorder = c("x", "y"), silent = TRUE)
 
   df <- expand.grid(
     "x" = seq(xlim[1], xlim[2], length.out = nx),
@@ -215,7 +215,7 @@ close_singular_endpoint_gaps <- function(df, poly, tol) {
   if (length(clusters) == 0) return(df)
 
   gfunc <- tryCatch(
-    as.function(poly, varorder = c("x", "y"), silent = TRUE),
+    poly_function(poly, varorder = c("x", "y"), silent = TRUE),
     error = function(e) NULL
   )
   if (is.null(gfunc)) return(df)
@@ -327,7 +327,7 @@ should_project_contours <- function(df, poly, projection, shift, no_sign_change0
   if (shift != 0 || isTRUE(no_sign_change0)) return(TRUE)
 
   gfunc <- tryCatch(
-    as.function(poly, varorder = c("x", "y"), silent = TRUE),
+    poly_function(poly, varorder = c("x", "y"), silent = TRUE),
     error = function(e) NULL
   )
   if (is.null(gfunc)) return(FALSE)
@@ -467,9 +467,9 @@ snap_shifted_contours_to_variety <- function(df, poly) {
 
   proj <- tryCatch({
     varorder <- c("x", "y")
-    gfunc <- as.function(poly, varorder = varorder, silent = TRUE)
+    gfunc <- poly_function(poly, varorder = varorder, silent = TRUE)
     dg <- stats::deriv(poly, var = varorder)
-    dgfunc <- as.function(dg, varorder = varorder, silent = TRUE)
+    dgfunc <- poly_function(dg, varorder = varorder, silent = TRUE)
 
     x <- as.matrix(df[, c("x", "y"), drop = FALSE])
 

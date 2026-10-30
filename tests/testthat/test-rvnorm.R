@@ -114,6 +114,19 @@ test_that("rvnorm(): generated code with large integer coefficients compiles", {
   expect_true(model$check_syntax(quiet = TRUE))
 })
 
+test_that("rvnorm() generated code and pdvnorm() agree at full precision", {
+  skip_if_no_cmdstan()
+  # lp__ of the generated program is normal_lpdf(0 | g/ndg, si), which is
+  # exactly pdvnorm(log = TRUE) when both use the same (unrounded) polynomial
+  p <- mp("x - 1.23456789012345")
+  samps <- rvnorm_or_skip(
+    200, p, sd = 1e-3, output = "tibble", pre_compiled = FALSE,
+    chains = 1, cores = 1, seed = 1, sig_figs = 18
+  )
+  lp <- pdvnorm(samps$x, p, sd = 1e-3, log = TRUE)
+  expect_lt(max(abs(samps$lp__ - lp)), 1e-8)
+})
+
 test_that("rvnorm(): pre_compiled == TRUE works", {
   skip_if_no_cmdstan()
   poly <- mp("x^2 + y^2 - 1")
