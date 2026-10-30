@@ -318,3 +318,13 @@ test_that("gradient descent and newton stop on the residual tolerance", {
   expect_lt(abs(pf(x_gd)), sqrt(.Machine$double.eps))
   expect_lt(abs(pf(x_newt)), sqrt(.Machine$double.eps))
 })
+
+test_that("newton projection handles singular hessians of g^2", {
+  # for linear g the hessian of g^2 is 2 grad(g) grad(g)', which is singular;
+  # the minimum-norm newton step is then the orthogonal projection
+  expect_equal(project_onto_variety_newton(c(2, 3), mp("x + y - 1")), c(0, 1))
+  expect_equal(
+    project_onto_variety_newton(c(2, 3, -1), mp("x + 2 y - z - 1")),
+    c(2, 3, -1) - 8 / 6 * c(1, 2, -1)
+  )
+})

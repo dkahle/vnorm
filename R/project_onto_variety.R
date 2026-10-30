@@ -716,10 +716,16 @@ project_onto_variety_newton <- function(
   dp2f <- gradient_function(poly^2, varorder)
   ddp2f <- hessian_function(poly^2, varorder)
 
+  # the hessian of g^2 is singular where g = 0 has flat directions (for a
+  # linear g, everywhere), so take the minimum-norm newton step there
+  newton_direction <- function(v) {
+    as.numeric(pdvnorm_pseudoinverse(ddp2f(v)) %*% -dp2f(v))
+  }
+
   # iterative Newton updates
   xn_1 <- x0
 
-  direction <- solve(ddp2f(xn_1), -dp2f(xn_1))
+  direction <- newton_direction(xn_1)
   if (method == "line") {
     ga <- stats::optimize(
       function(.) p2f(xn_1 + . * direction),
@@ -733,7 +739,7 @@ project_onto_variety_newton <- function(
   count <- 0
   while (abs(pf(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
     xn_1 <- xn
-    direction <- solve(ddp2f(xn_1), -dp2f(xn_1))
+    direction <- newton_direction(xn_1)
     if (method == "line") {
       ga <- stats::optimize(
         function(.) p2f(xn_1 + . * direction),
