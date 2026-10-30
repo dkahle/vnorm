@@ -173,3 +173,36 @@ test_that("variety_solve maps precompiled x/y/z draws back to variable names", {
   expect_named(out, "t")
   expect_equal(unname(out), 1)
 })
+
+test_that("variety_solve reads variables named like template quantities", {
+  # the precompiled fit also holds the template's g, ndg, and dgx; a variable
+  # with one of those names must still be read from the sampled x column
+  template_df <- data.frame(
+    x = c(0.99, 1.01), g = c(-0.01, 0.01), ndg = c(2, 2), dgx = c(2, 2),
+    lp__ = c(0, 0)
+  )
+  testthat::local_mocked_bindings(
+    rvnorm = function(...) fake_cmdstan_fit(template_df),
+    .package = "vnorm"
+  )
+  for (v in c("g", "ndg", "dgx")) {
+    out <- variety_solve(mp(paste(v, "- 1")), n = 2, sig_digit = 2)
+    expect_named(out, v)
+    expect_equal(unname(out), 1)
+  }
+})
+
+test_that("variety_solve keeps generated-code draws under their own names", {
+  # generated Stan code samples the polynomial's variables directly
+  generated_df <- data.frame(
+    t = c(0.99, 1.01), g = c(-0.01, 0.01), ndg = c(1, 1), lp__ = c(0, 0)
+  )
+  testthat::local_mocked_bindings(
+    rvnorm = function(...) fake_cmdstan_fit(generated_df),
+    .package = "vnorm"
+  )
+
+  out <- variety_solve(mp("t - 1"), n = 2, sig_digit = 2)
+  expect_named(out, "t")
+  expect_equal(unname(out), 1)
+})

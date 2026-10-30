@@ -70,10 +70,15 @@ variety_solve <- function(polylist,
   )
 
   df <- as.data.frame(samps$draws(format = "df", inc_warmup = inc_warmup))
-  # rvnorm()'s precompiled single-polynomial path samples in x/y/z; map the
-  # draw columns back to the polynomial's own variable names
-  if (is.mpoly(polylist) && !all(mpoly::vars(polylist) %in% names(df))) {
-    df <- rename_output_df(df, check_and_replace_vars(polylist)$mapping)
+  # rvnorm()'s precompiled single-polynomial path samples in x/y/z, so take
+  # the coordinates from those columns under the polynomial's own variable
+  # names; a variable can share its name with another template quantity
+  # (g, ndg, dgx), and generated code never has x/y/z columns besides the
+  # variables themselves
+  var_map <- if (is.mpoly(polylist)) check_and_replace_vars(polylist)$mapping
+  if (length(var_map) > 0L && all(names(var_map) %in% names(df))) {
+    df <- df[, names(var_map), drop = FALSE]
+    names(df) <- unlist(var_map, use.names = FALSE)
   }
   missing_vars <- setdiff(vars, names(df))
   if (length(missing_vars) > 0L) {
