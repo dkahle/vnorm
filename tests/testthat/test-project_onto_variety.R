@@ -296,6 +296,14 @@ test_that("projection functions handle one-variable polynomials", {
   }
 })
 
+test_that("lagrange projection uses the starting point at full precision", {
+  # the Lagrangian was built by printing x0 into a formula, which rounds it
+  # to 15 significant digits (here by about 2e-5)
+  x0 <- c(123456789012.3456789, 123456789014.3456789)
+  x_proj <- project_onto_variety_lagrange(x0, mp("x - y"))
+  expect_lt(max(abs(x_proj - mean(x0))), 1e-6)
+})
+
 test_that("batch projections return one row per point", {
   # apply() simplifies one-coordinate results to a vector, which t() turned
   # into a single row holding every point

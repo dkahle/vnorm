@@ -461,9 +461,10 @@ project_onto_variety_lagrange <- function(
     return(out)
   }
 
-  # build Lagrangian and stationarity equations
-  form <- paste0("(", varorder, " - ", x0, ")^2", collapse = " + ")
-  L <- mp(form) + mp("la")*poly
+  # build Lagrangian and stationarity equations; arithmetic on x0 itself, as
+  # printing it into a formula would round it to 15 significant digits
+  L <- Reduce(`+`, Map(function(var, x) (mp(var) - x)^2, varorder, x0)) +
+    mp("la")*poly
   dL <- stats::deriv(L, var = c(varorder, "la"))
   dLf <- poly_function(dL, varorder = c(varorder, "la"))
 
