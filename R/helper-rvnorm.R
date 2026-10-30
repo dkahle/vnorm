@@ -42,6 +42,14 @@ get_coefficients_data <- function(poly) {
   data
 }
 
+write_stan_data <- function(data) {
+  # cmdstanr writes data with 15 significant digits, which rounds
+  # coefficients that need more; Stan reads 17 back exactly
+  path <- tempfile(pattern = "vnorm-data-", fileext = ".json")
+  jsonlite::write_json(data, path, auto_unbox = TRUE, digits = I(17), pretty = TRUE)
+  path
+}
+
 check_and_replace_vars <- function(p) {
   # map arbitrary variable names to x/y/z for precompiled Stan templates
   current_vars <- mpoly::vars(p)

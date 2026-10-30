@@ -615,7 +615,7 @@ rvnorm <- function(
   }
 
   sample_args <- list(
-    data = stan_data,
+    data = write_stan_data(stan_data),
     refresh = refresh,
     iter_warmup = warmup,
     # thin = k keeps every k-th iteration, so run k times as many to return n

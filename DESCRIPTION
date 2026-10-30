@@ -21,6 +21,7 @@ Imports:
     ggplot2,
     tibble,
     instantiate,
+    jsonlite,
     mpoly,
     cmdstanr,
     dplyr,

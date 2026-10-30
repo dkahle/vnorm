@@ -13,6 +13,10 @@ rvnorm_or_skip <- function(...) {
   )
 }
 
+read_stan_data <- function(path) {
+  jsonlite::read_json(path, simplifyVector = TRUE)
+}
+
 fake_cmdstan_fit <- function(draws_df) {
   structure(
     list(
@@ -289,7 +293,7 @@ test_that("rvnorm() pre_compiled path works with mocked package model", {
   expect_true(tibble::is_tibble(out))
   expect_equal(nrow(out), 2)
   expect_gte(ncol(out), 2)
-  expect_true(is.list(capture$args$data))
+  expect_equal(read_stan_data(capture$args$data), list(fake_coef = 1, si = 0.05))
 })
 
 test_that("rvnorm() tibble output puts variables before model quantities", {
@@ -325,6 +329,34 @@ test_that("rvnorm() tibble output puts variables before model quantities", {
   expect_named(out_ab, c("a", "b", model_cols))
 })
 
+test_that("write_stan_data keeps every significant digit", {
+  # cmdstanr's writer keeps 15 significant digits
+  data <- list(
+    b1 = -123456789012345.67, bx = 1 / 3,
+    si = matrix(c(1, 0.1, 0.1, 2), 2), w = 1.25
+  )
+  expect_identical(read_stan_data(write_stan_data(data)), data)
+})
+
+test_that("rvnorm() passes precompiled coefficients at full precision", {
+  draws_df <- data.frame(lp__ = c(-1, -2), x = c(0.1, 0.2), check.names = FALSE)
+  capture <- new.env(parent = emptyenv())
+  testthat::local_mocked_bindings(
+    cmdstan_model = function(...) stop("cmdstan_model should not be called"),
+    .package = "vnorm"
+  )
+  testthat::local_mocked_bindings(
+    stan_package_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "instantiate"
+  )
+
+  a <- 123456789012345.67
+  rvnorm(2, mp("x") - a, sd = 0.1, pre_compiled = TRUE, chains = 1, cores = 1)
+  stan_data <- read_stan_data(capture$args$data)
+  expect_identical(stan_data$b1, -a)
+  expect_equal(stan_data$bx, 1)
+})
+
 test_that("rvnorm() keeps scalar w on precompiled path", {
   draws_df <- data.frame(
     lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
@@ -358,7 +390,7 @@ test_that("rvnorm() keeps scalar w on precompiled path", {
 
   expect_true(instantiate_called$flag)
   expect_true(is.data.frame(out))
-  expect_equal(capture$args$data$w, 1.5)
+  expect_equal(read_stan_data(capture$args$data)$w, 1.5)
 })
 
 test_that("rvnorm() uses generated Stan for non-scalar w", {
@@ -403,7 +435,7 @@ test_that("rvnorm() uses generated Stan for non-scalar w", {
   expect_false(instantiate_called$flag)
   expect_true(is.data.frame(out))
   expect_equal(capture$w, list(x = c(-1.5, 1.5)))
-  expect_false("w" %in% names(capture$args$data))
+  expect_false("w" %in% names(read_stan_data(capture$args$data)))
 })
 
 test_that("rvnorm() falls back when pre-compiled model is unavailable", {
@@ -991,8 +1023,9 @@ test_that("rvnorm() full non-diagonal Sigma passed to Stan data", {
     n = 2, poly = mp(c("x^2 + y^2 - 1", "y")), Sigma = S, sd = 0.05,
     pre_compiled = TRUE, chains = 1, cores = 1
   )
-  expect_true(is.matrix(capture$args$data$si))
-  expect_equal(dim(capture$args$data$si), c(2, 2))
+  si <- read_stan_data(capture$args$data)$si
+  expect_true(is.matrix(si))
+  expect_equal(si, S)
 })
 
 test_that("rvnorm() n < chains edge case sets iter_sampling to 1", {
@@ -1033,8 +1066,9 @@ test_that("rvnorm() Sigma as diagonal vector is converted to matrix", {
     n = 2, poly = mp(c("x^2 + y^2 - 1", "y")), sd = 0.05, Sigma = c(0.5, 0.5),
     pre_compiled = TRUE, chains = 1, cores = 1
   )
-  expect_true(is.matrix(capture$args$data$si))
-  expect_equal(capture$args$data$si, diag(c(0.5, 0.5)))
+  si <- read_stan_data(capture$args$data)$si
+  expect_true(is.matrix(si))
+  expect_equal(si, diag(c(0.5, 0.5)))
 })
 
 test_that("rvnorm() heteroskedastic mpolyList Sigma uses equation dimension", {
