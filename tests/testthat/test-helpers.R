@@ -157,6 +157,24 @@ test_that("generate_model_name ignores term and in-term variable order", {
   )
 })
 
+test_that("polynomial-list model keys and code ignore coefficient values", {
+  # equations were ordered by their coefficient-bearing terms, so changing a
+  # coefficient could reorder them and change the structural cache key
+  p <- mp(c("x^2 + y - 1", "x^2 + z - 1"))
+  q <- mp(c("2 x^2 + y - 1", "x^2 + z - 1"))
+
+  expect_identical(generate_model_name(p), generate_model_name(q))
+  expect_identical(get_custom_stan_code(p), get_custom_stan_code(q))
+
+  # the coefficient data follows the same equation order as the code
+  q_data <- get_coefficients_data(q)
+  expect_equal(q_data[["bx2_1"]], 2)
+  expect_equal(q_data[["by_1"]], 1)
+  expect_equal(q_data[["bx2_2"]], 1)
+  expect_equal(q_data[["bz_2"]], 1)
+  expect_identical(names(q_data), names(get_coefficients_data(p)))
+})
+
 test_that("gradient and hessian functions follow varorder", {
   # appearance order of every second-derivative row of this polynomial is
   # (y, x), so building the hessian without varorder swaps coordinates

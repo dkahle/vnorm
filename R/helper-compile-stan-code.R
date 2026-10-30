@@ -21,19 +21,18 @@ canonicalize_mpoly <- function(poly) {
   )
   # full monomial keys break ties between same-degree terms in the same
   # variables (e.g. x^2 y and x y^2), which otherwise kept input order
-  mono_keys <- vapply(
-    terms,
-    function(term) {
-      is_var <- names(term) != "coef"
-      paste0(names(term)[is_var], term[is_var], collapse = " ")
-    },
-    character(1)
-  )
+  mono_keys <- vapply(terms, monomial_key, character(1))
 
   # sort: highest total degree first, then lexicographic variable order
   sorted_terms <- terms[order(-degrees, lex_keys, mono_keys, method = "radix")]
 
   structure(sorted_terms, class = "mpoly")
+}
+
+monomial_key <- function(term) {
+  # coefficient-free label of a term, e.g. "x2 y1"
+  is_var <- names(term) != "coef"
+  paste0(names(term)[is_var], term[is_var], collapse = " ")
 }
 
 canonicalize_mpolylist <- function(poly) {
@@ -45,15 +44,19 @@ canonicalize_mpolylist <- function(poly) {
 }
 
 sort_mpolylist_lexicographically <- function(poly) {
-  # enforce deterministic polynomial ordering before hashing/codegen
+  # enforce deterministic polynomial ordering before hashing/codegen; the
+  # keys are the canonical monomials alone, so changing a coefficient cannot
+  # reorder the equations and change the model key, code, or coefficient data
   stopifnot(inherits(poly, "mpolyList"))
 
-  poly_strings <- vapply(
+  structure_keys <- vapply(
     poly,
-    function(p) paste(as.character(p), collapse = ""),
+    function(p) {
+      paste(vapply(unclass(p), monomial_key, character(1)), collapse = " + ")
+    },
     character(1)
   )
-  sorted_indices <- order(poly_strings, method = "radix")
+  sorted_indices <- order(structure_keys, method = "radix")
 
   sorted_list <- poly[sorted_indices]
   structure(sorted_list, class = "mpolyList")
