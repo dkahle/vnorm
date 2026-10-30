@@ -2,18 +2,13 @@
 # split out from rvnorm.R so coverage for rvnorm() can be assessed separately
 
 create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
-  # mpoly prints coefficients with getOption("digits") (7 by default), which
-  # would round the polynomial baked into the program; print at full precision
-  op <- options(digits = 15)
-  on.exit(options(op), add = TRUE)
-
   if (n_eqs == 1L) {
     if (!is.mpoly(poly)) poly <- mp(poly)
     if (missing(vars)) vars <- mpoly::vars(poly)
     n_vars <- length(vars)
     poly <- reorder(poly, varorder = sort(vars))
 
-    g_string <- mpoly_to_stan(poly)
+    g_string <- stan_poly_expr(poly)
     if (homo) {
       grad <- if (n_vars > 1) {
         deriv(poly, var = mpoly::vars(poly))
@@ -23,7 +18,7 @@ create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
 
       # squared gradient norm for homoskedastic normalization
       ndg_sq <- if (n_vars >1)  Reduce(`+`, grad ^ 2) else grad^2
-      ndg_string <- glue::glue("sqrt({mpoly_to_stan(ndg_sq)})")
+      ndg_string <- glue::glue("sqrt({stan_poly_expr(ndg_sq)})")
     } else {
       ndg_string <- "1"
     }
@@ -32,13 +27,13 @@ create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
       parms <- glue::glue("real {vars};")
       parms <- paste(parms, collapse = "\n  ")
     } else if (is.numeric(w) && length(w) == 1L) {
-      parms <- glue::glue("real<lower=-{w},upper={w}> {vars};")
+      parms <- glue::glue("real<lower={stan_real(-w)},upper={stan_real(w)}> {vars};")
       parms <- paste(parms, collapse = "\n  ")
     } else {
       parms <- sapply(seq_along(vars), function(i) {
         if (vars[i] %in% names(w)) {
           glue::glue(
-            "real<lower={w[[vars[i]]][1]},upper={w[[vars[i]]][2]}> {vars[i]};"
+            "real<lower={stan_real(w[[vars[i]]][1])},upper={stan_real(w[[vars[i]]][2])}> {vars[i]};"
           )
         } else {
           glue::glue("real {vars[i]};")
@@ -73,7 +68,7 @@ model {{
     # pdvnorm() regardless of the order variables appear in the terms
     vars <- sort(mpoly::vars(poly))
     n_vars <- length(vars)
-    printed_polys <- mpolyList_to_stan(poly)
+    printed_polys <- paste(vapply(poly, stan_poly_expr, character(1)), collapse = ", ")
 
     target_dim <- if (homo) n_vars else n_eqs
     data_string <- if (length(sd) == 1) {
@@ -98,7 +93,7 @@ model {{
       printed_jac <- array("", dim = c(n_eqs, n_vars))
       for (i in seq_len(n_eqs)) {
         for (j in seq_len(n_vars)) {
-          printed_jac[i, j] <- mpoly_to_stan(deriv(poly[[i]], vars[j]))
+          printed_jac[i, j] <- stan_poly_expr(deriv(poly[[i]], vars[j]))
         }
       }
 
@@ -120,15 +115,15 @@ model {{
     if (missing(w)) {
       parms <- paste(sprintf("real %s;", vars), collapse = "\n  ")
     } else if (is.numeric(w) && length(w) == 1L) {
-      parms <- glue::glue("real<lower=-{w},upper={w}> {vars};")
+      parms <- glue::glue("real<lower={stan_real(-w)},upper={stan_real(w)}> {vars};")
       parms <- paste(parms, collapse = "\n  ")
     } else {
       parms <- sapply(seq_along(vars), function(i) {
         if (vars[i] %in% names(w)) {
           sprintf(
             "real<lower=%s,upper=%s> %s;",
-            w[[vars[i]]][1],
-            w[[vars[i]]][2],
+            stan_real(w[[vars[i]]][1]),
+            stan_real(w[[vars[i]]][2]),
             vars[i]
           )
         } else {
@@ -175,4 +170,28 @@ stan_real_literals <- function(code) {
     "(?<![[:alnum:]_.])([0-9]{10,})(?![[:alnum:]_.])", "\\1.0", code,
     perl = TRUE
   )
+}
+
+stan_poly_expr <- function(poly) {
+  # print a polynomial as a Stan expression with its exact coefficients;
+  # mpoly's printer rounds them to getOption("digits") and prints any within
+  # sqrt(eps) of 1 as 1. Same layout as mpoly_to_stan() otherwise
+  terms <- vapply(unclass(poly), function(term) {
+    powers <- term[names(term) != "coef"]
+    coef <- unname(term[["coef"]])
+    if (length(powers) == 0L) return(stan_real(coef))
+    factors <- paste0(names(powers), ifelse(powers == 1, "", paste0("^", powers)))
+    lead <- if (coef == 1) "" else if (coef == -1) "-" else paste0(stan_real(coef), "*")
+    paste0(lead, paste(factors, collapse = "*"))
+  }, character(1))
+  gsub("+-", "-", paste(terms, collapse = "+"), fixed = TRUE)
+}
+
+stan_real <- function(x) {
+  # shortest decimal reading back as x: 15 significant digits when they do
+  # (R parses up to 15 exactly), else 17, which always do in stanc and C++
+  # (R's own parser misreads some 17-digit decimals)
+  out <- format(x, digits = 15, scientific = FALSE)
+  if (as.numeric(out) != x) out <- format(x, digits = 17, scientific = FALSE)
+  out
 }

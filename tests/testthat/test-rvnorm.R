@@ -103,15 +103,19 @@ model {
   expect_equal(stan_code, expected_result)
 })
 
-test_that("rvnorm(): generated code with large integer coefficients compiles", {
+test_that("rvnorm(): generated code with large or long coefficients compiles", {
   skip_if_no_cmdstan()
-  stan_code <- rvnorm(
-    10, mp("x^4 + y^4 - 3000000000"), sd = 0.1, code_only = TRUE
-  )
-  model <- cmdstanr::cmdstan_model(
-    cmdstanr::write_stan_file(stan_code), compile = FALSE
-  )
-  expect_true(model$check_syntax(quiet = TRUE))
+  for (p in list(
+    mp("x^4 + y^4 - 3000000000"),
+    mp("x^4 + y^4") - 123456789012345.67,
+    mp("x^4 + y^4") - 1e-20 / 3
+  )) {
+    stan_code <- rvnorm(10, p, sd = 0.1, code_only = TRUE)
+    model <- cmdstanr::cmdstan_model(
+      cmdstanr::write_stan_file(stan_code), compile = FALSE
+    )
+    expect_true(model$check_syntax(quiet = TRUE))
+  }
 })
 
 test_that("rvnorm() generated code and pdvnorm() agree at full precision", {

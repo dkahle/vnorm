@@ -121,6 +121,25 @@ test_that("create_stan_code prints coefficients at full precision", {
   expect_match(code_list, "1.23456789012345", fixed = TRUE)
   expect_match(code_list, "0.333333333333333", fixed = TRUE)
   expect_identical(getOption("digits"), digits_before)
+
+  # past 15 significant digits, the correctly rounded 17-digit decimal (C's
+  # formatting), which stanc and C++ read back exactly
+  a <- 123456789012345.67
+  code_a <- create_stan_code(mp("x") - a, sd = 0.1, n_eqs = 1L, homo = TRUE)
+  expect_match(code_a, paste0("real g = x-", sprintf("%.17g", a), ";"), fixed = TRUE)
+
+  # mpoly printed coefficients within sqrt(eps) of 1 as 1
+  b <- 1 + 1e-10
+  code_b <- create_stan_code(b * mp("x") - b, sd = 0.1, n_eqs = 1L, homo = TRUE)
+  expect_match(code_b, "real g = 1.0000000001*x-1.0000000001;", fixed = TRUE)
+})
+
+test_that("stan_real writes the shortest decimal that reads back exactly", {
+  expect_identical(stan_real(0.1), "0.1")
+  expect_identical(stan_real(-2), "-2")
+  expect_identical(stan_real(1.23456789012345), "1.23456789012345")
+  expect_identical(stan_real(1 / 3), sprintf("%.17g", 1 / 3))
+  expect_identical(stan_real(0.1 + 0.2), sprintf("%.17g", 0.1 + 0.2))
 })
 
 test_that("create_stan_code writes integer coefficients beyond Stan int as reals", {
