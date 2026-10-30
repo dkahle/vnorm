@@ -55,7 +55,7 @@ variety_solve <- function(polylist,
   }
 
   n_eqns <- if (is.mpoly(polylist)) 1L else length(polylist)
-  n_vars <- length(vars)
+  n_vars <- length(mpoly::vars(polylist))
   if (n_eqns != n_vars) {
     stop("The variety is not zero-dimensional.", call. = FALSE)
   }

@@ -139,3 +139,21 @@ test_that("variety_solve sig_digit parameter controls rounding", {
   expect_equal(unname(out_2), 0.12)
   expect_equal(unname(out_4), 0.1235)
 })
+
+test_that("variety_solve can average a subset of the variables", {
+  # the zero-dimensionality check must count the system's variables, not the
+  # variables requested for averaging
+  p <- mp(c("x^2 - y", "x^2 + y"))
+  fake_df <- data.frame(
+    x = c(0.001, -0.001), y = c(0.002, -0.002), lp__ = c(0, 0)
+  )
+
+  testthat::local_mocked_bindings(
+    rvnorm = function(...) fake_cmdstan_fit(fake_df),
+    .package = "vnorm"
+  )
+
+  out <- variety_solve(p, n = 2, sig_digit = 2, vars = "x")
+  expect_named(out, "x")
+  expect_equal(unname(out), 0)
+})
