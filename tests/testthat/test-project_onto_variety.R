@@ -306,3 +306,15 @@ test_that("newton projection lands on varieties with mixed-order hessians", {
     expect_lt(abs(pf(x_newt)), 1e-4)
   }
 })
+
+test_that("gradient descent and newton stop on the residual tolerance", {
+  # the loops used to stop once g^2 < tol, i.e. |g| ~ sqrt(tol), and then
+  # warn that |g| >= tol on their own converged runs
+  p <- mp("x^2 + y^2 - 1")
+  pf <- as.function(p, varorder = c("x", "y"), silent = TRUE)
+
+  expect_no_warning(x_gd <- project_onto_variety_gradient_descent(c(0.7, 1.3), p))
+  expect_no_warning(x_newt <- project_onto_variety_newton(c(0.7, 1.3), p))
+  expect_lt(abs(pf(x_gd)), sqrt(.Machine$double.eps))
+  expect_lt(abs(pf(x_newt)), sqrt(.Machine$double.eps))
+})

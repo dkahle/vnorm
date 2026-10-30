@@ -599,7 +599,7 @@ project_onto_variety_gradient_descent <- function(
     if (message) message(paste(round(xn, 5), collapse = " "))
 
     count <- 0
-    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
+    while (abs(pf(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
       xn_2 <- xn_1
       xn_1 <- xn
       direction_2 <- dp2f(xn_2)
@@ -630,7 +630,7 @@ project_onto_variety_gradient_descent <- function(
     if (message) message(paste(round(xn, 5), collapse = " "))
 
     count <- 0
-    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
+    while (abs(pf(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
       xn_1 <- xn
       direction <- dp2f(xn_1)
       ga <- stats::optimize(
@@ -652,7 +652,7 @@ project_onto_variety_gradient_descent <- function(
     if (message) message(paste(round(xn, 5), collapse = " "))
 
     count <- 0
-    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
+    while (abs(pf(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
       xn_1 <- xn
       direction <- dp2f(xn_1)
       xn   <- xn_1 - ga*direction
@@ -731,7 +731,7 @@ project_onto_variety_newton <- function(
   if (message) message(paste(round(xn, 5), collapse = " "))
 
   count <- 0
-  while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
+  while (abs(pf(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
     xn_1 <- xn
     direction <- solve(ddp2f(xn_1), -dp2f(xn_1))
     if (method == "line") {
