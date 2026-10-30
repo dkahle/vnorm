@@ -268,3 +268,31 @@ test_that("rejection_sampler single-variable mpolyList", {
 test_that("rejection_sampler rejects constant polynomials", {
   expect_error(rejection_sampler(5, mp("3"), sd = .1), "at least one variable")
 })
+
+test_that("rejection_sampler scalar sd works for overdetermined systems", {
+  # g'(JJ')^{-1}g needs JJ' invertible, which fails whenever there are more
+  # equations than variables; all homoskedastic kernels now use J^+ g
+  p <- mp(c("x", "y", "x + y"))
+
+  set.seed(1)
+  scalar_sd <- rejection_sampler(20, p, sd = 0.3, w = 1)
+  set.seed(1)
+  vector_sd <- rejection_sampler(20, p, sd = c(0.3, 0.3), w = 1)
+  set.seed(1)
+  matrix_sd <- rejection_sampler(20, p, sd = diag(c(0.3, 0.3)^2), w = 1)
+
+  expect_equal(nrow(scalar_sd), 20)
+  expect_equal(scalar_sd, vector_sd)
+  expect_equal(scalar_sd, matrix_sd)
+})
+
+test_that("rejection_sampler handles one-variable systems and 1 x 1 scales", {
+  # deriv() returns a bare constant mpoly for x - 1, which as.function()
+  # rejects; diag() of a scalar builds an identity matrix of that size
+  p <- mp(c("x^2 - 1", "x - 1"))
+
+  set.seed(1)
+  expect_equal(nrow(rejection_sampler(10, p, sd = 0.3, w = 2)), 10)
+  set.seed(1)
+  expect_equal(nrow(rejection_sampler(5, p, sd = matrix(0.01), w = 2)), 5)
+})

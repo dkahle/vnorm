@@ -117,7 +117,7 @@ rejection_sampler <- function(n,
     pf <- as.function(poly, varorder = vars, silent = TRUE)
     dp <- dpfs <- vector(mode = "list", length = n_polys)
     for (i in seq_len(n_polys)) {
-      dp[[i]] <- deriv(poly[[i]], vars)
+      dp[[i]] <- gradient_mpolylist(poly[[i]], vars)
       if (correct_dp_coefficients) dp[[i]] <- normalize_coefficients(dp[[i]])
       dpfs[[i]] <- as.function(dp[[i]], varorder = vars, silent = TRUE)
     }
@@ -129,16 +129,21 @@ rejection_sampler <- function(n,
       mat
     }
 
+    # J^+ g, the first-order displacement to the variety measured by every
+    # homoskedastic kernel (the pdvnorm() convention, including least squares
+    # for overdetermined systems)
+    newton_residual <- function(x) {
+      J <- dpf(x)
+      J_inv <- if (n_vars == n_polys) solve(J) else MASS::ginv(J)
+      J_inv %*% pf(x)
+    }
+
     # build the acceptance kernel based on sd shape and homo setting
     if (is.vector(sd)) {
       # scalar/diagonal scale case
       if (homo) {
         if (length(sd) == 1) {
-          pbar <- function(x) {
-            g <- pf(x)
-            J <- dpf(x)
-            as.numeric(g %*% solve(tcrossprod(J), g))
-          }
+          pbar <- function(x) sum(newton_residual(x)^2)
           log_ptilde <- function(x) -pbar(x) / (2 * sd^2)
         } else {
           if (length(sd) != n_vars) {
@@ -148,17 +153,7 @@ rejection_sampler <- function(n,
               call. = FALSE
             )
           }
-          pbar <- function(x) {
-            g <- pf(x)
-            J <- dpf(x)
-            if (n_vars == n_polys) {
-              J_inv <- solve(J)
-            } else {
-              J_inv <- MASS::ginv(J)
-            }
-            v <- (J_inv %*% g) / sd
-            as.numeric(crossprod(v))
-          }
+          pbar <- function(x) sum((newton_residual(x) / sd)^2)
           log_ptilde <- function(x) -pbar(x) / 2
         }
       } else {
@@ -189,18 +184,12 @@ rejection_sampler <- function(n,
       la <- eig_sd$values
       P <- eig_sd$vectors
       la_inv <- 1 / la
-      sqrt_sd_inv <- diag(sqrt(la_inv)) %*% t(P)
+      # nrow keeps diag() from reading a 1 x 1 scale as an identity size
+      sqrt_sd_inv <- diag(sqrt(la_inv), nrow = length(la_inv)) %*% t(P)
 
       if (homo) {
         pbar <- function(x) {
-          g <- pf(x)
-          J <- dpf(x)
-          if (n_vars == n_polys) {
-            J_inv <- solve(J)
-          } else {
-            J_inv <- MASS::ginv(J)
-          }
-          as.numeric(crossprod(sqrt_sd_inv %*% J_inv %*% g))
+          as.numeric(crossprod(sqrt_sd_inv %*% newton_residual(x)))
         }
       } else {
         pbar <- function(x) {
