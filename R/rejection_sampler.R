@@ -130,12 +130,29 @@ rejection_sampler <- function(n,
     }
 
     # J^+ g, the first-order displacement to the variety measured by every
-    # homoskedastic kernel (the pdvnorm() convention, including least squares
-    # for overdetermined systems)
+    # homoskedastic kernel, with pdvnorm()'s conventions: least squares for
+    # overdetermined systems, and no density (an infinite displacement) where
+    # a square or underdetermined system's J loses rank and g leaves its
+    # column space
     newton_residual <- function(x) {
       J <- dpf(x)
-      J_inv <- if (n_vars == n_polys) solve(J) else MASS::ginv(J)
-      J_inv %*% pf(x)
+      g <- as.numeric(pf(x))
+      J_inv <- pdvnorm_pseudoinverse(J)
+      if (
+        n_polys <= n_vars && attr(J_inv, "rank") < n_polys &&
+          pdvnorm_outside_column_space(J, matrix(g, nrow = 1))
+      ) {
+        return(rep(Inf, n_vars))
+      }
+      as.numeric(J_inv %*% g)
+    }
+    if (homo && n_polys <= n_vars && generic_jacobian_check(poly, vars)$density_vanishes) {
+      stop(
+        "The density is 0 off the variety: the Jacobian of `poly` loses rank ",
+        "everywhere (its equations are dependent) and the residual leaves its ",
+        "column space. Remove the dependent equations.",
+        call. = FALSE
+      )
     }
 
     # build the acceptance kernel based on sd shape and homo setting
@@ -189,7 +206,9 @@ rejection_sampler <- function(n,
 
       if (homo) {
         pbar <- function(x) {
-          as.numeric(crossprod(sqrt_sd_inv %*% newton_residual(x)))
+          v <- newton_residual(x)
+          if (any(is.infinite(v))) return(Inf)
+          as.numeric(crossprod(sqrt_sd_inv %*% v))
         }
       } else {
         pbar <- function(x) {

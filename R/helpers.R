@@ -193,6 +193,45 @@ hessian_function <- function(poly, varorder) {
   function(x) matrix(vapply(row_fns, function(f) f(x), numeric(n)), n, n)
 }
 
+jacobian_function <- function(poly, varorder) {
+  # jacobian of a polynomial system as a function of a point: one row per
+  # polynomial, columns in varorder order
+  row_fns <- lapply(poly, gradient_function, varorder = varorder)
+  n <- length(varorder)
+  function(x) {
+    matrix(
+      vapply(row_fns, function(f) f(x), numeric(n)),
+      nrow = length(row_fns), byrow = TRUE
+    )
+  }
+}
+
+generic_jacobian_check <- function(poly, varorder) {
+  # rank of a polynomial system's jacobian at a few fixed points with
+  # irrational-looking coordinates, which miss the proper algebraic subsets
+  # (singular loci) where an ordinary system's J loses rank, so rank
+  # deficiency at all of them means dependent equations. Also whether g
+  # leaves J's column space at all of them, where (for m <= n) pdvnorm()'s
+  # density is 0
+  m <- length(poly)
+  n <- length(varorder)
+  J_fn <- jacobian_function(poly, varorder)
+  g_fn <- poly_function(poly, varorder)
+  pts <- matrix(2 * ((seq_len(3L * n) * 0.6180339887498949) %% 1) - 1, nrow = 3L)
+  checks <- lapply(seq_len(nrow(pts)), function(i) {
+    J <- J_fn(pts[i, ])
+    rank <- attr(pdvnorm_pseudoinverse(J), "rank")
+    outside <- rank < m &&
+      pdvnorm_outside_column_space(J, matrix(g_fn(pts[i, ]), nrow = 1))
+    c(rank = rank, outside = outside)
+  })
+  checks <- do.call(rbind, checks)
+  list(
+    full_rank = max(checks[, "rank"]) == min(m, n),
+    density_vanishes = m <= n && all(checks[, "outside"] == 1)
+  )
+}
+
 mpoly_to_stan <- function(mpoly) {
   # print polynomial in Stan-compatible syntax and parseable legend labels
   result <- print(

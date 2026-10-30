@@ -295,6 +295,48 @@ test_that("rejection_sampler scalar sd works for overdetermined systems", {
   expect_equal(scalar_sd, matrix_sd)
 })
 
+test_that("rejection_sampler follows pdvnorm()'s support for dependent systems", {
+  # the kernel took J^+ g without pdvnorm()'s rule that the density is 0
+  # where a square or underdetermined system's J loses rank and g leaves its
+  # column space; for these equations (J has rank 1 everywhere, g = (s, s^2)
+  # leaves its column space off s = 0) every draw had density 0
+  p <- mp(c("x + y + z", "(x + y + z)^2"))
+  expect_error(rejection_sampler(10, p, sd = 0.1, w = 0.5), "density is 0 off the variety")
+  expect_error(
+    rvnorm(10, p, sd = 0.1, rejection = TRUE, w = 0.5),
+    "density is 0 off the variety"
+  )
+
+  # linearly dependent equations keep g in J's column space and a positive
+  # density, which the kernel now samples (solve(J) used to fail)
+  p_lin <- mp(c("x + y", "2 x + 2 y"))
+  set.seed(1)
+  samps <- rejection_sampler(20, p_lin, sd = 0.1, w = 1)
+  expect_equal(nrow(samps), 20)
+  expect_true(all(pdvnorm(samps, p_lin, sd = 0.1) > 0))
+})
+
+test_that("generic_jacobian_check detects dependent equations", {
+  check <- function(p) unlist(generic_jacobian_check(p, sort(mpoly::vars(p))))
+  expect_identical(
+    check(mp(c("x + y + z", "(x + y + z)^2"))),
+    c(full_rank = FALSE, density_vanishes = TRUE)
+  )
+  expect_identical(
+    check(mp(c("x + y", "2 x + 2 y"))),
+    c(full_rank = FALSE, density_vanishes = FALSE)
+  )
+  # singular only at points (the origin here) or overdetermined: full rank
+  expect_identical(
+    check(mp(c("x^2 - 1", "y^2 - 1"))),
+    c(full_rank = TRUE, density_vanishes = FALSE)
+  )
+  expect_identical(
+    check(mp(c("x", "y", "x + y"))),
+    c(full_rank = TRUE, density_vanishes = FALSE)
+  )
+})
+
 test_that("rejection_sampler handles one-variable systems and 1 x 1 scales", {
   # deriv() returns a bare constant mpoly for x - 1, which as.function()
   # rejects; diag() of a scalar builds an identity matrix of that size
