@@ -2,6 +2,13 @@ canonicalize_mpoly <- function(poly) {
   # normalize term ordering so structurally equivalent polynomials hash equally
   terms <- unclass(poly)
 
+  # order variables within each term too: mp("y x") and mp("x y") store the
+  # same monomial with differently ordered entries
+  terms <- lapply(terms, function(term) {
+    is_var <- names(term) != "coef"
+    c(term[is_var][order(names(term)[is_var], method = "radix")], term[!is_var])
+  })
+
   degrees <- sapply(
     terms,
     function(term) sum(term[names(term) != "coef"], na.rm = TRUE)
@@ -12,9 +19,19 @@ canonicalize_mpoly <- function(poly) {
       paste(sort(names(term)[names(term) != "coef"]), collapse = "")
     }
   )
+  # full monomial keys break ties between same-degree terms in the same
+  # variables (e.g. x^2 y and x y^2), which otherwise kept input order
+  mono_keys <- vapply(
+    terms,
+    function(term) {
+      is_var <- names(term) != "coef"
+      paste0(names(term)[is_var], term[is_var], collapse = " ")
+    },
+    character(1)
+  )
 
   # sort: highest total degree first, then lexicographic variable order
-  sorted_terms <- terms[order(-degrees, lex_keys, method = "radix")]
+  sorted_terms <- terms[order(-degrees, lex_keys, mono_keys, method = "radix")]
 
   structure(sorted_terms, class = "mpoly")
 }

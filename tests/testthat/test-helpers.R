@@ -140,6 +140,23 @@ test_that("generate_model_name is deterministic and differentiates structure", {
   expect_false(name1a == name3)
 })
 
+test_that("generate_model_name ignores term and in-term variable order", {
+  # compile_stan_code() and rvnorm(user_compiled = TRUE) must agree on the
+  # cache key for the same polynomial however its terms were written
+  expect_identical(
+    generate_model_name(mp("x y + x^4 - 1")),
+    generate_model_name(mp("y x + x^4 - 1"))
+  )
+  expect_identical(
+    generate_model_name(mp("x^2 y + x y^2 + x^4 - 1")),
+    generate_model_name(mp("x y^2 + x^2 y + x^4 - 1"))
+  )
+  expect_identical(
+    get_custom_stan_code(mp("y x + x^4 - 1")),
+    get_custom_stan_code(mp("x y + x^4 - 1"))
+  )
+})
+
 test_that("gradient and hessian functions follow varorder", {
   # appearance order of every second-derivative row of this polynomial is
   # (y, x), so building the hessian without varorder swaps coordinates
