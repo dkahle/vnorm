@@ -296,3 +296,13 @@ test_that("rejection_sampler handles one-variable systems and 1 x 1 scales", {
   set.seed(1)
   expect_equal(nrow(rejection_sampler(5, p, sd = matrix(0.01), w = 2)), 5)
 })
+
+test_that("rejection_sampler grows proposal batches at low acceptance rates", {
+  # batches used to shrink to the number of draws still needed, so a 0.1%
+  # acceptance rate needed thousands of batches (about log(n) / rate)
+  set.seed(1)
+  samps <- rejection_sampler(100, mp("x"), sd = 1e-3, w = 1, max_batches = 50)
+
+  expect_equal(nrow(samps), 100)
+  expect_lt(max(abs(samps[, "x"])), 0.01)
+})

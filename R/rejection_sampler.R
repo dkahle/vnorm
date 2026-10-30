@@ -242,6 +242,9 @@ rejection_sampler <- function(n,
 
   mat <- matrix(nrow = 0, ncol = n_vars, dimnames = list(NULL, vars))
   n_remaining <- n
+  n_proposed <- 0
+  n_accepted <- 0
+  batch_size <- n
   batch <- 0L
 
   # rejection loop: propose uniformly in box, accept by kernel
@@ -272,24 +275,36 @@ rejection_sampler <- function(n,
       )
     }
 
-    u <- matrix(nrow = n_remaining, ncol = n_vars, dimnames = list(NULL, vars))
+    u <- matrix(nrow = batch_size, ncol = n_vars, dimnames = list(NULL, vars))
     for (i in seq_len(n_vars)) {
-      u[, i] <- runif(n_remaining, w[[i]][1], w[[i]][2])
+      u[, i] <- runif(batch_size, w[[i]][1], w[[i]][2])
     }
 
     if (dist == "norm") {
       gbars <- apply(u, 1, log_ptilde)
-      accept_reject_ndcs <- which(log(runif(n_remaining)) <= gbars)
+      accept_reject_ndcs <- which(log(runif(batch_size)) <= gbars)
     } else if (dist == "unif") {
       gbars <- apply(u, 1, pbar)
       accept_reject_ndcs <- which(abs(gbars) <= sd)
     }
     n_accept <- length(accept_reject_ndcs)
+    n_proposed <- n_proposed + batch_size
+    n_accepted <- n_accepted + n_accept
 
     if (n_accept > 0) {
-      samp <- u[accept_reject_ndcs, , drop = FALSE]
-      mat <- rbind(mat, samp)
-      n_remaining <- n_remaining - n_accept
+      # accepted proposals are iid draws, so keeping the first ones still
+      # needed does not bias the sample
+      keep <- accept_reject_ndcs[seq_len(min(n_accept, n_remaining))]
+      mat <- rbind(mat, u[keep, , drop = FALSE])
+      n_remaining <- n_remaining - length(keep)
+    }
+
+    # size the next batch from the running acceptance rate; shrinking batches
+    # to n_remaining would need about log(n) / rate batches at low rates
+    batch_size <- if (n_accepted > 0) {
+      max(n_remaining, min(ceiling(1.2 * n_remaining * n_proposed / n_accepted), 1e5))
+    } else {
+      n_remaining
     }
   }
   if (message) cat("\r", strrep(" ", 80))
