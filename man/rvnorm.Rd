@@ -79,7 +79,8 @@ distribution.}
 
 \item{w}{A named list of box constraints for vectors to be passed to Stan,
 see examples. If a single number, a box window \verb{(-w, w)} is applied to all
-variables.}
+variables. With \code{rejection = TRUE}, a missing \code{w} means \code{w = 1.25}, the
+\code{\link[=rejection_sampler]{rejection_sampler()}} default.}
 
 \item{vars}{Character vector of polynomial indeterminates.}
 

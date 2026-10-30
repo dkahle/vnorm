@@ -195,6 +195,21 @@ test_that("rvnorm() rejection path returns a data frame for simple output", {
   expect_equal(nrow(out), 12)
 })
 
+test_that("rvnorm() rejection path defaults to rejection_sampler()'s window", {
+  # w = 1 clipped 18% of the unit circle's mass at sd = .05
+  capture <- new.env(parent = emptyenv())
+  testthat::local_mocked_bindings(
+    rejection_sampler = function(...) {
+      capture$args <- list(...)
+      matrix(0, nrow = 2, ncol = 2, dimnames = list(NULL, c("x", "y")))
+    },
+    .package = "vnorm"
+  )
+
+  rvnorm(2, mp("x^2 + y^2 - 1"), sd = 0.05, rejection = TRUE)
+  expect_equal(capture$args$w, 1.25)
+})
+
 test_that("rvnorm() rejection path validates sd shape", {
   expect_error(
     rvnorm(

@@ -46,7 +46,8 @@
 #'   and denominator forms.
 #' @param w A named list of box constraints for vectors to be passed to Stan,
 #'   see examples. If a single number, a box window `(-w, w)` is applied to all
-#'   variables.
+#'   variables. With `rejection = TRUE`, a missing `w` means `w = 1.25`, the
+#'   [rejection_sampler()] default.
 #' @param refresh CmdStan's `refresh`, which governs how often sampling
 #'   progress is reported.
 #' @param pre_compiled Whether to use precompiled Stan models. Available
@@ -426,7 +427,9 @@ rvnorm <- function(
       stop("`rejection = TRUE` supports `sd`, not `Sigma`.", call. = FALSE)
     }
     if (missing(w)) {
-      w <- 1
+      # rejection_sampler()'s default box; w = 1 clipped the band around
+      # unit-scale varieties such as the unit circle
+      w <- 1.25
     }
     if (missing(sd) || !(is.numeric(sd) && is.vector(sd) && length(sd) == 1L)) {
       stop("This sd is not supported yet for rejection sampler.")
