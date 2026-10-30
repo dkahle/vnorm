@@ -411,6 +411,20 @@ test_that("pdvnorm evaluates polynomial coefficients at full precision", {
     sum(stats::dnorm(c(g0, 0), log = TRUE)),
     tolerance = 1e-12
   )
+
+  # beyond 15 significant digits: the residual at x = a is exactly 0, where
+  # 15 digits put it 3 sd away
+  a <- 123456789012345.67
+  expect_equal(
+    pdvnorm(a, mp("x") - a, sd = .1, log = TRUE),
+    stats::dnorm(0, sd = .1, log = TRUE),
+    tolerance = 1e-12
+  )
+  expect_equal(
+    pdvnorm(c(a, 0), mpolyList(mp("x") - a, mp("y")), sd = .1, homo = FALSE, log = TRUE),
+    2 * stats::dnorm(0, sd = .1, log = TRUE),
+    tolerance = 1e-12
+  )
 })
 
 test_that("pdvnorm mpolyList homo density is 0 off the variety where J loses rank", {

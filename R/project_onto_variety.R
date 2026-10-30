@@ -9,8 +9,8 @@
 #'   matrix/data frame whose rows are points to be projected.
 #' @param poly An `mpoly` object, typically created with [mpoly::mp()].
 #' @param dt The t-mesh size for the homotopy.
-#' @param varorder A character vector specifying the variable order to pass to
-#'   [mpoly::as.function.mpoly()].
+#' @param varorder A character vector giving the variable order of the
+#'   coordinates of `x0` (default: the sorted variables of `poly`).
 #' @param n_correct The number of Newton correction iterations to use.
 #' @param al A numeric vector of length 2; the deterministic patch to do
 #'   projective calculations over.
@@ -290,7 +290,7 @@ project_onto_variety <- function(
     }
 
     # polynomial, jacobian, and hessian as functions of a point
-    gfunc <- poly_function(poly, varorder = varorder, silent = TRUE)
+    gfunc <- poly_function(poly, varorder = varorder)
     dgfunc <- gradient_function(poly, varorder)
     ddgfunc <- hessian_function(poly, varorder)
 
@@ -465,7 +465,7 @@ project_onto_variety_lagrange <- function(
   form <- paste0("(", varorder, " - ", x0, ")^2", collapse = " + ")
   L <- mp(form) + mp("la")*poly
   dL <- stats::deriv(L, var = c(varorder, "la"))
-  dLf <- poly_function(dL, varorder = c(varorder, "la"), silent = TRUE)
+  dLf <- poly_function(dL, varorder = c(varorder, "la"))
 
   if (method == "newton") {
 
@@ -473,8 +473,7 @@ project_onto_variety_lagrange <- function(
     ddLf <- lapply(
       ddL,
       poly_function,
-      varorder = c(varorder, "la"),
-      silent = TRUE
+      varorder = c(varorder, "la")
     )
     H <- function(v) do.call(rbind, lapply(ddLf, function(f) f(v)))
 
@@ -517,7 +516,7 @@ project_onto_variety_lagrange <- function(
 
   }
 
-  pf  <- poly_function(poly, varorder = varorder, silent = TRUE)
+  pf  <- poly_function(poly, varorder = varorder)
   resid <- pf(xn)
   if (abs(resid) >= tol) {
     warning(
@@ -571,8 +570,8 @@ project_onto_variety_gradient_descent <- function(
   method <- match.arg(method)
 
   # build objective and gradient helpers for g(x)^2
-  pf  <- poly_function(poly, varorder = varorder, silent = TRUE)
-  p2f <- poly_function(poly^2, varorder = varorder, silent = TRUE)
+  pf  <- poly_function(poly, varorder = varorder)
+  p2f <- poly_function(poly^2, varorder = varorder)
   dp2f <- gradient_function(poly^2, varorder)
 
 
@@ -711,8 +710,8 @@ project_onto_variety_newton <- function(
   method <- match.arg(method)
 
   # build objective, gradient, and hessian helpers for g(x)^2
-  pf  <- poly_function(poly, varorder = varorder, silent = TRUE)
-  p2f <- poly_function(poly^2, varorder = varorder, silent = TRUE)
+  pf  <- poly_function(poly, varorder = varorder)
+  p2f <- poly_function(poly^2, varorder = varorder)
   dp2f <- gradient_function(poly^2, varorder)
   ddp2f <- hessian_function(poly^2, varorder)
 

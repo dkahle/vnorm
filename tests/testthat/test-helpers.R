@@ -196,9 +196,52 @@ test_that("gradient and hessian functions handle one-variable polynomials", {
   expect_equal(hessian_function(mp("x^3"), "x")(2), matrix(12, 1, 1))
 })
 
-test_that("poly_function evaluates at full coefficient precision", {
-  digits_before <- getOption("digits")
-  f <- poly_function(mp("x - 1.23456789012345"), silent = TRUE)
-  expect_equal(f(0), -1.23456789012345, tolerance = 1e-14)
-  expect_identical(getOption("digits"), digits_before)
+test_that("poly_function evaluates with the exact coefficients", {
+  # mpoly's as.function() parses printed coefficients (7 significant digits
+  # by default, 15 under the earlier digits = 15 wrapper), and R's parser
+  # misreads some 17-digit decimals
+  a <- 123456789012345.67
+  f <- poly_function(mp("x") - a, "x")
+  expect_identical(f(a), 0)
+  expect_identical(poly_function(mp("x") - 1 / 3, "x")(1 / 3), 0)
+  withr::with_options(list(digits = 3), expect_identical(f(a), 0))
+  withr::with_options(list(digits = 17), expect_identical(f(a), 0))
+
+  # mpoly prints coefficients within sqrt(eps) of 1 as 1
+  b <- 1 + 1e-10
+  expect_identical(poly_function(b * mp("x") - b, "x")(1), 0)
+})
+
+test_that("poly_function evaluates points given as vectors or matrix rows", {
+  f <- poly_function(mp("x^2 y - 3.5 x + 2"), c("x", "y"))
+  expect_identical(f(c(2, 3)), 7)
+  expect_identical(f(rbind(c(2, 3), c(1, 1))), c(7, -0.5))
+
+  # varorder orders the coordinates and may name variables poly lacks
+  expect_identical(poly_function(mp("x^2 y"), c("y", "x"))(c(3, 2)), 12)
+  expect_identical(
+    poly_function(mp("x^2 - 1"), c("x", "y"))(cbind(c(0, 2), 5)),
+    c(-1, 3)
+  )
+
+  # with one variable each vector entry is a point; constants give one
+  # value per point
+  expect_identical(poly_function(mp("x^2"), "x")(c(1, 2, 3)), c(1, 4, 9))
+  expect_identical(
+    poly_function(mp("5"), c("x", "y"))(rbind(c(1, 2), c(3, 4))),
+    c(5, 5)
+  )
+
+  # polynomial lists: one column per polynomial, a vector for a single point
+  g <- poly_function(mp(c("x^2 + y", "x y - 1", "5")), c("x", "y"))
+  expect_identical(g(c(2, 3)), c(7, 5, 5))
+  expect_identical(g(rbind(c(2, 3), c(1, 1))), rbind(c(7, 5, 5), c(2, 0, 5)))
+  expect_identical(
+    poly_function(mp(c("x^2", "x - 1")), "x")(c(3, 4)),
+    rbind(c(9, 2), c(16, 3))
+  )
+
+  expect_error(poly_function(mp("x y"), "x"), "missing variable")
+  expect_error(f(1:3), "one entry per variable")
+  expect_error(f(matrix(1:3, 1)), "one column per variable")
 })

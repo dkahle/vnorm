@@ -114,12 +114,12 @@ rejection_sampler <- function(n,
   if (is.mpolyList(poly)) {
     # mpolyList case: g(x) is vector-valued and uses jacobian-based scaling
     n_polys <- length(poly)
-    pf <- poly_function(poly, varorder = vars, silent = TRUE)
+    pf <- poly_function(poly, varorder = vars)
     dp <- dpfs <- vector(mode = "list", length = n_polys)
     for (i in seq_len(n_polys)) {
       dp[[i]] <- gradient_mpolylist(poly[[i]], vars)
       if (correct_dp_coefficients) dp[[i]] <- normalize_coefficients(dp[[i]])
-      dpfs[[i]] <- poly_function(dp[[i]], varorder = vars, silent = TRUE)
+      dpfs[[i]] <- poly_function(dp[[i]], varorder = vars)
     }
 
     # assemble jacobian row-by-row from per-polynomial gradients
@@ -202,7 +202,7 @@ rejection_sampler <- function(n,
     }
   } else if (is.mpoly(poly)) {
     # single-polynomial case
-    pf <- poly_function(poly, varorder = vars, silent = TRUE)
+    pf <- poly_function(poly, varorder = vars)
     dp <- deriv(poly, vars)
     if (correct_dp_coefficients) dp <- normalize_coefficients(dp)
 
@@ -219,7 +219,7 @@ rejection_sampler <- function(n,
     ssdpf <- if (is.constant(ssdp)) {
       function(x) ssdp[[1]][["coef"]]
     } else {
-      poly_function(ssdp, varorder = vars, silent = TRUE)
+      poly_function(ssdp, varorder = vars)
     }
 
     if (homo) {

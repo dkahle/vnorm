@@ -93,6 +93,15 @@ test_that("rejection_sampler handles single-variable polynomial branch", {
   expect_equal(nrow(samps), 6)
 })
 
+test_that("rejection_sampler handles gradient norms missing a variable", {
+  # |grad(y - x^2)|^2 = 4 x^2 + 1 has no y, which mpoly's as.function()
+  # rejected for varorder c("x", "y")
+  set.seed(5)
+  samps <- rejection_sampler(n = 20, poly = mp("y - x^2"), sd = 0.05)
+  expect_equal(dim(samps), c(20L, 2L))
+  expect_true(all(abs(samps[, "y"] - samps[, "x"]^2) < 0.5))
+})
+
 test_that("rejection_sampler validates poly class", {
   expect_error(
     rejection_sampler(

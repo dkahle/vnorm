@@ -8,6 +8,13 @@ test_that("poly_to_df evaluates on a regular grid with shift", {
   expect_equal(out$z[1], 1)
 })
 
+test_that("poly_to_df evaluates polynomials in x alone", {
+  # mpoly's as.function() required varorder to match the polynomial's own
+  # variables, so the x/y grid failed for curves such as vertical lines
+  out <- poly_to_df(mp("x^2 - 1"), xlim = c(-2, 2), ylim = c(0, 1), nx = 5, ny = 2)
+  expect_equal(out$z, out$x^2 - 1)
+})
+
 test_that("geom_variety sign helpers ignore near-zero noise but detect real sign changes", {
   z_noise <- c(1e-20, 0, -1e-20, 2e-20)
   z_change <- c(-0.5, 0, 0.25)
