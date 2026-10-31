@@ -94,7 +94,7 @@ rvnorm_domain_latent <- function(
       if (!is.null(seed)) seed + round - 1L, pilot_args
     ))
     x0 <- as.matrix(pilot[, vars, drop = FALSE])
-    proj <- project_rows_closest(x0, poly, vars)
+    proj <- project_rows_closest(x0, poly, vars, scale = pilot_sd)
     # the pilot's residual |J^+ g| is the distance to the variety to first
     # order where poly is square-free, and about the distance / k on a
     # component where it has a factor of multiplicity k, like (x - 1)^2.

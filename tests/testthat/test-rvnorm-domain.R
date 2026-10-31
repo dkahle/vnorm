@@ -142,6 +142,33 @@ test_that("rvnorm(noise = \"domain\") places no points off the variety", {
   )
 })
 
+test_that("translating a system leaves the projection's tolerances alone", {
+  # tolerances grew with |u|, so x - 1e9 and x - 1e9 - 1, an empty
+  # variety, passed at 1e9 + 0.5
+  expect_error(
+    rvnorm(
+      8, mp(c("x - 1000000000", "x - 1000000001")), sd = 0.2,
+      noise = "domain", rejection = TRUE, w = 1e9 + c(-1, 2), seed = 5
+    ),
+    "Only 0 of 8 pilot draws projected onto the variety"
+  )
+  # as did a free coordinate far away
+  expect_error(
+    rvnorm(
+      8, mp(c("x", "x - 1")), sd = 0.2, noise = "domain", rejection = TRUE,
+      vars = c("x", "z"), w = list(x = c(-1, 2), z = 1e9 + c(-1, 1)), seed = 5
+    ),
+    "Only 0 of 8 pilot draws projected onto the variety"
+  )
+
+  # a translated variety with points still gets them
+  z <- rvnorm(
+    20, mp("x - 1000000000"), sd = 0.2, noise = "domain", rejection = TRUE,
+    output = "tibble", w = 1e9 + c(-1, 1), seed = 6
+  )
+  expect_true(all(abs(z$x_proj - 1e9) < 1e-6))
+})
+
 test_that("free variables leave a system's geometry alone", {
   # x and x^2 cut out the line x = 0, and z is free. Counting z, the system
   # looked square, so its Jacobian's rank of 1 read as dependence

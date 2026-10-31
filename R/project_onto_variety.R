@@ -780,7 +780,7 @@ projected_rows <- function(out, x0) {
 }
 
 project_rows_closest <- function(
-    x, poly, varorder, tol = 1e-10, maxit = 100L, max_dist = Inf
+    x, poly, varorder, tol = 1e-10, maxit = 100L, max_dist = Inf, scale = 1
   ) {
   # the closest point on the variety of poly (an mpoly or mpolyList) to each
   # row of x, for points near it: Gauss-Newton steps u <- u - J^+ g(u) onto
@@ -794,7 +794,16 @@ project_rows_closest <- function(
   # from its start, or some equation does not vanish there. Gauss-Newton
   # converges only linearly onto a repeated factor, hence the iterations.
   # Variables in varorder that poly does not involve have zero Jacobian
-  # columns, so their coordinates stay put
+  # columns, so their coordinates stay put.
+  #
+  # Tolerances are distances: tol * scale, scale the problem's (the
+  # pilot's sd), plus the rounding error of poly's own coordinates. Grown
+  # with |u|, they let a translated empty variety pass (x - 1e9 and
+  # x - 1e9 - 1 at 1e9 + 0.5), as did a free coordinate far away
+  poly_cols <- which(varorder %in% mpoly::vars(poly))
+  coordinate_rounding <- function(u) {
+    8 * .Machine$double.eps * sqrt(rowSums(u[, poly_cols, drop = FALSE]^2))
+  }
   # g within the rounding error of its terms is on the variety as far as can
   # be told, even where the gradient vanishes too, as everywhere on a
   # repeated factor. Closer in, a step of rounding error over a vanishing
@@ -870,7 +879,7 @@ project_rows_closest <- function(
       r
     }
   }
-  small <- function(v, u) sqrt(rowSums(v^2)) <= tol * (1 + sqrt(rowSums(u^2)))
+  small <- function(v, u) sqrt(rowSums(v^2)) <= tol * scale + coordinate_rounding(u)
 
   newton <- function(u) {
     ok <- rep(FALSE, nrow(u))
@@ -919,24 +928,26 @@ project_rows_closest <- function(
   # a vanishing step does not put u on the variety: for an overdetermined
   # system it also vanishes at least-squares points where g does not, and
   # for an empty variety only there
-  ok[ok] <- variety_feasible(u[ok, , drop = FALSE], poly, varorder)
+  ok[ok] <- variety_feasible(
+    u[ok, , drop = FALSE], poly, varorder,
+    1e-6 * scale + coordinate_rounding(u[ok, , drop = FALSE])
+  )
   list(points = u, ok = ok, residual = residual)
 }
 
-variety_feasible <- function(u, poly, varorder, tol = 1e-8) {
+variety_feasible <- function(u, poly, varorder, dist) {
   # whether each row of u lies on the variety: every equation g_i vanishes
-  # there to within a distance tol (1 + |u|), |g_i| <= tol (1 + |u|) |grad
-  # g_i|, or to rounding error in its terms, which covers points where
-  # grad g_i vanishes too
+  # there to within the distance dist, |g_i| <= dist |grad g_i|, or to
+  # rounding error in its terms, which covers points where grad g_i
+  # vanishes too
   polys <- if (is.mpoly(poly)) list(poly) else unclass(poly)
-  scale <- 1 + sqrt(rowSums(u^2))
   ok <- rep(TRUE, nrow(u))
   for (g in polys) {
     g_val <- poly_function(g, varorder = varorder)(u)
     grad <- matrix(gradient_function(g, varorder)(u), nrow = nrow(u))
     g_abs <- poly_function(abs_coefficients(g), varorder = varorder)(abs(u))
     ok <- ok & is.finite(g_val) &
-      abs(g_val) <= tol * scale * sqrt(rowSums(grad^2)) +
+      abs(g_val) <= dist * sqrt(rowSums(grad^2)) +
         64 * .Machine$double.eps * g_abs
   }
   ok
