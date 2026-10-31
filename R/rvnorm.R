@@ -102,7 +102,8 @@
 #'   covariance from `sd` or `Sigma`. The points `u` are draws of the
 #'   homogeneous variety normal with scale `pilot_sd`, each moved to the
 #'   closest point on the variety; draws whose projection fails, as near
-#'   singular points, are replaced. The window bounds `u`, not `x`. As with
+#'   singular points, are replaced by further pilot runs, whose chains
+#'   continue the numbering in `.chain`. The window bounds `u`, not `x`. As with
 #'   codomain noise, chains do not cross between disconnected components, so
 #'   `rejection = TRUE` suits such varieties better. `"tibble"` output adds
 #'   the points `u` as `<var>_proj` columns; `"stanfit"` output and

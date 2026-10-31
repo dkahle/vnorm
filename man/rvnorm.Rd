@@ -173,7 +173,8 @@ window \code{w} when one is given) and \code{e} is normal with mean 0 and
 covariance from \code{sd} or \code{Sigma}. The points \code{u} are draws of the
 homogeneous variety normal with scale \code{pilot_sd}, each moved to the
 closest point on the variety; draws whose projection fails, as near
-singular points, are replaced. The window bounds \code{u}, not \code{x}. As with
+singular points, are replaced by further pilot runs, whose chains
+continue the numbering in \code{.chain}. The window bounds \code{u}, not \code{x}. As with
 codomain noise, chains do not cross between disconnected components, so
 \code{rejection = TRUE} suits such varieties better. \code{"tibble"} output adds
 the points \code{u} as \verb{<var>_proj} columns; \code{"stanfit"} output and

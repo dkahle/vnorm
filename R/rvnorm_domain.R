@@ -82,6 +82,7 @@ rvnorm_domain_latent <- function(
   # projections were tried and failed
   points <- matrix(numeric(0), nrow = 0, ncol = length(vars))
   index <- NULL
+  chains_used <- 0L
   n_failed <- 0L
   n_projected <- 0L
   # spare draws for projections that fail or leave the window
@@ -98,7 +99,12 @@ rvnorm_domain_latent <- function(
     n_projected <- n_projected + nrow(x0)
     points <- rbind(points, proj$points[keep, , drop = FALSE])
     if (all(c(".chain", ".iteration") %in% names(pilot))) {
-      index <- rbind(index, as.matrix(pilot[keep, c(".chain", ".iteration")]))
+      # each run's chains follow the previous runs', so that a chain and
+      # iteration identify one pilot draw
+      run_index <- as.matrix(pilot[keep, c(".chain", ".iteration")])
+      run_index[, ".chain"] <- run_index[, ".chain"] + chains_used
+      chains_used <- chains_used + max(pilot$.chain)
+      index <- rbind(index, run_index)
     }
     if (nrow(points) >= n) break
     rate <- max(mean(keep), 0.05)

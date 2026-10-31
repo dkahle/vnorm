@@ -291,6 +291,10 @@ test_that("rvnorm(noise = \"domain\") replaces failed projections from new pilot
   expect_equal(vapply(calls$args, `[[`, numeric(1), "seed"), c(7, 8))
   expect_equal(nrow(out), 80)
   expect_equal(anyDuplicated(as.data.frame(out[, c("x_proj", "y_proj")])), 0L)
+  # the second run's chains follow the first run's two, so a chain and
+  # iteration identify one pilot draw
+  expect_equal(anyDuplicated(as.data.frame(out[, c(".chain", ".iteration")])), 0L)
+  expect_setequal(unique(out$.chain), 1:4)
 
   mock_pilot(center[rep(1, 20), ])
   expect_error(
