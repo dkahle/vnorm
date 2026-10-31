@@ -114,10 +114,11 @@ rejection_sampler <- function(n,
   if (is.mpolyList(poly)) {
     # mpolyList case: g(x) is vector-valued and uses jacobian-based scaling
     n_polys <- length(poly)
-    # variables in vars that poly does not involve add zero columns to J,
-    # which change neither J^+ g nor J's rank, so whether the system is
-    # overdetermined depends on poly's own variables
+    # variables in vars that poly does not involve add zero columns to J.
+    # Whether the system is overdetermined, and its pseudoinverse, depend on
+    # poly's own variables alone
     n_poly_vars <- length(mpoly::vars(poly))
+    poly_cols <- which(vars %in% mpoly::vars(poly))
     pf <- poly_function(poly, varorder = vars)
     dp <- dpfs <- vector(mode = "list", length = n_polys)
     for (i in seq_len(n_polys)) {
@@ -141,10 +142,10 @@ rejection_sampler <- function(n,
     newton_residual <- function(x) {
       J <- dpf(x)
       g <- as.numeric(pf(x))
-      J_inv <- pdvnorm_pseudoinverse(J)
+      J_inv <- pdvnorm_pseudoinverse_cols(J, poly_cols)
       if (
         n_polys <= n_poly_vars && attr(J_inv, "rank") < n_polys &&
-          pdvnorm_outside_column_space(J, matrix(g, nrow = 1))
+          pdvnorm_outside_column_space(J[, poly_cols, drop = FALSE], matrix(g, nrow = 1))
       ) {
         return(rep(Inf, n_vars))
       }

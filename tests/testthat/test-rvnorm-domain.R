@@ -162,6 +162,34 @@ test_that("free variables leave a system's geometry alone", {
   expect_equal(nrow(rvnorm(20, p, sd = 0.1, vars = c("x", "z"), w = 1, rejection = TRUE)), 20)
 })
 
+test_that("free variables leave a system's least squares alone", {
+  # pdvnorm_pseudoinverse() row-scales a system that is not overdetermined.
+  # Counting the free z, (x, 2 x - 2) looked square, and its least-squares
+  # residual x - 0.8 became x - 0.5
+  p <- mp(c("x", "2 x - 2"))
+  withr::local_seed(1)
+  b <- rvnorm(1000, p, sd = 0.1, w = 1.5, rejection = TRUE, vars = c("x", "z"))
+  expect_lt(abs(mean(b$x) - 0.8), 0.015)
+
+  # domain noise on a system whose two components weigh the same. Its
+  # least-squares pilot also puts draws at x = 0.552, a least-squares point
+  # off the variety, whose projections are dropped
+  expect_warning(
+    z <- rvnorm(
+      2000, mp(c("x^2 - x", "x^3 - x^2")), sd = 0.1, noise = "domain",
+      rejection = TRUE, output = "tibble", w = 1.5, seed = 53, vars = c("x", "z")
+    ),
+    "dropped"
+  )
+  expect_equal(mean(z$x_proj > 0.5), 0.5, tolerance = 0.06)
+
+  J <- cbind(c(1, 2), 0)
+  expect_equal(
+    pdvnorm_pseudoinverse_cols(J, 1),
+    structure(rbind(as.numeric(pdvnorm_pseudoinverse(J[, 1, drop = FALSE])), 0), rank = 1L)
+  )
+})
+
 test_that("free variables leave a system's geometry alone with CmdStan", {
   skip_if_no_cmdstan()
   z <- rvnorm(

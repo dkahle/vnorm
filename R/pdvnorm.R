@@ -600,6 +600,18 @@ pdvnorm_pseudoinverse <- function(J) {
   Jp
 }
 
+pdvnorm_pseudoinverse_cols <- function(J, cols) {
+  # pdvnorm_pseudoinverse() of J's columns cols, the variables the equations
+  # involve, with zero rows for the others. Those add zero columns to J,
+  # which would make an overdetermined system look square to the row
+  # scaling, and rescaled rows weight its least squares differently
+  sub <- pdvnorm_pseudoinverse(J[, cols, drop = FALSE])
+  Jp <- matrix(0, ncol(J), nrow(J))
+  Jp[cols, ] <- sub
+  attr(Jp, "rank") <- attr(sub, "rank")
+  Jp
+}
+
 pdvnorm_outside_column_space <- function(J, G) {
   # which rows of G (one residual vector g per point) have a component
   # outside the column space of J, with pdvnorm_pseudoinverse()'s row

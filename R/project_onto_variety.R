@@ -836,8 +836,9 @@ project_rows_closest <- function(
     )
     J_fn <- jacobian_function(poly, varorder)
     # variables poly does not involve add zero columns, which cannot raise
-    # J's rank
+    # J's rank; its pseudoinverse uses poly's own columns
     full_rank <- min(length(poly), length(mpoly::vars(poly)))
+    poly_cols <- which(varorder %in% mpoly::vars(poly))
     step_fn <- function(u) {
       step <- matrix(0, nrow(u), ncol(u))
       stalled <- logical(nrow(u))
@@ -845,7 +846,7 @@ project_rows_closest <- function(
         g <- g_fn(u[i, ])
         # on the variety as far as can be told, whatever J's rank there
         if (all(is.finite(g)) && all(abs(g) <= rounding(g_abs_fn(abs(u[i, ]))))) next
-        Jp <- pdvnorm_pseudoinverse(J_fn(u[i, ]))
+        Jp <- pdvnorm_pseudoinverse_cols(J_fn(u[i, ]), poly_cols)
         s <- as.numeric(Jp %*% g)
         if (attr(Jp, "rank") < full_rank || any(!is.finite(s))) {
           stalled[i] <- TRUE
@@ -863,7 +864,7 @@ project_rows_closest <- function(
         r[i, ] <- if (all(J == 0)) {
           0
         } else {
-          r[i, ] - as.numeric(pdvnorm_pseudoinverse(J) %*% (J %*% r[i, ]))
+          r[i, ] - as.numeric(pdvnorm_pseudoinverse_cols(J, poly_cols) %*% (J %*% r[i, ]))
         }
       }
       r
