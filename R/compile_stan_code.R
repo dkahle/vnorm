@@ -3,7 +3,8 @@
 #' Compile and cache a Stan model template for a polynomial shape so repeated
 #' calls to [rvnorm()] can reuse the compiled binary.
 #'
-#' @param poly An `mpoly` or `mpolyList` object.
+#' @param poly An `mpoly` or `mpolyList` object. An `mpolyList` of one
+#'   polynomial is treated as that polynomial, as in [rvnorm()].
 #' @param custom_stan_code If `TRUE`, a custom model is compiled even if the
 #'   general case of the polynomial is already included during package
 #'   installation. Defaults to `FALSE`.
@@ -34,6 +35,11 @@ compile_stan_code <- function(
   ) {
   if (!(is.mpoly(poly) || is.mpolyList(poly))) {
     stop("`poly` should be an mpoly or mpolyList object.", call. = FALSE)
+  }
+  # rvnorm() samples an mpolyList of one polynomial as that polynomial, so its
+  # model must be cached under the polynomial's name
+  if (is.mpolyList(poly) && length(poly) == 1L) {
+    poly <- poly[[1]]
   }
 
   if (!custom_stan_code && is.mpoly(poly)) {

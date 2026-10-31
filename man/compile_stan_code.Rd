@@ -12,7 +12,8 @@ compile_stan_code(
 )
 }
 \arguments{
-\item{poly}{An \code{mpoly} or \code{mpolyList} object.}
+\item{poly}{An \code{mpoly} or \code{mpolyList} object. An \code{mpolyList} of one
+polynomial is treated as that polynomial, as in \code{\link[=rvnorm]{rvnorm()}}.}
 
 \item{custom_stan_code}{If \code{TRUE}, a custom model is compiled even if the
 general case of the polynomial is already included during package

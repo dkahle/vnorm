@@ -7,7 +7,8 @@
 #' @param n Total number of post-warmup draws to return (after any thinning);
 #'   they are split evenly across `chains`.
 #' @param poly An `mpoly` or `mpolyList` object, or a character vector that
-#'   [mpoly::mp()] can parse.
+#'   [mpoly::mp()] can parse. An `mpolyList` of one polynomial is treated as
+#'   that polynomial.
 #' @param sd Scale parameter for the normal kernel. If `Sigma` is supplied,
 #'   `sd` is replaced by `Sigma`. For single-polynomial sampling, `sd` must be
 #'   a positive scalar. For polynomial-list sampling, `sd` may be a positive
@@ -425,10 +426,16 @@ rvnorm <- function(
   }
   vars_arg <- if (missing(vars)) NULL else vars
 
+  if (is.character(poly)) {
+    poly <- mp(poly)
+  }
+  # an mpolyList of one polynomial is that polynomial, as in pdvnorm(), so
+  # the single-polynomial programs and templates serve it
+  if (is.mpolyList(poly) && length(poly) == 1L) {
+    poly <- poly[[1]]
+  }
+
   if (rejection) {
-    if (is.character(poly)) {
-      poly <- mp(poly)
-    }
     if (!is.null(Sigma)) {
       stop("`rejection = TRUE` supports `sd`, not `Sigma`.", call. = FALSE)
     }
@@ -456,10 +463,6 @@ rvnorm <- function(
   }
 
   output_needs_rewriting <- FALSE
-
-  if (is.character(poly)) {
-    poly <- mp(poly)
-  }
 
   if (is.mpoly(poly)) {
     n_eqs <- 1L

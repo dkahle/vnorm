@@ -702,6 +702,47 @@ test_that("rvnorm() says once per session that template binaries are missing", {
   )
 })
 
+test_that("rvnorm() samples an mpolyList of one polynomial as that polynomial", {
+  # pdvnorm() treats such a list as its polynomial; rvnorm() failed on it on
+  # every Stan path, templates included
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    cmdstan_model = function(...) stop("cmdstan_model should not be called"),
+    .package = "vnorm"
+  )
+  testthat::local_mocked_bindings(
+    stan_package_model = function(name, ...) {
+      capture$name <- name
+      fake_cmdstan_model(draws_df, capture = capture)
+    },
+    .package = "instantiate"
+  )
+
+  p <- mp("x^2 + y^2 - 1")
+  out <- rvnorm(2, mpolyList(p), sd = 0.05, w = 2, chains = 1, cores = 1)
+  data_list <- read_stan_data(capture$args$data)
+  expect_identical(capture$name, "2_2_vn_w")
+  expect_named(out, c("x", "y"))
+  rvnorm(2, p, sd = 0.05, w = 2, chains = 1, cores = 1)
+  expect_identical(data_list, read_stan_data(capture$args$data))
+
+  rvnorm(2, mpolyList(mp("a^2 + b^2 - 1")), sd = 0.05, chains = 1, cores = 1)
+  expect_identical(capture$name, "2_2_vn")
+
+  expect_identical(
+    rvnorm(2, mpolyList(p), sd = 0.05, code_only = TRUE),
+    rvnorm(2, p, sd = 0.05, code_only = TRUE)
+  )
+  expect_error(
+    rvnorm(2, mpolyList(p), sd = c(0.05, 0.1), code_only = TRUE),
+    "single positive numeric"
+  )
+})
+
 test_that("rvnorm() pre_compiled auto-disables for mpolyList and uses regular path", {
   draws_df <- data.frame(
     lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE

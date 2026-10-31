@@ -60,6 +60,29 @@ test_that("Stops if pre-compiled model already exists", {
   )
 })
 
+test_that("compile_stan_code() treats an mpolyList of one polynomial as that polynomial", {
+  # rvnorm(user_compiled = TRUE) looks the model up under the polynomial's name
+  info <- get_compiled_stan_info()
+  withr::defer(set_compiled_stan_info(info))
+  clear_compiled_stan_info()
+  testthat::local_mocked_bindings(
+    cmdstan_model = function(path) path,
+    .package = "vnorm"
+  )
+
+  expect_error(
+    compile_stan_code(mpolyList(mp("x^2 + y^2"))),
+    "Pre-compiled model for the general case already exists"
+  )
+
+  p <- mp("x^4 + y^4 - 1")
+  suppressMessages(compile_stan_code(mpolyList(p)))
+  expect_identical(
+    get_compiled_stan_info()$name,
+    generate_model_name(p, homo = TRUE, windowed = FALSE)
+  )
+})
+
 test_that("Compiles model correctly for an mpolyList object", {
   skip_if_no_cmdstan()
   p <- mp(c("x^2 + y^2 - 1","y - x"))

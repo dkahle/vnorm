@@ -38,7 +38,8 @@ rvnorm(
 they are split evenly across \code{chains}.}
 
 \item{poly}{An \code{mpoly} or \code{mpolyList} object, or a character vector that
-\code{\link[mpoly:mp]{mpoly::mp()}} can parse.}
+\code{\link[mpoly:mp]{mpoly::mp()}} can parse. An \code{mpolyList} of one polynomial is treated as
+that polynomial.}
 
 \item{sd}{Scale parameter for the normal kernel. If \code{Sigma} is supplied,
 \code{sd} is replaced by \code{Sigma}. For single-polynomial sampling, \code{sd} must be
