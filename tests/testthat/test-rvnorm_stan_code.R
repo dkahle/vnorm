@@ -140,6 +140,13 @@ test_that("stan_real writes the shortest decimal that reads back exactly", {
   expect_identical(stan_real(1.23456789012345), "1.23456789012345")
   expect_identical(stan_real(1 / 3), sprintf("%.17g", 1 / 3))
   expect_identical(stan_real(0.1 + 0.2), sprintf("%.17g", 0.1 + 0.2))
+
+  # R's parser on arm64 reads the 15-digit -0.000000000261404920558413 back
+  # as this value, but stanc and C++ round it to the neighboring double
+  # -0x1.1f6af1a526407p-32; the hex literal keeps R's decimal parser out
+  expect_identical(
+    stan_real(-0x1.1f6af1a526408p-32), "-0.00000000026140492055841303"
+  )
 })
 
 test_that("create_stan_code writes integer coefficients beyond Stan int as reals", {

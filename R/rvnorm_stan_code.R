@@ -188,10 +188,12 @@ stan_poly_expr <- function(poly) {
 }
 
 stan_real <- function(x) {
-  # shortest decimal reading back as x: 15 significant digits when they do
-  # (R parses up to 15 exactly), else 17, which always do in stanc and C++
-  # (R's own parser misreads some 17-digit decimals)
+  # shortest decimal that stanc and C++ read back as x: 15 significant digits
+  # when they do, else 17, which always do. Both round correctly, as C's
+  # strtod() does under jsonlite's parser; R's own parser does not on every
+  # platform (on arm64 it reads -0.000000000261404920558413 as
+  # -0x1.1f6af1a526408p-32, one ulp from the correctly rounded value)
   out <- format(x, digits = 15, scientific = FALSE)
-  if (as.numeric(out) != x) out <- format(x, digits = 17, scientific = FALSE)
+  if (jsonlite::parse_json(out) != x) out <- format(x, digits = 17, scientific = FALSE)
   out
 }
