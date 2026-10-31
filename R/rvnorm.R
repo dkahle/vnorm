@@ -783,6 +783,13 @@ rvnorm <- function(
   )
   # seed is injected separately to avoid passing NULL to cmdStan
   if (!is.null(seed)) sample_args$seed <- seed
+  # cmdstanr names output files after the minute and a draw from R's RNG,
+  # so runs after the same set.seed() shared them, and garbage collecting
+  # the first run's fit deleted the second's files before they were read.
+  # tempfile() names do not depend on R's RNG
+  if (is.null(sample_args$output_basename)) {
+    sample_args$output_basename <- basename(tempfile("vnorm-"))
+  }
   samps <- do.call(model$sample, sample_args)
 
   if (output == "simple") {

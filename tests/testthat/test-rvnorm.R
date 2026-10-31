@@ -47,6 +47,43 @@ test_that("rvnorm() respects RNG seeds", {
   expect_equal(samps1, samps2)
 })
 
+test_that("rvnorm() gives each run its own output files", {
+  # cmdstanr named them after the minute and a draw from R's RNG, so runs
+  # after the same set.seed() shared them, and garbage collecting the first
+  # run's fit deleted the second's files
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+  testthat::local_mocked_bindings(
+    stan_package_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "instantiate"
+  )
+
+  withr::local_seed(1)
+  rvnorm(2, mp("x^2 + y^2 - 1"), sd = 0.1, chains = 1, cores = 1)
+  first <- capture$args$output_basename
+  set.seed(1)
+  rvnorm(2, mp("x^2 + y^2 - 1"), sd = 0.1, chains = 1, cores = 1)
+  expect_type(first, "character")
+  expect_false(identical(capture$args$output_basename, first))
+
+  # a basename passed through `...` is kept
+  rvnorm(2, mp("x^2 + y^2 - 1"), sd = 0.1, chains = 1, cores = 1, output_basename = "mine")
+  expect_identical(capture$args$output_basename, "mine")
+})
+
+test_that("rvnorm() runs after the same set.seed() keep their output files", {
+  skip_if_no_cmdstan()
+  withr::local_seed(1)
+  fit1 <- rvnorm(10, mp("x^2 + y^2 - 1"), sd = 0.1, output = "stanfit", chains = 1, cores = 1)
+  set.seed(1)
+  fit2 <- rvnorm(10, mp("x^2 + y^2 - 1"), sd = 0.1, output = "stanfit", chains = 1, cores = 1)
+  rm(fit1)
+  invisible(gc())
+  expect_true(all(file.exists(fit2$output_files())))
+})
+
 test_that("rvnorm() has stated output", {
   skip_if_no_cmdstan()
   samps1 <- rvnorm(
