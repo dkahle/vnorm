@@ -94,8 +94,9 @@ from \code{sd} or \code{Sigma}; see Details.}
 
 \item{pilot_sd}{With \code{noise = "domain"}, the scale of the homogeneous
 variety normal whose draws are projected onto the variety to give its
-uniform points. Their distribution differs from uniform by terms of order
-\code{pilot_sd^2} times the variety's squared curvature, and the cost of
+uniform points. Where the variety is smooth and \code{poly} has no repeated
+factors, their distribution differs from uniform by terms of order
+\code{pilot_sd^2} times the variety's squared curvature; the cost of
 sampling grows roughly like \code{1 / pilot_sd}. Defaults to a tenth of the
 noise scale, \code{sqrt(mean(diag(Sigma))) / 10}.}
 
@@ -174,7 +175,15 @@ covariance from \code{sd} or \code{Sigma}. The points \code{u} are draws of the
 homogeneous variety normal with scale \code{pilot_sd}, each moved to the
 closest point on the variety; draws whose projection fails, as near
 singular points, are replaced by further pilot runs, whose chains
-continue the numbering in \code{.chain}. The window bounds \code{u}, not \code{x}. As with
+continue the numbering in \code{.chain}. The window bounds \code{u}, not \code{x}.
+
+Uniform points need a variety of finite size: compact, or bounded by
+the window \code{w}. They also need equations without repeated factors. On
+a component where \code{poly} has a factor such as \code{(x - 1)^2}, the pilot's
+residual is about half the distance to the variety, so that component
+would get twice its share; \code{rvnorm()} detects this and stops. The
+approximation is of order \code{pilot_sd^2} where the variety is smooth, and
+isolated singular points, such as crossings, do not affect it. As with
 codomain noise, chains do not cross between disconnected components, so
 \code{rejection = TRUE} suits such varieties better. \code{"tibble"} output adds
 the points \code{u} as \verb{<var>_proj} columns; \code{"stanfit"} output and

@@ -85,6 +85,7 @@ rvnorm_domain_latent <- function(
   chains_used <- 0L
   n_failed <- 0L
   n_projected <- 0L
+  n_stretched <- 0L
   # spare draws for projections that fail or leave the window
   n_draw <- n + ceiling(if (is.null(window)) 0.02 * n else 0.1 * n) + 10L
   for (round in seq_len(5L)) {
@@ -94,6 +95,15 @@ rvnorm_domain_latent <- function(
     ))
     x0 <- as.matrix(pilot[, vars, drop = FALSE])
     proj <- project_rows_closest(x0, poly, vars, max_dist = 10 * pilot_sd)
+    # the pilot's residual |J^+ g| is the distance to the variety to first
+    # order where poly is square-free, and about the distance / k on a
+    # component where it has a factor of multiplicity k, like (x - 1)^2.
+    # There the pilot's tube is k times wider, and its points weigh k
+    # times as much. Crossings of two smooth branches keep the ratio below
+    # sqrt(2)
+    distance <- sqrt(rowSums((proj$points - x0)^2))
+    n_stretched <- n_stretched +
+      sum(proj$ok & distance > 1.5 * proj$residual)
     keep <- proj$ok & rvnorm_in_window(proj$points, window)
     n_failed <- n_failed + sum(!proj$ok)
     n_projected <- n_projected + nrow(x0)
@@ -114,7 +124,19 @@ rvnorm_domain_latent <- function(
     stop(
       "Only ", nrow(points), " of ", n, " pilot draws projected onto the ",
       "variety", if (!is.null(window)) " inside the window `w`", ". Check ",
-      "that the variety has points there, or lower `pilot_sd`.",
+      "that the variety has points there and that `poly` has no repeated ",
+      "factors, or lower `pilot_sd`.",
+      call. = FALSE
+    )
+  }
+  if (n_stretched > 0.01 * (n_projected - n_failed)) {
+    stop(
+      "At ", n_stretched, " of ", n_projected - n_failed, " pilot draws, the ",
+      "residual |J^+ g| was under two thirds of the distance to the variety, ",
+      "so the pilot would weight those parts of the variety more. That ",
+      "happens where `poly` has a repeated factor, such as (x - 1)^2, or ",
+      "where `pilot_sd` is large next to the variety's curvature. Use ",
+      "equations without repeated factors, or lower `pilot_sd`.",
       call. = FALSE
     )
   }

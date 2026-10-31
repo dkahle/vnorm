@@ -172,6 +172,30 @@ test_that("free variables leave a system's geometry alone with CmdStan", {
   expect_true(all(abs(z$z_proj) <= 1))
 })
 
+test_that("rvnorm(noise = \"domain\") stops on repeated factors", {
+  # x^2 - x and x (x - 1)^2 both cut out {0, 1}, but the pilot's tube around
+  # the double root is twice as wide, so 1 got two thirds of the points at
+  # any pilot_sd
+  share <- function(expr) {
+    z <- rvnorm(
+      2000, mp(expr), sd = 0.1, noise = "domain", rejection = TRUE,
+      output = "tibble", w = 1.5, seed = 53
+    )
+    mean(z$x_proj > 0.5)
+  }
+  expect_equal(share("x^2 - x"), 0.5, tolerance = 0.06)
+  expect_error(share("x^3 - 2 x^2 + x"), "repeated factor")
+
+  # a repeated equation in a system
+  expect_error(
+    rvnorm(
+      200, mp(c("x^2 + y^2 - 1", "y^2")), sd = 0.1, noise = "domain",
+      rejection = TRUE, w = 1.5, seed = 1
+    ),
+    "repeated factor"
+  )
+})
+
 test_that("project_rows_closest() flags rows it cannot project", {
   # the gradient vanishes at the center
   expect_false(project_rows_closest(matrix(0, 1, 2), circle, c("x", "y"))$ok)

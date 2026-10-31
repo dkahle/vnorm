@@ -780,7 +780,7 @@ projected_rows <- function(out, x0) {
 }
 
 project_rows_closest <- function(
-    x, poly, varorder, tol = 1e-10, maxit = 50L, max_dist = Inf
+    x, poly, varorder, tol = 1e-10, maxit = 100L, max_dist = Inf
   ) {
   # the closest point on the variety of poly (an mpoly or mpolyList) to each
   # row of x, for points near it: Gauss-Newton steps u <- u - J^+ g(u) onto
@@ -788,11 +788,13 @@ project_rows_closest <- function(
   # followed by Gauss-Newton again, until x - u is normal to the variety.
   # Gauss-Newton alone lands a distance O(d^2) along the variety from the
   # closest point, d the distance to it, by an amount that depends on how
-  # poly is written. Returns the points and whether each converged: a row
-  # fails if J loses rank on the way (as at a singular point), it does not
-  # converge, or it ends more than max_dist from its start. Variables in
-  # varorder that poly does not involve have zero Jacobian columns, so their
-  # coordinates stay put
+  # poly is written. Returns the points, whether each converged, and each
+  # row's residual |J^+ g(x)|: a row fails if J loses rank on the way (as
+  # at a singular point), it does not converge, it ends more than max_dist
+  # from its start, or some equation does not vanish there. Gauss-Newton
+  # converges only linearly onto a repeated factor, hence the iterations.
+  # Variables in varorder that poly does not involve have zero Jacobian
+  # columns, so their coordinates stay put
   if (is.mpoly(poly)) {
     # one equation, all rows at once: J^+ g = g grad(g) / |grad(g)|^2
     g_fn <- poly_function(poly, varorder = varorder)
@@ -856,6 +858,7 @@ project_rows_closest <- function(
     list(u = u, ok = ok)
   }
 
+  residual <- sqrt(rowSums(step_fn(x)$step^2))
   first <- newton(x)
   u <- first$u
   ok <- first$ok
@@ -881,7 +884,7 @@ project_rows_closest <- function(
   # system it also vanishes at least-squares points where g does not, and
   # for an empty variety only there
   ok[ok] <- variety_feasible(u[ok, , drop = FALSE], poly, varorder)
-  list(points = u, ok = ok)
+  list(points = u, ok = ok, residual = residual)
 }
 
 variety_feasible <- function(u, poly, varorder, tol = 1e-8) {
