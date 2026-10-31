@@ -648,6 +648,9 @@ test_that("rvnorm() falls back when pre-compiled model is unavailable", {
     stan_package_model = function(...) stop("Stan model file \"\" not found."),
     .package = "instantiate"
   )
+  noted <- .vnorm_state$noted_missing_templates
+  withr::defer(.vnorm_state$noted_missing_templates <- noted)
+  .vnorm_state$noted_missing_templates <- NULL
 
   expect_message(
     out <- rvnorm(
@@ -658,12 +661,45 @@ test_that("rvnorm() falls back when pre-compiled model is unavailable", {
       chains = 1,
       cores = 1
     ),
-    "falling back to regular rvnorm sampling"
+    "pre-compiled Stan models are not installed"
   )
 
   expect_true(is.data.frame(out))
   expect_equal(nrow(out), 2)
   expect_equal(capture$args$iter_sampling, 2)
+})
+
+test_that("rvnorm() says once per session that template binaries are missing", {
+  # installations can have the templates' .stan files without binaries, and
+  # rvnorm() compiled every model without saying why
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
+  )
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df),
+    .package = "vnorm"
+  )
+  testthat::local_mocked_bindings(
+    stan_package_model = function(...) {
+      list(exe_file = function() tempfile(), sample = function(...) stop("no binary"))
+    },
+    .package = "instantiate"
+  )
+  noted <- .vnorm_state$noted_missing_templates
+  withr::defer(.vnorm_state$noted_missing_templates <- noted)
+  .vnorm_state$noted_missing_templates <- NULL
+
+  expect_message(
+    out <- rvnorm(2, mp("x^2 + y^2 - 1"), sd = 0.05, chains = 1, cores = 1),
+    "pre-compiled Stan models are not installed"
+  )
+  expect_true(is.data.frame(out))
+  expect_no_message(
+    rvnorm(2, mp("x^2 + y^2 - 1"), sd = 0.05, chains = 1, cores = 1)
+  )
 })
 
 test_that("rvnorm() pre_compiled auto-disables for mpolyList and uses regular path", {

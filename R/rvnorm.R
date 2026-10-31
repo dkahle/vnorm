@@ -627,15 +627,10 @@ rvnorm <- function(
         name = stan_file_name,
         package = "vnorm"
       ),
-      error = function(e) {
-        message(
-          "pre-compiled Stan model not available; ",
-          "falling back to regular rvnorm sampling"
-        )
-        NULL
-      }
+      error = function(e) NULL
     )
     if (!model_has_usable_executable(model)) {
+      rvnorm_note_missing_templates()
       poly <- poly_original
       output_needs_rewriting <- output_needs_rewriting_original
       stan_code <- if (w_supplied) {
@@ -854,6 +849,20 @@ rvnorm_resolve_scale <- function(poly, sd, Sigma, has_sd, homo, n_vars, n_eqs) {
     )
   }
   list(si = diag(as.numeric(sd)^2), target_dim = target_dim)
+}
+
+rvnorm_note_missing_templates <- function() {
+  # installations can lack the template binaries (R CMD check skips them, as
+  # do VNORM_PRECOMPILE_STAN=false and a failed compile), and rvnorm() then
+  # compiles every model; say so once per session
+  if (isTRUE(.vnorm_state$noted_missing_templates)) return(invisible(FALSE))
+  .vnorm_state$noted_missing_templates <- TRUE
+  message(
+    "vnorm's pre-compiled Stan models are not installed, so rvnorm() ",
+    "compiles a model instead, which is slower. Reinstalling vnorm with ",
+    "CmdStan available builds them. This message is shown once per session."
+  )
+  invisible(TRUE)
 }
 
 model_has_usable_executable <- function(model) {
