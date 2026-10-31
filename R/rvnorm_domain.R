@@ -83,8 +83,12 @@ rvnorm_domain_latent <- function(
   points <- matrix(numeric(0), nrow = 0, ncol = length(vars))
   index <- NULL
   chains_used <- 0L
-  n_failed <- 0L
+  degree <- max(mpoly::totaldeg(poly))
   n_projected <- 0L
+  n_failed <- 0L
+  n_off <- 0L
+  n_far <- 0L
+  n_accepted <- 0L
   n_stretched <- 0L
   # spare draws for projections that fail or leave the window
   n_draw <- n + ceiling(if (is.null(window)) 0.02 * n else 0.1 * n) + 10L
@@ -106,23 +110,33 @@ rvnorm_domain_latent <- function(
       proj$ok & proj$residual > 0, distance / proj$residual, 1
     )
     if (is.mpoly(poly)) {
+      # a factor's multiplicity is at most the degree. Draws from a
+      # component's tube lie within about 5 pilot_sd k of it; a projection
+      # farther from its draw, or with a larger ratio, jumped to another
+      # branch
       k <- pmax(1, round(multiplicity))
-      # a projection more than 10 pilot_sd times k from its draw, or with a
-      # ratio past 4.5, jumped to another branch
-      ok <- proj$ok & k <= 4 & distance <= 10 * pilot_sd * k
+      near <- k <= degree & distance <= 10 * pilot_sd * k
     } else {
       # a system's correction is a product over the normal directions,
       # which one draw cannot estimate
       k <- rep(1, nrow(x0))
-      ok <- proj$ok & distance <= 10 * pilot_sd
-      n_stretched <- n_stretched + sum(ok & multiplicity > 1.5)
+      near <- distance <= 10 * pilot_sd
+      n_stretched <- n_stretched + sum(proj$ok & near & multiplicity > 1.5)
     }
+    ok <- proj$ok & near
     keep <- ok & rvnorm_in_window(proj$points, window)
     # keep a draw on a component of multiplicity k with probability 1 / k,
     # which restores each component's share
     if (any(keep & k > 1)) keep <- keep & stats::runif(length(k)) < 1 / k
-    n_failed <- n_failed + sum(!ok)
+    # projections that did not converge lose points of the variety, which
+    # must not pass silently; those that converged off the variety (at an
+    # overdetermined system's least-squares points) or far from their draw
+    # came from pilot draws that were not near it
     n_projected <- n_projected + nrow(x0)
+    n_failed <- n_failed + sum(!proj$converged)
+    n_off <- n_off + sum(proj$converged & !proj$ok)
+    n_far <- n_far + sum(proj$ok & !near)
+    n_accepted <- n_accepted + sum(ok)
     points <- rbind(points, proj$points[keep, , drop = FALSE])
     if (all(c(".chain", ".iteration") %in% names(pilot))) {
       # each run's chains follow the previous runs', so that a chain and
@@ -145,9 +159,18 @@ rvnorm_domain_latent <- function(
       call. = FALSE
     )
   }
-  if (n_stretched > 0.01 * (n_projected - n_failed)) {
+  if (n_failed > 0.05 * n_projected) {
     stop(
-      "At ", n_stretched, " of ", n_projected - n_failed, " pilot draws, the ",
+      n_failed, " of ", n_projected, " projections onto the variety did not ",
+      "converge: Gauss-Newton ran out of iterations, or the Jacobian of ",
+      "`poly` lost rank. Parts of the variety would be missing. Check it for ",
+      "singular components, or lower `pilot_sd`.",
+      call. = FALSE
+    )
+  }
+  if (n_stretched > 0.01 * n_accepted) {
+    stop(
+      "At ", n_stretched, " of ", n_accepted, " pilot draws, the ",
       "residual |J^+ g| was under two thirds of the distance to the variety, ",
       "so the pilot would weight those parts of the variety more. That ",
       "happens where an equation of `poly` has a repeated factor, such as ",
@@ -156,11 +179,13 @@ rvnorm_domain_latent <- function(
       call. = FALSE
     )
   }
-  if (n_failed > 0.01 * n_projected) {
+  n_dropped <- n_failed + n_off + n_far
+  if (n_dropped > 0.01 * n_projected) {
     warning(
-      n_failed, " of ", n_projected, " projections onto the variety failed ",
-      "(near singular points, or far from their pilot draw) and were ",
-      "dropped.",
+      n_dropped, " of ", n_projected, " pilot draws were dropped: ",
+      n_failed, " projections did not converge, ", n_off, " converged off ",
+      "the variety (as at an overdetermined system's least-squares points), ",
+      "and ", n_far, " landed far from their draw.",
       call. = FALSE
     )
   }

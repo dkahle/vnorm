@@ -780,7 +780,7 @@ projected_rows <- function(out, x0) {
 }
 
 project_rows_closest <- function(
-    x, poly, varorder, tol = 1e-10, maxit = 100L, max_dist = Inf, scale = 1
+    x, poly, varorder, tol = 1e-10, maxit = 1000L, max_dist = Inf, scale = 1
   ) {
   # the closest point on the variety of poly (an mpoly or mpolyList) to each
   # row of x, for points near it: Gauss-Newton steps u <- u - J^+ g(u) onto
@@ -788,11 +788,12 @@ project_rows_closest <- function(
   # followed by Gauss-Newton again, until x - u is normal to the variety.
   # Gauss-Newton alone lands a distance O(d^2) along the variety from the
   # closest point, d the distance to it, by an amount that depends on how
-  # poly is written. Returns the points, whether each converged, and each
-  # row's residual |J^+ g(x)|: a row fails if J loses rank on the way (as
-  # at a singular point), it does not converge, it ends more than max_dist
-  # from its start, or some equation does not vanish there. Gauss-Newton
-  # converges only linearly onto a repeated factor, hence the iterations.
+  # poly is written. Returns the points; whether each converged, which fails
+  # if J loses rank on the way (as at a singular point), the iterations run
+  # out, or it ends more than max_dist from its start; whether it is ok,
+  # converged and with every equation vanishing there; and each row's
+  # residual |J^+ g(x)|. Gauss-Newton converges only linearly onto a
+  # factor of multiplicity k, at rate (k - 1) / k, hence the iterations.
   # Variables in varorder that poly does not involve have zero Jacobian
   # columns, so their coordinates stay put.
   #
@@ -927,12 +928,14 @@ project_rows_closest <- function(
     sqrt(rowSums((u - x)^2)) <= max_dist
   # a vanishing step does not put u on the variety: for an overdetermined
   # system it also vanishes at least-squares points where g does not, and
-  # for an empty variety only there
+  # for an empty variety only there. Rows that converged there are told
+  # apart from rows that did not converge
+  converged <- ok
   ok[ok] <- variety_feasible(
     u[ok, , drop = FALSE], poly, varorder,
     1e-6 * scale + coordinate_rounding(u[ok, , drop = FALSE])
   )
-  list(points = u, ok = ok, residual = residual)
+  list(points = u, ok = ok, converged = converged, residual = residual)
 }
 
 variety_feasible <- function(u, poly, varorder, dist) {

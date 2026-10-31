@@ -129,7 +129,7 @@ test_that("rvnorm(noise = \"domain\") places no points off the variety", {
       100, over, sd = 1, pilot_sd = 0.1, noise = "domain", rejection = TRUE,
       output = "tibble", w = 1.5, seed = 43
     ),
-    "projections onto the variety failed"
+    "pilot draws were dropped"
   )
   expect_true(all(abs(z$x_proj - 1) < 1e-8))
 
@@ -377,7 +377,7 @@ test_that("rvnorm(noise = \"domain\") replaces failed projections from new pilot
   center <- data.frame(x = 0, y = 0, .chain = 1L, .iteration = 0L)
   calls <- mock_pilot(function(call) {
     if (call == 1L) {
-      rbind(near_circle(40, seed = 1), center[rep(1, 20), ])
+      rbind(near_circle(40, seed = 1), center[rep(1, 3), ])
     } else {
       near_circle(100, seed = 2)
     }
@@ -385,7 +385,7 @@ test_that("rvnorm(noise = \"domain\") replaces failed projections from new pilot
 
   expect_warning(
     out <- rvnorm(80, circle, sd = 0.1, noise = "domain", output = "tibble", seed = 7),
-    "20 of 160 projections onto the variety failed"
+    "3 of 143 pilot draws were dropped: 3 projections did not converge"
   )
   expect_equal(vapply(calls$args, `[[`, numeric(1), "seed"), c(7, 8))
   expect_equal(nrow(out), 80)
@@ -400,6 +400,24 @@ test_that("rvnorm(noise = \"domain\") replaces failed projections from new pilot
     rvnorm(10, circle, sd = 0.1, noise = "domain"),
     "Only 0 of 10 pilot draws projected onto the variety"
   )
+
+  # many projections that do not converge stop, as parts of the variety
+  # would be missing, instead of a warning over a full sample
+  mock_pilot(rbind(near_circle(70, seed = 3), center[rep(1, 30), ]))
+  expect_error(
+    rvnorm(50, circle, sd = 0.1, noise = "domain"),
+    "30 of 100 projections onto the variety did not converge"
+  )
+})
+
+test_that("rvnorm(noise = \"domain\") corrects multiplicities up to the degree", {
+  # a cap of 4 took the draws at x^6 - x^5's root 0, of multiplicity 5, for
+  # jumps to another branch, and every point went to 1
+  z <- rvnorm(
+    2000, mp("x^6 - x^5"), sd = 0.1, pilot_sd = 0.01, noise = "domain",
+    rejection = TRUE, output = "tibble", w = 1.5, seed = 53
+  )
+  expect_equal(mean(z$x_proj > 0.5), 0.5, tolerance = 0.06)
 })
 
 test_that("rvnorm(noise = \"domain\") seeds its noise without changing R's stream", {
