@@ -377,7 +377,7 @@ test_that("rvnorm(noise = \"domain\") replaces failed projections from new pilot
   center <- data.frame(x = 0, y = 0, .chain = 1L, .iteration = 0L)
   calls <- mock_pilot(function(call) {
     if (call == 1L) {
-      rbind(near_circle(40, seed = 1), center[rep(1, 3), ])
+      rbind(near_circle(60, seed = 1), center[rep(1, 2), ])
     } else {
       near_circle(100, seed = 2)
     }
@@ -385,7 +385,7 @@ test_that("rvnorm(noise = \"domain\") replaces failed projections from new pilot
 
   expect_warning(
     out <- rvnorm(80, circle, sd = 0.1, noise = "domain", output = "tibble", seed = 7),
-    "3 of 143 pilot draws were dropped: 3 projections did not converge"
+    "2 of 162 pilot draws were dropped: 2 projections did not converge"
   )
   expect_equal(vapply(calls$args, `[[`, numeric(1), "seed"), c(7, 8))
   expect_equal(nrow(out), 80)
@@ -395,19 +395,51 @@ test_that("rvnorm(noise = \"domain\") replaces failed projections from new pilot
   expect_equal(anyDuplicated(as.data.frame(out[, c(".chain", ".iteration")])), 0L)
   expect_setequal(unique(out$.chain), 1:4)
 
+  # many projections that do not converge stop, as parts of the variety
+  # would be missing, instead of a warning over a full sample. The check
+  # follows every pilot run, so it does not wait for further runs
   mock_pilot(center[rep(1, 20), ])
   expect_error(
     rvnorm(10, circle, sd = 0.1, noise = "domain"),
-    "Only 0 of 10 pilot draws projected onto the variety"
+    "20 of 20 projections onto the variety did not converge"
   )
-
-  # many projections that do not converge stop, as parts of the variety
-  # would be missing, instead of a warning over a full sample
   mock_pilot(rbind(near_circle(70, seed = 3), center[rep(1, 30), ]))
   expect_error(
     rvnorm(50, circle, sd = 0.1, noise = "domain"),
     "30 of 100 projections onto the variety did not converge"
   )
+})
+
+test_that("rvnorm(noise = \"domain\") stops when it cannot locate the variety precisely", {
+  # expanded, (x - 1)^3 vanishes to within rounding error over about 5e-5
+  # around 1, which went unnoticed as latent noise next to sd = 1e-5
+  expect_error(
+    rvnorm(
+      400, mp("(x - 1)^3"), sd = 1e-5, noise = "domain", rejection = TRUE,
+      w = c(0.999, 1.001), seed = 17
+    ),
+    "locates the variety only to about"
+  )
+
+  # the reduced polynomial is exact
+  z <- rvnorm(
+    400, mp("x - 1"), sd = 1e-5, noise = "domain", rejection = TRUE,
+    output = "tibble", w = c(0.999, 1.001), seed = 17
+  )
+  expect_true(all(z$x_proj == 1))
+
+  # and the cube is precise enough next to larger noise
+  z <- rvnorm(
+    400, mp("(x - 1)^3"), sd = 0.1, noise = "domain", rejection = TRUE,
+    output = "tibble", w = 1.5, seed = 18
+  )
+  expect_lt(max(abs(z$x_proj - 1)), 1e-3)
+
+  # the projection's own estimate: rounding level on a simple root, larger
+  # on a cube
+  x <- matrix(c(1.002, 0.997), ncol = 1)
+  expect_lt(max(project_rows_closest(x, mp("x - 1"), "x")$precision), 1e-14)
+  expect_gt(min(project_rows_closest(x, mp("(x - 1)^3"), "x")$precision), 1e-7)
 })
 
 test_that("rvnorm(noise = \"domain\") corrects multiplicities up to the degree", {

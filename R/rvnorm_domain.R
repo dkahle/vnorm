@@ -48,9 +48,13 @@ rvnorm_domain <- function(
     return(rvnorm_domain_pilot(n, poly, pilot_sd, rejection, seed, pilot_args))
   }
 
+  # the latent points must lie on the variety to within 1% of the noise's
+  # smallest sd, or they would add noise of their own
+  noise_sd_min <- sqrt(min(eigen(noise_cov, symmetric = TRUE, only.values = TRUE)$values))
   draws <- rvnorm_with_seed(seed, {
     latent <- rvnorm_domain_latent(
-      n, poly, sample_vars, pilot_sd, rejection, seed, pilot_args, window
+      n, poly, sample_vars, pilot_sd, rejection, seed, pilot_args, window,
+      noise_sd_min
     )
     latent$x <- latent$points + rvnorm_gaussian_noise(n, noise_cov)
     latent
@@ -73,23 +77,65 @@ rvnorm_domain <- function(
 }
 
 rvnorm_domain_latent <- function(
-    n, poly, vars, pilot_sd, rejection, seed, pilot_args, window
+    n, poly, vars, pilot_sd, rejection, seed, pilot_args, window,
+    noise_sd_min = Inf
   ) {
   # n points nearly uniform on the variety, within the window if there is
   # one: pilot draws of the homogeneous variety normal, each moved to the
-  # closest point on the variety. Returns the points, the chain and
-  # iteration of their pilot draws (NULL for rejection pilots), and how many
-  # projections were tried and failed
+  # closest point on the variety. Each point must be located to within 1%
+  # of noise_sd_min. Returns the points, the chain and iteration of their
+  # pilot draws (NULL for rejection pilots), and how many projections were
+  # tried and failed
   points <- matrix(numeric(0), nrow = 0, ncol = length(vars))
   index <- NULL
   chains_used <- 0L
   degree <- max(mpoly::totaldeg(poly))
+  accuracy <- 0.01 * noise_sd_min
   n_projected <- 0L
   n_failed <- 0L
   n_off <- 0L
   n_far <- 0L
   n_accepted <- 0L
   n_stretched <- 0L
+  n_imprecise <- 0L
+  precision_missed <- numeric(0)
+  # conditions under which the latent points cannot be trusted, checked
+  # after every pilot run so as not to waste further runs
+  stop_if_untrusted <- function() {
+    if (n_stretched > 0.01 * n_accepted) {
+      stop(
+        "At ", n_stretched, " of ", n_accepted, " pilot draws, the ",
+        "residual |J^+ g| was under two thirds of the distance to the ",
+        "variety, so the pilot would weight those parts of the variety ",
+        "more. That happens where an equation of `poly` has a repeated ",
+        "factor, such as (x - 1)^2, or where `pilot_sd` is large next to ",
+        "the variety's curvature. Use equations without repeated factors, ",
+        "or lower `pilot_sd`.",
+        call. = FALSE
+      )
+    }
+    if (n_imprecise > 0.01 * (n_accepted + n_imprecise)) {
+      stop(
+        "At ", n_imprecise, " of ", n_accepted + n_imprecise, " pilot ",
+        "draws, the projection locates the variety only to about ",
+        signif(stats::median(precision_missed), 2), ", not within 1% of the ",
+        "noise's smallest sd, ", signif(noise_sd_min, 2), ". Near a ",
+        "repeated factor, such as (x - 1)^3, the expanded polynomial loses ",
+        "precision. Use the polynomial without the repeated factor, or ",
+        "larger noise.",
+        call. = FALSE
+      )
+    }
+    if (n_failed > 0.05 * n_projected) {
+      stop(
+        n_failed, " of ", n_projected, " projections onto the variety did ",
+        "not converge: Gauss-Newton ran out of iterations, or the Jacobian ",
+        "of `poly` lost rank. Parts of the variety would be missing. Check ",
+        "it for singular components, or lower `pilot_sd`.",
+        call. = FALSE
+      )
+    }
+  }
   # spare draws for projections that fail or leave the window
   n_draw <- n + ceiling(if (is.null(window)) 0.02 * n else 0.1 * n) + 10L
   for (round in seq_len(5L)) {
@@ -123,7 +169,10 @@ rvnorm_domain_latent <- function(
       near <- distance <= 10 * pilot_sd
       n_stretched <- n_stretched + sum(proj$ok & near & multiplicity > 1.5)
     }
-    ok <- proj$ok & near
+    precise <- proj$ok & near & proj$precision <= accuracy
+    n_imprecise <- n_imprecise + sum(proj$ok & near & !precise)
+    precision_missed <- c(precision_missed, proj$precision[proj$ok & near & !precise])
+    ok <- precise
     keep <- ok & rvnorm_in_window(proj$points, window)
     # keep a draw on a component of multiplicity k with probability 1 / k,
     # which restores each component's share
@@ -146,6 +195,7 @@ rvnorm_domain_latent <- function(
       chains_used <- chains_used + max(pilot$.chain)
       index <- rbind(index, run_index)
     }
+    stop_if_untrusted()
     if (nrow(points) >= n) break
     rate <- max(mean(keep), 0.05)
     n_draw <- ceiling(1.5 * (n - nrow(points)) / rate) + 10L
@@ -159,33 +209,14 @@ rvnorm_domain_latent <- function(
       call. = FALSE
     )
   }
-  if (n_failed > 0.05 * n_projected) {
-    stop(
-      n_failed, " of ", n_projected, " projections onto the variety did not ",
-      "converge: Gauss-Newton ran out of iterations, or the Jacobian of ",
-      "`poly` lost rank. Parts of the variety would be missing. Check it for ",
-      "singular components, or lower `pilot_sd`.",
-      call. = FALSE
-    )
-  }
-  if (n_stretched > 0.01 * n_accepted) {
-    stop(
-      "At ", n_stretched, " of ", n_accepted, " pilot draws, the ",
-      "residual |J^+ g| was under two thirds of the distance to the variety, ",
-      "so the pilot would weight those parts of the variety more. That ",
-      "happens where an equation of `poly` has a repeated factor, such as ",
-      "(x - 1)^2, or where `pilot_sd` is large next to the variety's ",
-      "curvature. Use equations without repeated factors, or lower `pilot_sd`.",
-      call. = FALSE
-    )
-  }
-  n_dropped <- n_failed + n_off + n_far
+  n_dropped <- n_failed + n_off + n_far + n_imprecise
   if (n_dropped > 0.01 * n_projected) {
     warning(
       n_dropped, " of ", n_projected, " pilot draws were dropped: ",
       n_failed, " projections did not converge, ", n_off, " converged off ",
       "the variety (as at an overdetermined system's least-squares points), ",
-      "and ", n_far, " landed far from their draw.",
+      n_far, " landed far from their draw, and ", n_imprecise, " were not ",
+      "precise enough.",
       call. = FALSE
     )
   }

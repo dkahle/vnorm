@@ -176,6 +176,10 @@ homogeneous variety normal with scale \code{pilot_sd}, each moved to the
 closest point on the variety; draws whose projection fails, as near
 singular points, are replaced by further pilot runs, whose chains
 continue the numbering in \code{.chain}. The window bounds \code{u}, not \code{x}.
+Each \code{u} lies on the variety to within 1\% of the noise's smallest
+standard deviation; near a repeated factor the expanded polynomial
+loses precision, and \code{rvnorm()} stops when it cannot locate the variety
+that closely.
 
 Uniform points need a variety of finite size: compact, or bounded by
 the window \code{w}. On a component where \code{poly} has a factor such as

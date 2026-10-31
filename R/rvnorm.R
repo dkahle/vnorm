@@ -105,6 +105,10 @@
 #'   closest point on the variety; draws whose projection fails, as near
 #'   singular points, are replaced by further pilot runs, whose chains
 #'   continue the numbering in `.chain`. The window bounds `u`, not `x`.
+#'   Each `u` lies on the variety to within 1% of the noise's smallest
+#'   standard deviation; near a repeated factor the expanded polynomial
+#'   loses precision, and `rvnorm()` stops when it cannot locate the variety
+#'   that closely.
 #'
 #'   Uniform points need a variety of finite size: compact, or bounded by
 #'   the window `w`. On a component where `poly` has a factor such as

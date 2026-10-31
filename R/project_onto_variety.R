@@ -791,8 +791,10 @@ project_rows_closest <- function(
   # poly is written. Returns the points; whether each converged, which fails
   # if J loses rank on the way (as at a singular point), the iterations run
   # out, or it ends more than max_dist from its start; whether it is ok,
-  # converged and with every equation vanishing there; and each row's
-  # residual |J^+ g(x)|. Gauss-Newton converges only linearly onto a
+  # converged and with every equation vanishing there; each row's residual
+  # |J^+ g(x)|; and each ok point's precision, the distance within which
+  # the equations' evaluation errors leave it. Gauss-Newton converges only
+  # linearly onto a
   # factor of multiplicity k, at rate (k - 1) / k, hence the iterations.
   # Variables in varorder that poly does not involve have zero Jacobian
   # columns, so their coordinates stay put.
@@ -838,6 +840,18 @@ project_rows_closest <- function(
       tangent[!known, ] <- 0
       tangent
     }
+    precision_fn <- function(u, x, residual) {
+      # the distance over which g stays within its evaluation error of 0:
+      # the error over the gradient at a simple root; on a factor of
+      # multiplicity k, where g grows like c d^k, d (error / |g(x)|)^(1/k),
+      # with c read off the row x at distance d, and k from the residual
+      err <- 4 * .Machine$double.eps * g_abs_fn(abs(u))
+      grad <- sqrt(rowSums(matrix(dg_fn(u), nrow = nrow(u))^2))
+      d <- sqrt(rowSums((u - x)^2))
+      k <- ifelse(residual > 0, pmax(1, round(d / residual)), 1)
+      repeated <- d * pmin(1, err / abs(g_fn(x)))^(1 / k)
+      ifelse(k == 1 & grad > 0, err / grad, repeated)
+    }
   } else {
     g_fn <- poly_function(poly, varorder = varorder)
     g_abs_fn <- poly_function(
@@ -848,7 +862,6 @@ project_rows_closest <- function(
     # variables poly does not involve add zero columns, which cannot raise
     # J's rank; its pseudoinverse uses poly's own columns
     full_rank <- min(length(poly), length(mpoly::vars(poly)))
-    poly_cols <- which(varorder %in% mpoly::vars(poly))
     step_fn <- function(u) {
       step <- matrix(0, nrow(u), ncol(u))
       stalled <- logical(nrow(u))
@@ -878,6 +891,16 @@ project_rows_closest <- function(
         }
       }
       r
+    }
+    precision_fn <- function(u, x, residual) {
+      # the equations' evaluation errors, carried to a distance by J^+;
+      # where J loses rank, as on a repeated equation, u is not located
+      vapply(seq_len(nrow(u)), function(i) {
+        Jp <- pdvnorm_pseudoinverse_cols(J_fn(u[i, ]), poly_cols)
+        if (attr(Jp, "rank") < full_rank) return(Inf)
+        err <- 4 * .Machine$double.eps * g_abs_fn(abs(u[i, ]))
+        sqrt(sum((Jp %*% err)^2))
+      }, numeric(1))
     }
   }
   small <- function(v, u) sqrt(rowSums(v^2)) <= tol * scale + coordinate_rounding(u)
@@ -935,7 +958,17 @@ project_rows_closest <- function(
     u[ok, , drop = FALSE], poly, varorder,
     1e-6 * scale + coordinate_rounding(u[ok, , drop = FALSE])
   )
-  list(points = u, ok = ok, converged = converged, residual = residual)
+  # how closely each accepted point is known to lie on the variety
+  precision <- rep(NA_real_, nrow(x))
+  if (any(ok)) {
+    uo <- u[ok, , drop = FALSE]
+    precision[ok] <- precision_fn(uo, x[ok, , drop = FALSE], residual[ok]) +
+      coordinate_rounding(uo)
+  }
+  list(
+    points = u, ok = ok, converged = converged, residual = residual,
+    precision = precision
+  )
 }
 
 variety_feasible <- function(u, poly, varorder, dist) {
