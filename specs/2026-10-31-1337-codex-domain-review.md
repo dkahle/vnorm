@@ -109,19 +109,61 @@ numbering across runs.
 - These fixes do not touch the HMC pilot or the projection of regular points.
 - Exact checks belong to the rejection pilot, whose draws are independent.
 
-## 4. Open questions for David
+## 4. David's decisions
 
-1. **Repeated factors: correct instead of stop?** For one polynomial, the ratio
-   distance / residual estimates each draw's multiplicity k. Keeping each draw
-   with probability 1/k would restore uniform weights. For systems the
-   correction is a product over normal directions, which one draw cannot
-   estimate, so systems would still stop.
-2. **A public latent sampler.** For example `rvariety()`, or `output =
-   "latent"`. Latent points could then be reused across noise covariances, and
-   other backends could be added later.
-3. **Exact sampling of finite root sets.** For zero-dimensional varieties,
-   `variety_solve()` could find the points, and U would be uniform over them.
-   That would avoid the chain caveat that gives x² − x its 0.375.
+1. **Repeated factors: correct single polynomials (`497c70a`).**
+   - Each pilot draw's multiplicity k = round(distance / residual) is kept
+     with probability 1/k. That draws from R's RNG only when some k > 1, so a
+     square-free polynomial's draws are unchanged for a given seed.
+   - With 8,000 rejection draws, the share at 1 of {0, 1} is 0.5065 for
+     x² − x, 0.5039 for x(x − 1)², and 0.5020 for x(x − 1)³ (SE 0.0056).
+   - A squared circle is uniform in angle.
+   - Systems still stop, since their correction is a product over normal
+     directions.
+2. **Public latent sampler: not now.** `"tibble"` output already returns the
+   latent points.
+3. **Exact sampling of finite root sets: later.**
+
+**Projecting repeated factors.** The full test suite on `c964731` flagged a
+warning: 37 of 2,450 projections had failed for the squared circle. Two
+numerical problems on repeated factors, both now fixed:
+- **Refinement.** On (x² + y² − 1)² the gradient vanishes on the circle and
+  comes from cancelling terms near it. The tangent stalled at 3.5e-10, above
+  its 2e-10 tolerance. On (x² + y² − 1)³ the computed gradient at the landing
+  point is rounding noise (about 6e-18).
+  - **Fix.** The refinement now runs only where distance ≈ residual, i.e. on
+    simple components. On repeated ones Gauss–Newton's point stands. It
+    steps along the reduced factor's normal, so it lands within O(d²) of the
+    closest point.
+- **Gauss–Newton itself.** On the cube, once f³ falls below the expanded
+  polynomial's rounding error, each step is noise over a gradient that
+  vanishes like f². That threw points across the circle, up to 1.39 away.
+  - **Fix.** Gauss–Newton now stops once |g| is within the rounding error of
+    its terms, the floor `variety_feasible()` already uses.
+- **Jump limit.** On a k-fold component the pilot's tube is k times wider,
+  so the 10 `pilot_sd` limit now scales with k. A ratio above 4.5 counts as
+  a jump to another branch.
+
+Projections of 2,000 rejection-pilot draws (`pilot_sd` 0.01) had no failures.
+Errors against `project_onto_variety()` on the reduced polynomial:
+
+| Polynomial | Error |
+|---|---|
+| ellipse | 3e-10 |
+| squared circle | 1.2e-7 |
+| cubed circle | 2.4e-5 |
+| squared ellipse | 1.5e-3, Gauss–Newton's O(d²) drift |
+
+With 8,000 draws, the shares at 1 of {0, 1} were 0.5065, 0.5071 and 0.5070
+for multiplicities 1–3, with no warnings.
+
+**Found along the way (`c964731`).** For a single polynomial,
+`rejection_sampler()` expanded |∇g|² into one polynomial and took its log.
+- Near a repeated root that expansion cancels below 0: −3.6e-15 for the true
+  9.0e-16, for x(x − 1)³ at x = 1 − 1e-4.
+- The log was then NaN, with warnings, for codomain and domain rejection
+  sampling alike.
+- It now squares the evaluated partials.
 
 ## 5. Verification
 
@@ -134,3 +176,9 @@ numbering across runs.
 - CRAN-style `R CMD check` on `f060950`: **Status: OK**. testthat summary:
   `[ FAIL 0 | WARN 2 | SKIP 3 | PASS 874 ]`, with the usual 2 warnings and 3
   skips.
+- After David's decisions, on the final tree `47a5d7a`:
+  - `devtools::test()`: **886 passed, 0 failed, 0 warnings, 1 skipped**.
+  - `R CMD check`: **Status: OK**; testthat summary
+    `[ FAIL 0 | WARN 2 | SKIP 3 | PASS 884 ]`.
+  - The new tests of `497c70a`, `c964731` and `47a5d7a` failed against their
+    pre-fix code.
