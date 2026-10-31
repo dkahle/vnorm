@@ -16,7 +16,6 @@ rvnorm_domain <- function(
     stop("`poly` must contain at least one variable.", call. = FALSE)
   }
   sample_vars <- rvnorm_resolve_vars(vars, poly)
-  n_vars <- length(sample_vars)
   noise_cov <- rvnorm_domain_covariance(sd, Sigma, sample_vars)
   if (is.null(pilot_sd)) {
     # the projected pilot draws are uniform on the variety up to terms of
@@ -48,54 +47,11 @@ rvnorm_domain <- function(
   }
 
   draws <- rvnorm_with_seed(seed, {
-    latent <- matrix(numeric(0), nrow = 0, ncol = n_vars)
-    index <- NULL
-    n_failed <- 0L
-    n_projected <- 0L
-    # spare draws for projections that fail or leave the window
-    n_draw <- n + ceiling(if (is.null(window)) 0.02 * n else 0.1 * n) + 10L
-    for (round in seq_len(5L)) {
-      pilot <- as.data.frame(rvnorm_domain_pilot(
-        n_draw, poly, pilot_sd, rejection,
-        if (!is.null(seed)) seed + round - 1L, pilot_args
-      ))
-      x0 <- as.matrix(pilot[, sample_vars, drop = FALSE])
-      proj <- project_rows_closest(x0, poly, sample_vars, max_dist = 10 * pilot_sd)
-      keep <- proj$ok & rvnorm_in_window(proj$points, window)
-      n_failed <- n_failed + sum(!proj$ok)
-      n_projected <- n_projected + nrow(x0)
-      latent <- rbind(latent, proj$points[keep, , drop = FALSE])
-      if (all(c(".chain", ".iteration") %in% names(pilot))) {
-        index <- rbind(index, as.matrix(pilot[keep, c(".chain", ".iteration")]))
-      }
-      if (nrow(latent) >= n) break
-      rate <- max(mean(keep), 0.05)
-      n_draw <- ceiling(1.5 * (n - nrow(latent)) / rate) + 10L
-    }
-    if (nrow(latent) < n) {
-      stop(
-        "Only ", nrow(latent), " of ", n, " pilot draws projected onto the ",
-        "variety", if (!is.null(window)) " inside the window `w`", ". Check ",
-        "that the variety has points there, or lower `pilot_sd`.",
-        call. = FALSE
-      )
-    }
-    if (n_failed > 0.01 * n_projected) {
-      warning(
-        n_failed, " of ", n_projected, " projections onto the variety failed ",
-        "(near singular points, or more than 10 `pilot_sd` from their pilot ",
-        "draw) and were dropped.",
-        call. = FALSE
-      )
-    }
-    # an evenly spaced subset keeps each chain's share of the draws
-    rows <- ceiling(seq_len(n) * nrow(latent) / n)
-    latent <- latent[rows, , drop = FALSE]
-    if (!is.null(index)) index <- index[rows, , drop = FALSE]
-
-    # rows of z %*% chol(Sigma) have covariance t(chol(Sigma)) %*% chol(Sigma)
-    noise <- matrix(stats::rnorm(n * n_vars), n, n_vars) %*% chol(noise_cov)
-    list(x = latent + noise, latent = latent, index = index)
+    latent <- rvnorm_domain_latent(
+      n, poly, sample_vars, pilot_sd, rejection, seed, pilot_args, window
+    )
+    latent$x <- latent$points + rvnorm_gaussian_noise(n, noise_cov)
+    latent
   })
 
   x <- draws$x
@@ -103,7 +59,7 @@ rvnorm_domain <- function(
   if (output == "simple") {
     return(as.data.frame(x))
   }
-  latent <- draws$latent
+  latent <- draws$points
   colnames(latent) <- proj_vars
   out <- cbind(as.data.frame(x), as.data.frame(latent))
   if (!is.null(draws$index)) {
@@ -112,6 +68,70 @@ rvnorm_domain <- function(
     out$.draw <- seq_len(n)
   }
   tibble::as_tibble(out)
+}
+
+rvnorm_domain_latent <- function(
+    n, poly, vars, pilot_sd, rejection, seed, pilot_args, window
+  ) {
+  # n points nearly uniform on the variety, within the window if there is
+  # one: pilot draws of the homogeneous variety normal, each moved to the
+  # closest point on the variety. Returns the points, the chain and
+  # iteration of their pilot draws (NULL for rejection pilots), and how many
+  # projections were tried and failed
+  points <- matrix(numeric(0), nrow = 0, ncol = length(vars))
+  index <- NULL
+  n_failed <- 0L
+  n_projected <- 0L
+  # spare draws for projections that fail or leave the window
+  n_draw <- n + ceiling(if (is.null(window)) 0.02 * n else 0.1 * n) + 10L
+  for (round in seq_len(5L)) {
+    pilot <- as.data.frame(rvnorm_domain_pilot(
+      n_draw, poly, pilot_sd, rejection,
+      if (!is.null(seed)) seed + round - 1L, pilot_args
+    ))
+    x0 <- as.matrix(pilot[, vars, drop = FALSE])
+    proj <- project_rows_closest(x0, poly, vars, max_dist = 10 * pilot_sd)
+    keep <- proj$ok & rvnorm_in_window(proj$points, window)
+    n_failed <- n_failed + sum(!proj$ok)
+    n_projected <- n_projected + nrow(x0)
+    points <- rbind(points, proj$points[keep, , drop = FALSE])
+    if (all(c(".chain", ".iteration") %in% names(pilot))) {
+      index <- rbind(index, as.matrix(pilot[keep, c(".chain", ".iteration")]))
+    }
+    if (nrow(points) >= n) break
+    rate <- max(mean(keep), 0.05)
+    n_draw <- ceiling(1.5 * (n - nrow(points)) / rate) + 10L
+  }
+  if (nrow(points) < n) {
+    stop(
+      "Only ", nrow(points), " of ", n, " pilot draws projected onto the ",
+      "variety", if (!is.null(window)) " inside the window `w`", ". Check ",
+      "that the variety has points there, or lower `pilot_sd`.",
+      call. = FALSE
+    )
+  }
+  if (n_failed > 0.01 * n_projected) {
+    warning(
+      n_failed, " of ", n_projected, " projections onto the variety failed ",
+      "(near singular points, or more than 10 `pilot_sd` from their pilot ",
+      "draw) and were dropped.",
+      call. = FALSE
+    )
+  }
+  # an evenly spaced subset keeps each chain's share of the draws
+  rows <- ceiling(seq_len(n) * nrow(points) / n)
+  list(
+    points = points[rows, , drop = FALSE],
+    index = if (!is.null(index)) index[rows, , drop = FALSE],
+    n_projected = n_projected,
+    n_failed = n_failed
+  )
+}
+
+rvnorm_gaussian_noise <- function(n, Sigma) {
+  # n draws of N(0, Sigma), one per row: rows of z %*% chol(Sigma) have
+  # covariance t(chol(Sigma)) %*% chol(Sigma)
+  matrix(stats::rnorm(n * ncol(Sigma)), n, ncol(Sigma)) %*% chol(Sigma)
 }
 
 rvnorm_domain_pilot <- function(n, poly, pilot_sd, rejection, seed, pilot_args) {
