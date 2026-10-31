@@ -817,11 +817,11 @@ project_rows_closest <- function(
     g_fn <- poly_function(poly, varorder = varorder)
     g_abs_fn <- poly_function(abs_coefficients(poly), varorder = varorder)
     dg_fn <- gradient_function(poly, varorder)
-    step_fn <- function(u) {
+    step_fn <- function(u, floor = TRUE) {
       g <- g_fn(u)
       dg <- matrix(dg_fn(u), nrow = nrow(u))
       dg2 <- rowSums(dg^2)
-      on_variety <- is.finite(g) & abs(g) <= rounding(g_abs_fn(abs(u)))
+      on_variety <- floor & is.finite(g) & abs(g) <= rounding(g_abs_fn(abs(u)))
       stalled <- !is.finite(g) | (!(dg2 > 0) & !on_variety)
       step <- g / dg2 * dg
       step[stalled | on_variety, ] <- 0
@@ -862,13 +862,13 @@ project_rows_closest <- function(
     # variables poly does not involve add zero columns, which cannot raise
     # J's rank; its pseudoinverse uses poly's own columns
     full_rank <- min(length(poly), length(mpoly::vars(poly)))
-    step_fn <- function(u) {
+    step_fn <- function(u, floor = TRUE) {
       step <- matrix(0, nrow(u), ncol(u))
       stalled <- logical(nrow(u))
       for (i in seq_len(nrow(u))) {
         g <- g_fn(u[i, ])
         # on the variety as far as can be told, whatever J's rank there
-        if (all(is.finite(g)) && all(abs(g) <= rounding(g_abs_fn(abs(u[i, ]))))) next
+        if (floor && all(is.finite(g)) && all(abs(g) <= rounding(g_abs_fn(abs(u[i, ]))))) next
         Jp <- pdvnorm_pseudoinverse_cols(J_fn(u[i, ]), poly_cols)
         s <- as.numeric(Jp %*% g)
         if (attr(Jp, "rank") < full_rank || any(!is.finite(s))) {
@@ -945,6 +945,20 @@ project_rows_closest <- function(
     u[moving, ] <- again$u
     ok[moving] <- again$ok
     active <- moving[again$ok]
+  }
+  # Gauss-Newton stops once |g| is within 64 eps of its terms' size, up to
+  # that distance over |grad g| from the variety (1 + 2e-14 for x^2 - x),
+  # and a window with its edge there excluded such points. Past that floor,
+  # a simple root's Newton steps are of rounding size, its gradient being
+  # O(1), so two more of them, when that small, put u within rounding error
+  # of the variety
+  polish <- which(ok & converged & simple)
+  for (. in 1:2) {
+    if (length(polish) == 0L) break
+    up <- u[polish, , drop = FALSE]
+    s <- step_fn(up, floor = FALSE)
+    move <- !s$stalled & small(s$step, up)
+    u[polish[move], ] <- up[move, , drop = FALSE] - s$step[move, , drop = FALSE]
   }
 
   ok <- ok & converged & rowSums(!is.finite(u)) == 0 &

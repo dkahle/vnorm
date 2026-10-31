@@ -378,6 +378,11 @@ test_that("rvnorm(noise = \"domain\") keeps components on the window's edge", {
   window <- rvnorm_normalize_window(1, "x")
   expect_true(rvnorm_in_window(matrix(1 + 2e-16), window, slack = 1e-15))
   expect_false(rvnorm_in_window(matrix(1 + 1e-6), window, slack = 1e-15))
+
+  # Gauss-Newton stopped at the rounding floor, up to 64 eps away (1 + 2e-14
+  # from 1.02); simple roots are polished past it
+  pr <- project_rows_closest(matrix(c(0.99, 1.01, 1.02), ncol = 1), mp("x^2 - x"), "x", scale = 0.01)
+  expect_equal(pr$points[, 1], c(1, 1, 1), tolerance = 0)
 })
 
 test_that("rvnorm(noise = \"domain\") keeps a narrow window on free variables", {
