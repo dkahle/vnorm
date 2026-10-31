@@ -875,5 +875,40 @@ project_rows_closest <- function(
 
   ok <- ok & converged & rowSums(!is.finite(u)) == 0 &
     sqrt(rowSums((u - x)^2)) <= max_dist
+  # a vanishing step does not put u on the variety: for an overdetermined
+  # system it also vanishes at least-squares points where g does not, and
+  # for an empty variety only there
+  ok[ok] <- variety_feasible(u[ok, , drop = FALSE], poly, varorder)
   list(points = u, ok = ok)
+}
+
+variety_feasible <- function(u, poly, varorder, tol = 1e-8) {
+  # whether each row of u lies on the variety: every equation g_i vanishes
+  # there to within a distance tol (1 + |u|), |g_i| <= tol (1 + |u|) |grad
+  # g_i|, or to rounding error in its terms, which covers points where
+  # grad g_i vanishes too
+  polys <- if (is.mpoly(poly)) list(poly) else unclass(poly)
+  scale <- 1 + sqrt(rowSums(u^2))
+  ok <- rep(TRUE, nrow(u))
+  for (g in polys) {
+    g_val <- poly_function(g, varorder = varorder)(u)
+    grad <- matrix(gradient_function(g, varorder)(u), nrow = nrow(u))
+    g_abs <- poly_function(abs_coefficients(g), varorder = varorder)(abs(u))
+    ok <- ok & is.finite(g_val) &
+      abs(g_val) <= tol * scale * sqrt(rowSums(grad^2)) +
+        64 * .Machine$double.eps * g_abs
+  }
+  ok
+}
+
+abs_coefficients <- function(p) {
+  # p with each coefficient replaced by its absolute value: evaluated at |u|,
+  # the sum of the magnitudes of p's terms at u
+  structure(
+    lapply(unclass(p), function(term) {
+      term[["coef"]] <- abs(term[["coef"]])
+      term
+    }),
+    class = "mpoly"
+  )
 }

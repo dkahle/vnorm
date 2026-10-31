@@ -109,6 +109,39 @@ test_that("project_rows_closest() finds the closest points on the variety", {
   expect_equal(proj_z$points[, 1:2], u, tolerance = 1e-10)
 })
 
+test_that("project_rows_closest() accepts only points where every equation vanishes", {
+  # the variety of this overdetermined system is {1}; near -1 the
+  # least-squares Gauss-Newton step vanishes at a point where g does not
+  over <- mp(c("x^2 - 1", "0.1 x - 0.1"))
+  proj <- project_rows_closest(matrix(c(-0.9, 0.9), ncol = 1), over, "x")
+  expect_identical(proj$ok, c(FALSE, TRUE))
+  expect_equal(proj$points[2, 1], 1)
+
+  # an empty variety has no points to project to
+  empty <- mp(c("x", "x - 1"))
+  expect_false(any(project_rows_closest(matrix(c(0.3, 0.6), ncol = 1), empty, "x")$ok))
+})
+
+test_that("rvnorm(noise = \"domain\") places no points off the variety", {
+  over <- mp(c("x^2 - 1", "0.1 x - 0.1"))
+  expect_warning(
+    z <- rvnorm(
+      100, over, sd = 1, pilot_sd = 0.1, noise = "domain", rejection = TRUE,
+      output = "tibble", w = 1.5, seed = 43
+    ),
+    "projections onto the variety failed"
+  )
+  expect_true(all(abs(z$x_proj - 1) < 1e-8))
+
+  expect_error(
+    rvnorm(
+      8, mp(c("x", "x - 1")), sd = 0.2, noise = "domain", rejection = TRUE,
+      w = 1, seed = 5
+    ),
+    "Only 0 of 8 pilot draws projected onto the variety"
+  )
+})
+
 test_that("project_rows_closest() flags rows it cannot project", {
   # the gradient vanishes at the center
   expect_false(project_rows_closest(matrix(0, 1, 2), circle, c("x", "y"))$ok)
