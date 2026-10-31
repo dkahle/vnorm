@@ -1037,6 +1037,20 @@ test_that("rvnorm() rejects dependent equations before building Stan models", {
     out <- rvnorm(2, p, sd = 0.1, chains = 1, cores = 1)
     expect_equal(nrow(out), 2)
   }
+
+  # rescaled by 1e-20: elimination in doubles underflowed to 0 and refused
+  # these independent equations
+  vars <- paste0("x", 1:5)
+  xs <- lapply(vars, mp)
+  s <- Reduce(`+`, xs)
+  q <- 1e-20 * structure(lapply(xs, function(x) s + 1e-8 * x), class = "mpolyList")
+  draws5 <- data.frame(lp__ = c(-1, -2), matrix(0.1, 2, 5, dimnames = list(NULL, vars)))
+  testthat::local_mocked_bindings(
+    cmdstan_model = function(...) fake_cmdstan_model(draws5),
+    .package = "vnorm"
+  )
+  out <- rvnorm(2, q, sd = 0.1, chains = 1, cores = 1)
+  expect_equal(nrow(out), 2)
 })
 
 test_that("rvnorm() full non-diagonal Sigma passed to Stan data", {

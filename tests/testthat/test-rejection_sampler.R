@@ -364,21 +364,72 @@ test_that("dependent_equations decides dependence exactly", {
   expect_false(dep(mp(c(
     "0.000000001 x^2 - 1", "y^2 - 1", "0.000000001 x^2 + y^2 - 2"
   ))))
-  # numerically rank 1 at every point (condition number 2e12), which only the
-  # exact rank settles
+  # numerically rank 1 at every point (condition number 2e12); in integers
+  # 1e-12 against 1 passes 2^53, so the exact stage is inconclusive
   expect_false(dep(mpolyList(mp("x") + 1e-12 * mp("y"), mp("x") + 2e-12 * mp("y"))))
 })
 
-test_that("polynomial_matrix_rank finds generic ranks within its budget", {
-  rows <- function(p) {
-    lapply(p, function(q) unclass(gradient_mpolylist(q, c("x", "y", "z"))))
+test_that("dependent_equations gives the same verdict for rescaled equations", {
+  # J = 11' + 1e-8 I has full rank, but elimination in doubles underflowed
+  # products of 1e-20-sized coefficients to 0 and took that for dependence
+  vars <- paste0("x", 1:5)
+  xs <- lapply(vars, mp)
+  s <- Reduce(`+`, xs)
+  p <- structure(lapply(xs, function(x) s + 1e-8 * x), class = "mpolyList")
+  rescale_first <- function(p, scale) {
+    structure(c(list(scale * p[[1]]), unclass(p)[-1]), class = "mpolyList")
   }
+  for (scale in c(1, 1e-20, 1e20)) {
+    expect_false(dependent_equations(scale * p, vars))
+    expect_false(dependent_equations(rescale_first(p, scale), vars))
+  }
+
+  # dependent equations stay dependent when rescaling keeps their
+  # coefficients' exact ratios, as for equal coefficients or doubling
+  for (q in list(mp(c("x + y + z", "(x + y + z)^2")), mp(c("x + y", "2 x + 2 y")))) {
+    v <- sort(mpoly::vars(q))
+    for (scale in c(3, 1e-20, 2^-60)) {
+      expect_true(dependent_equations(scale * q, v))
+      expect_true(dependent_equations(rescale_first(q, scale), v))
+    }
+  }
+})
+
+test_that("integer_jacobian_rows clears each equation's binary fractions exactly", {
+  rows <- function(p) {
+    r <- integer_jacobian_rows(p, sort(mpoly::vars(p)))
+    if (is.null(r)) return(NULL)
+    lapply(r, function(row) vapply(row, function(q) print(q, silent = TRUE), character(1)))
+  }
+  # 0.2 is exactly twice 0.1, and 0.6 twice 0.3
+  expect_identical(
+    rows(mp(c("0.1 x + 0.2 y - 0.3", "0.3 x + 0.6 y - 0.9"))),
+    list(c("1", "2"), c("1", "2"))
+  )
+  # 0.3 is not exactly three times 0.1, and as integers the pair passes 2^53
+  expect_null(rows(mp(c("0.1 x + 0.3 y", "x"))))
+
+  x <- c(0.1, 3, -0.5, 2^-1074, 1e300, -6)
+  parts <- binary_parts(x)
+  expect_identical(parts$m * 2^parts$e, x)
+  expect_true(all(parts$m %% 2 == 1))
+})
+
+test_that("polynomial_matrix_rank finds generic ranks within its budget", {
+  rows <- function(p) integer_jacobian_rows(p, c("x", "y", "z"))
   p <- mp(c("x^2 + y^2 + z^2 - 1", "x y - z", "x + y^2 z - 2"))
   expect_identical(polynomial_matrix_rank(rows(p)), 3L)
   expect_identical(
     polynomial_matrix_rank(rows(mp(c("x + y + z", "(x + y + z)^2")))), 1L
   )
   expect_identical(polynomial_matrix_rank(rows(p), max_work = 10), NA_integer_)
+
+  # doubles stop holding every integer at 2^53, where (2^30 + 1)^2 lies
+  big <- 2^30 + 1
+  expect_identical(
+    polynomial_matrix_rank(list(list(big * mp("x"), mp("1")), list(mp("1"), big * mp("y")))),
+    NA_integer_
+  )
 })
 
 test_that("rejection_sampler handles one-variable systems and 1 x 1 scales", {

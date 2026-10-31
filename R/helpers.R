@@ -212,8 +212,8 @@ dependent_equations <- function(poly, varorder) {
   # not, once each row is scaled to unit size (x^100 - 1 has gradient
   # 100 x^99, about 1e-20 at x = 0.6). Rank deficiency there proves nothing,
   # since badly scaled or nearly dependent equations show it too, so the rank
-  # is then found exactly from the derivative polynomials; when that would
-  # take too long the check is inconclusive and reports independence
+  # is then computed exactly, in integers. When that cannot be done exactly
+  # or quickly, the check is inconclusive and reports independence
   m <- length(poly)
   n <- length(varorder)
   k <- min(m, n)
@@ -226,17 +226,79 @@ dependent_equations <- function(poly, varorder) {
     d <- svd(J, nu = 0L, nv = 0L)$d
     if (d[k] > sqrt(.Machine$double.eps) * d[1L]) return(FALSE)
   }
-  rows <- lapply(poly, function(p) unclass(gradient_mpolylist(p, varorder)))
-  isTRUE(polynomial_matrix_rank(rows, max_work = 1e5) < k)
+  rows <- integer_jacobian_rows(poly, varorder)
+  !is.null(rows) && isTRUE(polynomial_matrix_rank(rows, max_work = 1e5) < k)
+}
+
+integer_jacobian_rows <- function(poly, varorder) {
+  # the jacobian's rows (lists of mpoly) with integer coefficients, for
+  # polynomial_matrix_rank(). Each equation is divided by the greatest common
+  # divisor of its coefficients, an odd integer times a power of two, which
+  # changes no rank and gives 0.1 x + 0.2 y (0.2 is exactly twice 0.1) the
+  # coefficients 1 and 2. NULL once a coefficient reaches 2^53, past which
+  # doubles do not hold every integer, as unrelated decimals' 53-bit
+  # expansions do
+  rows <- lapply(poly, function(p) {
+    terms <- Filter(function(term) length(term) > 1L, unclass(p))
+    if (length(terms) == 0L) return(rep(list(mp("0")), length(varorder)))
+    parts <- binary_parts(vapply(terms, function(term) term[["coef"]], numeric(1)))
+    gcd <- function(a, b) {
+      # floor(a / b) is exact for integers below 2^53, where %% warns of a
+      # loss of accuracy it does not have
+      while (b > 0) {
+        r <- a - floor(a / b) * b
+        a <- b
+        b <- r
+      }
+      a
+    }
+    coefs <- parts$m / Reduce(gcd, abs(parts$m)) * 2^(parts$e - min(parts$e))
+    lapply(varorder, function(v) {
+      # differentiate term by term: mpoly's deriv() rounds coef * power
+      d_terms <- list()
+      for (i in seq_along(terms)) {
+        powers <- terms[[i]][names(terms[[i]]) != "coef"]
+        if (!v %in% names(powers)) next
+        power <- powers[[v]]
+        powers[[v]] <- power - 1
+        d_terms[[length(d_terms) + 1L]] <- c(powers[powers > 0], coef = coefs[i] * power)
+      }
+      if (length(d_terms) == 0L) mp("0") else mpoly::mpoly(d_terms)
+    })
+  })
+  coefs <- unlist(lapply(rows, function(row) lapply(row, function(p) {
+    vapply(unclass(p), function(term) term[["coef"]], numeric(1))
+  })))
+  if (!all(is.finite(coefs)) || any(abs(coefs) >= 2^53)) return(NULL)
+  rows
+}
+
+binary_parts <- function(x) {
+  # x = m * 2^e exactly for finite nonzero x, with m an odd integer: dividing
+  # by a power of two is exact, and log2() can round across one
+  e <- floor(log2(abs(x)))
+  e <- e - (abs(x) < 2^e) + (abs(x) >= 2^(e + 1))
+  e <- pmax(e - 52, -1074)
+  m <- x / 2^e
+  repeat {
+    even <- m / 2 == floor(m / 2)
+    if (!any(even)) break
+    m[even] <- m[even] / 2
+    e[even] <- e[even] + 1
+  }
+  list(m = m, e = e)
 }
 
 polynomial_matrix_rank <- function(rows, max_work = Inf) {
-  # rank of a matrix of polynomials (a list of rows of mpoly entries) at
-  # generic points, i.e. over the rational functions, by fraction-free
-  # elimination with exact zero tests on the coefficients. Entries grow with
-  # each step, so this gives NA once the term products it would multiply out
-  # pass max_work (about 30 microseconds each)
+  # rank of a matrix of integer polynomials (a list of rows of mpoly entries)
+  # at generic points, i.e. over the rational functions, by fraction-free
+  # elimination with exact zero tests on the coefficients. Doubles hold
+  # integers exactly below 2^53, so this gives NA once an update could reach
+  # that (each coefficient of p a - f b is at most |p||a| + |f||b|, with |.|
+  # the sum of absolute coefficients), and once the term products it would
+  # multiply out pass max_work (about 30 microseconds each)
   is_zero <- function(p) all(vapply(unclass(p), function(term) term[["coef"]] == 0, logical(1)))
+  l1 <- function(p) sum(abs(vapply(unclass(p), function(term) term[["coef"]], numeric(1))))
   rank <- 0L
   work <- 0
   repeat {
@@ -256,6 +318,13 @@ polynomial_matrix_rank <- function(rows, max_work = Inf) {
       length(p) * sum(lengths(row[-j])) + length(row[[j]]) * sum(lengths(pivot_row[-j]))
     }, numeric(1)))
     if (work > max_work) return(NA_integer_)
+    # 2^52 leaves room for rounding in the bound's own sums
+    for (row in rows[to_clear]) {
+      for (col in seq_along(pivot_row)[-j]) {
+        bound <- l1(p) * l1(row[[col]]) + l1(row[[j]]) * l1(pivot_row[[col]])
+        if (bound >= 2^52) return(NA_integer_)
+      }
+    }
     rows <- lapply(seq_along(rows), function(i) {
       row <- rows[[i]]
       if (!to_clear[i]) return(row[-j])
