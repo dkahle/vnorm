@@ -361,6 +361,25 @@ test_that("rvnorm(noise = \"domain\") widens the pilot's window and keeps points
   )
 })
 
+test_that("rvnorm(noise = \"domain\") keeps components on the window's edge", {
+  # the root 1 of x^2 - x lies on the edge of w = 1; its projections land
+  # within their precision of it, as at 1 + 2e-16, and an exact window test
+  # dropped them, leaving 1 with 0.41 of the points
+  share <- function(w) {
+    z <- rvnorm(
+      2000, mp("x^2 - x"), sd = 0.1, pilot_sd = 0.01, noise = "domain",
+      rejection = TRUE, output = "tibble", w = w, seed = 53
+    )
+    mean(z$x_proj > 0.5)
+  }
+  expect_equal(share(1), 0.5, tolerance = 0.06)
+  expect_equal(share(1.1), 0.5, tolerance = 0.06)
+
+  window <- rvnorm_normalize_window(1, "x")
+  expect_true(rvnorm_in_window(matrix(1 + 2e-16), window, slack = 1e-15))
+  expect_false(rvnorm_in_window(matrix(1 + 1e-6), window, slack = 1e-15))
+})
+
 test_that("rvnorm(noise = \"domain\") keeps a narrow window on free variables", {
   # widening y and z with x made the pilot draw them from (-0.61, 0.61),
   # and all but about 1 in 3721 latent points left the window

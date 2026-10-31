@@ -173,7 +173,7 @@ rvnorm_domain_latent <- function(
     n_imprecise <- n_imprecise + sum(proj$ok & near & !precise)
     precision_missed <- c(precision_missed, proj$precision[proj$ok & near & !precise])
     ok <- precise
-    keep <- ok & rvnorm_in_window(proj$points, window)
+    keep <- ok & rvnorm_in_window(proj$points, window, slack = proj$precision)
     # keep a draw on a component of multiplicity k with probability 1 / k,
     # which restores each component's share
     if (any(keep & k > 1)) keep <- keep & stats::runif(length(k)) < 1 / k
@@ -334,16 +334,23 @@ rvnorm_widen_window <- function(window, vars, poly_vars, margin) {
   out
 }
 
-rvnorm_in_window <- function(x, window) {
-  # whether each row of x lies in the box rvnorm_normalize_window() describes
+rvnorm_in_window <- function(x, window, slack = 0) {
+  # whether each row of x lies in the box rvnorm_normalize_window()
+  # describes, to within slack (each row's precision) plus the rounding of
+  # the bounds. A projection stops within its precision of the variety, so
+  # a point of it on the box's edge, as the root 1 of x^2 - x is for w = 1,
+  # can land just outside (1 + 2e-16), and an exact test dropped it
   if (is.null(window)) return(rep(TRUE, nrow(x)))
   if (window$scalar) {
-    return(rowSums(abs(x) > window$value) == 0)
+    margin <- slack + 8 * .Machine$double.eps * window$value
+    return(rowSums(abs(x) > window$value + margin) == 0)
   }
   inside <- rep(TRUE, nrow(x))
   for (var in names(window$value)) {
     bounds <- window$value[[var]]
-    inside <- inside & x[, var] >= bounds[1] & x[, var] <= bounds[2]
+    margin <- slack + 8 * .Machine$double.eps * max(abs(bounds))
+    inside <- inside & x[, var] >= bounds[1] - margin &
+      x[, var] <= bounds[2] + margin
   }
   inside
 }
