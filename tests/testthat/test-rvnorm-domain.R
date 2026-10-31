@@ -172,7 +172,7 @@ test_that("free variables leave a system's geometry alone with CmdStan", {
   expect_true(all(abs(z$z_proj) <= 1))
 })
 
-test_that("rvnorm(noise = \"domain\") stops on repeated factors", {
+test_that("rvnorm(noise = \"domain\") corrects for repeated factors", {
   # x^2 - x and x (x - 1)^2 both cut out {0, 1}, but the pilot's tube around
   # the double root is twice as wide, so 1 got two thirds of the points at
   # any pilot_sd
@@ -184,9 +184,17 @@ test_that("rvnorm(noise = \"domain\") stops on repeated factors", {
     mean(z$x_proj > 0.5)
   }
   expect_equal(share("x^2 - x"), 0.5, tolerance = 0.06)
-  expect_error(share("x^3 - 2 x^2 + x"), "repeated factor")
+  expect_equal(share("x^3 - 2 x^2 + x"), 0.5, tolerance = 0.06)
 
-  # a repeated equation in a system
+  # a squared circle is still uniform in angle
+  z <- rvnorm(
+    1000, mp("x^2 + y^2 - 1")^2, sd = 0.1, noise = "domain", rejection = TRUE,
+    output = "tibble", w = 1.5, seed = 54
+  )
+  angle <- atan2(z$y_proj, z$x_proj) %% (2 * pi) / (2 * pi)
+  expect_gt(stats::ks.test(angle, "punif")$p.value, 0.01)
+
+  # a system's correction cannot be estimated from one draw: it stops
   expect_error(
     rvnorm(
       200, mp(c("x^2 + y^2 - 1", "y^2")), sd = 0.1, noise = "domain",

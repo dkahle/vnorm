@@ -94,11 +94,11 @@ from \code{sd} or \code{Sigma}; see Details.}
 
 \item{pilot_sd}{With \code{noise = "domain"}, the scale of the homogeneous
 variety normal whose draws are projected onto the variety to give its
-uniform points. Where the variety is smooth and \code{poly} has no repeated
-factors, their distribution differs from uniform by terms of order
-\code{pilot_sd^2} times the variety's squared curvature; the cost of
-sampling grows roughly like \code{1 / pilot_sd}. Defaults to a tenth of the
-noise scale, \code{sqrt(mean(diag(Sigma))) / 10}.}
+uniform points. Where the variety is smooth, their distribution differs
+from uniform by terms of order \code{pilot_sd^2} times the variety's squared
+curvature (see Details for repeated factors); the cost of sampling
+grows roughly like \code{1 / pilot_sd}. Defaults to a tenth of the noise
+scale, \code{sqrt(mean(diag(Sigma))) / 10}.}
 
 \item{w}{A named list of box constraints for vectors to be passed to Stan,
 see examples. If a single number, a box window \verb{(-w, w)} is applied to all
@@ -178,10 +178,12 @@ singular points, are replaced by further pilot runs, whose chains
 continue the numbering in \code{.chain}. The window bounds \code{u}, not \code{x}.
 
 Uniform points need a variety of finite size: compact, or bounded by
-the window \code{w}. They also need equations without repeated factors. On
-a component where \code{poly} has a factor such as \code{(x - 1)^2}, the pilot's
-residual is about half the distance to the variety, so that component
-would get twice its share; \code{rvnorm()} detects this and stops. The
+the window \code{w}. On a component where \code{poly} has a factor such as
+\code{(x - 1)^2}, the pilot's residual is about half the distance to the
+variety, so the pilot gives that component twice its share. For a
+single polynomial, \code{rvnorm()} estimates each pilot draw's multiplicity
+\code{k} from that ratio and keeps the draw with probability \code{1 / k}. For a
+system, whose correction one draw cannot estimate, it stops. The
 approximation is of order \code{pilot_sd^2} where the variety is smooth, and
 isolated singular points, such as crossings, do not affect it. As with
 codomain noise, chains do not cross between disconnected components, so

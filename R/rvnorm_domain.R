@@ -102,9 +102,20 @@ rvnorm_domain_latent <- function(
     # times as much. Crossings of two smooth branches keep the ratio below
     # sqrt(2)
     distance <- sqrt(rowSums((proj$points - x0)^2))
-    n_stretched <- n_stretched +
-      sum(proj$ok & distance > 1.5 * proj$residual)
+    multiplicity <- ifelse(
+      proj$ok & proj$residual > 0, distance / proj$residual, 1
+    )
     keep <- proj$ok & rvnorm_in_window(proj$points, window)
+    if (is.mpoly(poly)) {
+      # keep a draw on a component of multiplicity k with probability 1 / k,
+      # which restores each component's share
+      k <- pmax(1, round(multiplicity))
+      if (any(keep & k > 1)) keep <- keep & stats::runif(length(k)) < 1 / k
+    } else {
+      # a system's correction is a product over the normal directions,
+      # which one draw cannot estimate
+      n_stretched <- n_stretched + sum(proj$ok & multiplicity > 1.5)
+    }
     n_failed <- n_failed + sum(!proj$ok)
     n_projected <- n_projected + nrow(x0)
     points <- rbind(points, proj$points[keep, , drop = FALSE])
@@ -134,9 +145,9 @@ rvnorm_domain_latent <- function(
       "At ", n_stretched, " of ", n_projected - n_failed, " pilot draws, the ",
       "residual |J^+ g| was under two thirds of the distance to the variety, ",
       "so the pilot would weight those parts of the variety more. That ",
-      "happens where `poly` has a repeated factor, such as (x - 1)^2, or ",
-      "where `pilot_sd` is large next to the variety's curvature. Use ",
-      "equations without repeated factors, or lower `pilot_sd`.",
+      "happens where an equation of `poly` has a repeated factor, such as ",
+      "(x - 1)^2, or where `pilot_sd` is large next to the variety's ",
+      "curvature. Use equations without repeated factors, or lower `pilot_sd`.",
       call. = FALSE
     )
   }

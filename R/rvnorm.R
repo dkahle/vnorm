@@ -46,11 +46,11 @@
 #'   from `sd` or `Sigma`; see Details.
 #' @param pilot_sd With `noise = "domain"`, the scale of the homogeneous
 #'   variety normal whose draws are projected onto the variety to give its
-#'   uniform points. Where the variety is smooth and `poly` has no repeated
-#'   factors, their distribution differs from uniform by terms of order
-#'   `pilot_sd^2` times the variety's squared curvature; the cost of
-#'   sampling grows roughly like `1 / pilot_sd`. Defaults to a tenth of the
-#'   noise scale, `sqrt(mean(diag(Sigma))) / 10`.
+#'   uniform points. Where the variety is smooth, their distribution differs
+#'   from uniform by terms of order `pilot_sd^2` times the variety's squared
+#'   curvature (see Details for repeated factors); the cost of sampling
+#'   grows roughly like `1 / pilot_sd`. Defaults to a tenth of the noise
+#'   scale, `sqrt(mean(diag(Sigma))) / 10`.
 #' @param verbose If `TRUE`, print additional progress messages.
 #' @param vars Character vector of the variables to sample. Defaults to the
 #'   variables of `poly`, and must include all of them. The distribution is
@@ -107,10 +107,12 @@
 #'   continue the numbering in `.chain`. The window bounds `u`, not `x`.
 #'
 #'   Uniform points need a variety of finite size: compact, or bounded by
-#'   the window `w`. They also need equations without repeated factors. On
-#'   a component where `poly` has a factor such as `(x - 1)^2`, the pilot's
-#'   residual is about half the distance to the variety, so that component
-#'   would get twice its share; `rvnorm()` detects this and stops. The
+#'   the window `w`. On a component where `poly` has a factor such as
+#'   `(x - 1)^2`, the pilot's residual is about half the distance to the
+#'   variety, so the pilot gives that component twice its share. For a
+#'   single polynomial, `rvnorm()` estimates each pilot draw's multiplicity
+#'   `k` from that ratio and keeps the draw with probability `1 / k`. For a
+#'   system, whose correction one draw cannot estimate, it stops. The
 #'   approximation is of order `pilot_sd^2` where the variety is smooth, and
 #'   isolated singular points, such as crossings, do not affect it. As with
 #'   codomain noise, chains do not cross between disconnected components, so
