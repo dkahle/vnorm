@@ -452,3 +452,19 @@ test_that("rejection_sampler grows proposal batches at low acceptance rates", {
   expect_equal(nrow(samps), 100)
   expect_lt(max(abs(samps[, "x"])), 0.01)
 })
+
+test_that("rejection_sampler keeps the gradient norm positive near repeated roots", {
+  # the expanded square of the derivative of x (x - 1)^3 rounds below 0 near
+  # x = 1, and the kernel took its log
+  g <- mp("x^4 - 3 x^3 + 3 x^2 - x")
+  set.seed(1)
+  expect_no_warning(samps <- rejection_sampler(2000, g, sd = 0.01, w = 1.5))
+  expect_equal(nrow(samps), 2000)
+
+  # a linear polynomial's constant gradient, in one and two variables
+  set.seed(2)
+  expect_lt(max(abs(rejection_sampler(50, mp("2 x - 1"), sd = 0.01, w = 1)[, "x"] - 0.5)), 0.1)
+  set.seed(3)
+  s2 <- rejection_sampler(50, mp("x + y - 1"), sd = 0.01, w = 2)
+  expect_lt(max(abs(rowSums(s2) - 1)), 0.1)
+})

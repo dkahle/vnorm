@@ -244,20 +244,14 @@ rejection_sampler <- function(n,
     dp <- deriv(poly, vars)
     if (correct_dp_coefficients) dp <- normalize_coefficients(dp)
 
-    # sum of squared partial derivatives (gradient norm squared)
-    if (n_vars > 1) {
-      ssdp <- mp("0")
-      for (i in seq_len(n_vars)) {
-        ssdp <- ssdp + dp[[i]]^2
-      }
-    } else {
-      ssdp <- dp^2
-    }
-
-    ssdpf <- if (is.constant(ssdp)) {
-      function(x) ssdp[[1]][["coef"]]
-    } else {
-      poly_function(ssdp, varorder = vars)
+    # sum of squared partial derivatives (gradient norm squared), from the
+    # evaluated partials: expanded into one polynomial, it cancels near a
+    # repeated root and can round below 0, whose log is NaN (for
+    # x (x - 1)^3 at x = 1 - 1e-4, -3.6e-15 for 9.0e-16)
+    dpf <- poly_function(dp, varorder = vars)
+    ssdpf <- function(x) {
+      x <- matrix(x, ncol = n_vars)
+      rowSums(matrix(dpf(x), nrow = nrow(x))^2)
     }
 
     if (homo) {
