@@ -42,22 +42,19 @@ The main workflow is: define a polynomial variety, sample near it with
 Stan/HMC (primary path):
 
 ``` r
-p1 <- mp("x^2 + y^2 - 1")
-samps1 <- rvnorm(
-  2000,
-  poly = p1,
-  sd = 0.1,
-  output = "tibble"
-)
+library("ggplot2"); theme_set(theme_minimal())
+library("vnorm")
 
-ggplot(samps1, aes(x, y)) +
-  geom_point(size = 0.4) +
-  geom_variety(poly = p1, inherit.aes = FALSE, show.legend = FALSE) +
-  coord_equal() +
-  theme_minimal()
+p1 <- mp("x^2 + y^2 - 1")
+
+samps1 <- rvnorm(2000, poly = p1, sd = 0.1, output = "tibble")
+
+ggplot(samps1, aes(x, y)) + geom_point(size = 0.4) +
+  geom_variety(poly = p1) +
+  coord_equal()
 ```
 
-<img src="man/figures/README-unnamed-chunk-3-1.png" alt="" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-2-1.png" alt="" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 ## Main Functions
 
@@ -156,8 +153,7 @@ samps3 <- rvnorm(
 ggplot(samps3, aes(x, y)) +
   geom_point(size = 0.5, alpha = 0.4) +
   geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2), inherit.aes = FALSE) +
-  coord_equal() +
-  theme_minimal()
+  coord_equal()
 ```
 
 ### `pdvnorm()`: pseudo-density evaluation
@@ -193,30 +189,23 @@ directly, or `projection = "on"` to always project.
 p5 <- mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
 
 ggplot() +
-  geom_variety(poly = p5, xlim = c(-2, 2), ylim = c(-2, 2), show.legend = FALSE) +
-  coord_equal() +
-  theme_minimal()
+  geom_variety(poly = p5, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  coord_equal() 
 ```
 
-<img src="man/figures/README-unnamed-chunk-9-1.png" alt="" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-8-1.png" alt="" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 ``` r
 p6 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
 
 ggplot() +
-  geom_variety(
-    poly = p6,
-    xlim = c(-2, 2),
-    ylim = c(-2, 2),
-    vary_color = TRUE
-  ) +
+  geom_variety(poly = p6, xlim = c(-2, 2), ylim = c(-2, 2), vary_color = TRUE) +
   coord_equal() +
   scale_colour_manual(values = c("steelblue", "firebrick")) +
-  theme_minimal() +
   theme(legend.position = "top")
 ```
 
-<img src="man/figures/README-unnamed-chunk-10-1.png" alt="" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-9-1.png" alt="" width="72%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 If a squared polynomial (for example, `p^2`) produces no contour at
 `shift = 0`, `geom_variety()` prints a suggested negative `shift`. Using
@@ -238,18 +227,14 @@ ggplot() +
 ``` r
 p7 <- mp("y^2 - x^2")
 ggplot() +
-  geom_variety(
-    poly = p7^2,
-    xlim = c(-2, 2), ylim = c(-2, 2),
-    shift = -0.000959513,
-    show.legend = FALSE
+  geom_variety(poly = p7^2, xlim = c(-2, 2), ylim = c(-2, 2),
+    shift = -0.000959513
   ) +
-  coord_equal() +
-  theme_minimal()
+  coord_equal()
 #> Using shift = -0.000959513 to contour a nearby level set. For repeated-factor varieties, the projected result may still miss branches; if the unsquared polynomial is available, prefer plotting that directly.
 ```
 
-<img src="man/figures/README-unnamed-chunk-12-1.png" alt="" width="62%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-11-1.png" alt="" width="62%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 ``` r
 p7_cross <- mp("y^2 - x^2")
@@ -263,8 +248,7 @@ ggplot() +
     show.legend = FALSE
   ) +
   coord_equal() +
-  ggtitle('projection = "off"') +
-  theme_minimal()
+  ggtitle('projection = "off"')
 
 ggplot() +
   geom_variety(
@@ -275,11 +259,10 @@ ggplot() +
     show.legend = FALSE
   ) +
   coord_equal() +
-  ggtitle('projection = "auto"') +
-  theme_minimal()
+  ggtitle('projection = "auto"')
 ```
 
-<img src="man/figures/README-unnamed-chunk-13-1.png" alt="" width="49%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" /><img src="man/figures/README-unnamed-chunk-13-2.png" alt="" width="49%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-12-1.png" alt="" width="49%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" /><img src="man/figures/README-unnamed-chunk-12-2.png" alt="" width="49%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 ### `project_onto_variety()`: projection with visualization
 
@@ -293,7 +276,7 @@ x0 <- c(1.3, 0.9)
 #> [1] 0.4110961 0.2846050
 ```
 
-<img src="man/figures/README-unnamed-chunk-15-1.png" alt="" width="62%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-14-1.png" alt="" width="62%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 The red point is the starting value and the black point is its
 projection onto the variety. The grey segment shows the displacement
@@ -304,7 +287,7 @@ illustrates the homotopy projection path from the same starting point
 using fixed step sizes versus adaptive step sizes (similar to the paper
 figure). The open circles mark successive iterates along the path.
 
-<img src="man/figures/README-unnamed-chunk-16-1.png" alt="" width="92%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-15-1.png" alt="" width="92%" style="display:block; margin: 0 auto;" style="display: block; margin: auto;" />
 
 In each panel, the black curve is the target variety (an ellipse
 segment), the connected black path is the homotopy projection path from

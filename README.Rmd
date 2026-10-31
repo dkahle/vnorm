@@ -17,12 +17,6 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r, include = FALSE}
-library(vnorm)
-library(mpoly)
-library(ggplot2)
-```
-
 # vnorm
 
 <img src="man/figures/logo.png" align="right" width="180" alt="vnorm logo" />
@@ -61,19 +55,16 @@ The main workflow is: define a polynomial variety, sample near it with
 Stan/HMC (primary path):
 
 ```{r fig.width = 4.8, fig.height = 3.4, message = FALSE}
-p1 <- mp("x^2 + y^2 - 1")
-samps1 <- rvnorm(
-  2000,
-  poly = p1,
-  sd = 0.1,
-  output = "tibble"
-)
+library("ggplot2"); theme_set(theme_minimal())
+library("vnorm")
 
-ggplot(samps1, aes(x, y)) +
-  geom_point(size = 0.4) +
-  geom_variety(poly = p1, inherit.aes = FALSE, show.legend = FALSE) +
-  coord_equal() +
-  theme_minimal()
+p1 <- mp("x^2 + y^2 - 1")
+
+samps1 <- rvnorm(2000, poly = p1, sd = 0.1, output = "tibble")
+
+ggplot(samps1, aes(x, y)) + geom_point(size = 0.4) +
+  geom_variety(poly = p1) +
+  coord_equal()
 ```
 
 ## Main Functions
@@ -166,8 +157,7 @@ samps3 <- rvnorm(
 ggplot(samps3, aes(x, y)) +
   geom_point(size = 0.5, alpha = 0.4) +
   geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2), inherit.aes = FALSE) +
-  coord_equal() +
-  theme_minimal()
+  coord_equal()
 ```
 
 ### `pdvnorm()`: pseudo-density evaluation
@@ -198,24 +188,17 @@ raw shifted level set directly, or `projection = "on"` to always project.
 p5 <- mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
 
 ggplot() +
-  geom_variety(poly = p5, xlim = c(-2, 2), ylim = c(-2, 2), show.legend = FALSE) +
-  coord_equal() +
-  theme_minimal()
+  geom_variety(poly = p5, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  coord_equal() 
 ```
 
 ```{r warning = FALSE}
 p6 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
 
 ggplot() +
-  geom_variety(
-    poly = p6,
-    xlim = c(-2, 2),
-    ylim = c(-2, 2),
-    vary_color = TRUE
-  ) +
+  geom_variety(poly = p6, xlim = c(-2, 2), ylim = c(-2, 2), vary_color = TRUE) +
   coord_equal() +
   scale_colour_manual(values = c("steelblue", "firebrick")) +
-  theme_minimal() +
   theme(legend.position = "top")
 ```
 
@@ -236,14 +219,10 @@ ggplot() +
 ```{r fig.width = 4.0, fig.height = 2.8, out.width = "62%"}
 p7 <- mp("y^2 - x^2")
 ggplot() +
-  geom_variety(
-    poly = p7^2,
-    xlim = c(-2, 2), ylim = c(-2, 2),
-    shift = -0.000959513,
-    show.legend = FALSE
+  geom_variety(poly = p7^2, xlim = c(-2, 2), ylim = c(-2, 2),
+    shift = -0.000959513
   ) +
-  coord_equal() +
-  theme_minimal()
+  coord_equal()
 ```
 
 ```{r fig.width = 6.0, fig.height = 2.8, out.width = "49%", fig.show = "hold", warning = FALSE, message = FALSE}
@@ -258,8 +237,7 @@ ggplot() +
     show.legend = FALSE
   ) +
   coord_equal() +
-  ggtitle('projection = "off"') +
-  theme_minimal()
+  ggtitle('projection = "off"')
 
 ggplot() +
   geom_variety(
@@ -270,8 +248,7 @@ ggplot() +
     show.legend = FALSE
   ) +
   coord_equal() +
-  ggtitle('projection = "auto"') +
-  theme_minimal()
+  ggtitle('projection = "auto"')
 ```
 
 ### `project_onto_variety()`: projection with visualization
@@ -305,8 +282,7 @@ ggplot() +
   ) +
   geom_point(data = df_proj, aes(x, y), colour = "firebrick", size = 2) +
   geom_point(data = df_proj, aes(x_proj, y_proj), colour = "black", size = 2) +
-  coord_equal() +
-  theme_minimal()
+  coord_equal()
 ```
 
 The red point is the starting value and the black point is its projection onto
@@ -456,8 +432,7 @@ ggplot() +
   geom_point(data = df_paths, aes(x, y), size = 1.6, shape = 1, stroke = 0.5) +
   geom_point(data = df_start, aes(x, y), size = 1.7, shape = 16) +
   coord_equal(xlim = c(0.9, 3.1), ylim = c(1.95, 3.05), expand = FALSE) +
-  facet_wrap(~ method) +
-  theme_minimal()
+  facet_wrap(~ method)
 ```
 
 In each panel, the black curve is the target variety (an ellipse segment), the
