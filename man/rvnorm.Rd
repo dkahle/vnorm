@@ -82,7 +82,10 @@ see examples. If a single number, a box window \verb{(-w, w)} is applied to all
 variables. With \code{rejection = TRUE}, a missing \code{w} means \code{w = 1.25}, the
 \code{\link[=rejection_sampler]{rejection_sampler()}} default.}
 
-\item{vars}{Character vector of polynomial indeterminates.}
+\item{vars}{Character vector of the variables to sample. Defaults to the
+variables of \code{poly}, and must include all of them. The distribution is
+flat along variables that \code{poly} does not involve, so \code{w} must bound
+those, and they are sampled uniformly within it.}
 
 \item{numerator, denominator}{Character scalars containing printed numerator
 and denominator forms.}
@@ -94,10 +97,10 @@ progress is reported.}
 
 \item{pre_compiled}{If \code{TRUE} (the default), sample with a Stan model
 compiled when vnorm was installed whenever one covers the request: a
-single polynomial in at most three variables of total degree at most
-three, with no window or the same window \verb{(-a, a)} on every variable.
-Other requests, and installations without these models, compile a model
-for \code{poly}.}
+single polynomial in at most three variables (counting \code{vars}) of total
+degree at most three, with no window or the same window \verb{(-a, a)} on
+every variable. Other requests, and installations without these models,
+compile a model for \code{poly}.}
 
 \item{user_compiled}{If \code{TRUE}, use a user-compiled Stan program produced by
 \code{\link[=compile_stan_code]{compile_stan_code()}}. Defaults to \code{FALSE}.}
@@ -122,8 +125,8 @@ for caveats.
 }
 \details{
 Variable columns in \code{"simple"} and \code{"tibble"} output appear in
-sorted variable order (\code{sort(mpoly::vars(poly))}), regardless of the
-order in which variables appear in the polynomial's terms.
+sorted variable order (\code{sort(vars)}), regardless of the order in which
+variables appear in the polynomial's terms.
 
 When the variety has several disconnected components, HMC chains cannot
 cross the low-density regions between them, so the share of draws in

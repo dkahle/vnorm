@@ -50,9 +50,11 @@ write_stan_data <- function(data) {
   path
 }
 
-check_and_replace_vars <- function(p) {
-  # map arbitrary variable names to x/y/z for precompiled Stan templates
-  current_vars <- mpoly::vars(p)
+check_and_replace_vars <- function(p, vars = mpoly::vars(p)) {
+  # map arbitrary variable names to x/y/z for precompiled Stan templates;
+  # `vars` may add variables that p does not involve, which take the
+  # remaining template names
+  current_vars <- vars
   num_vars <- length(current_vars)
   target_vars <- list(
     c("x"),           # for 1 indeterminate
@@ -69,22 +71,47 @@ check_and_replace_vars <- function(p) {
     return(list(polynomial = p, mapping = list()))
   }
 
-  # two-pass swap via temporary names to avoid collisions (e.g. x->y, y->x)
-  var_mapping <- list()
+  # two-pass swap via temporary names to avoid collisions (e.g. x->y, y->x);
+  # swap() only renames variables p involves
   temp_vars <- paste0("tmp", seq_along(current_vars))
+  in_p <- which(current_vars %in% mpoly::vars(p))
 
-  for (i in seq_along(current_vars)) {
+  for (i in in_p) {
     p <- swap(p, current_vars[i], temp_vars[i])
-    var_mapping[[temp_vars[i]]] <- current_vars[i]
   }
 
-  for (i in seq_along(expected_vars)) {
+  for (i in in_p) {
     p <- swap(p, temp_vars[i], expected_vars[i])
-    var_mapping[[expected_vars[i]]] <- var_mapping[[temp_vars[i]]]
-    var_mapping[[temp_vars[i]]] <- NULL
   }
 
-  list(polynomial = p, mapping = var_mapping)
+  list(
+    polynomial = p,
+    mapping = stats::setNames(as.list(current_vars), expected_vars)
+  )
+}
+
+rvnorm_resolve_vars <- function(vars, poly) {
+  # the variables to sample, sorted: those of poly unless `vars` is given,
+  # in which case it must include them
+  poly_vars <- mpoly::vars(poly)
+  if (is.null(vars)) {
+    return(sort(poly_vars))
+  }
+  if (
+    !is.character(vars) || length(vars) == 0L || anyNA(vars) ||
+      any(!nzchar(vars)) || anyDuplicated(vars)
+  ) {
+    stop("`vars` must be a character vector of unique variable names.", call. = FALSE)
+  }
+  missing_vars <- setdiff(poly_vars, vars)
+  if (length(missing_vars) > 0L) {
+    stop(
+      "`vars` must include every variable of `poly`; it lacks ",
+      paste(missing_vars, collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  sort(vars)
 }
 
 rvnorm_normalize_window <- function(w, vars) {

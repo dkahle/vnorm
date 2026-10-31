@@ -256,7 +256,7 @@ test_that("rvnorm() pre_compiled path works with mocked package model", {
   testthat::local_mocked_bindings(
     cmdstan_model = function(...) stop("cmdstan_model should not be called"),
     make_coefficients_data = function(...) list(fake_coef = 1),
-    check_and_replace_vars = function(p) {
+    check_and_replace_vars = function(p, vars) {
       list(polynomial = mp("x^2 + y^2 - 1"), mapping = list(x = "a", y = "b"))
     },
     rename_output_df = function(df, replacement_list) {
@@ -474,6 +474,162 @@ test_that("rvnorm_normalize_window() collapses the same symmetric box to a scala
     rvnorm_normalize_window(list(x = c(-2, 2), y = c(-1, 1)), c("x", "y"))$scalar
   )
   expect_false(rvnorm_normalize_window(list(x = c(-2, 2)), c("x", "y"))$scalar)
+})
+
+test_that("rvnorm() samples extra variables in `vars` with pre-compiled templates", {
+  # x^2 + y^2 - 1 in (x, y, z) is the degree-2 template in three variables,
+  # with 0 for the coefficients of terms in z
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), z = c(0.5, 0.6),
+    check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    cmdstan_model = function(...) stop("cmdstan_model should not be called"),
+    .package = "vnorm"
+  )
+  testthat::local_mocked_bindings(
+    stan_package_model = function(name, ...) {
+      capture$name <- name
+      fake_cmdstan_model(draws_df, capture = capture)
+    },
+    .package = "instantiate"
+  )
+
+  out <- rvnorm(
+    2, mp("x^2 + y^2 - 1"), sd = 0.05, vars = c("x", "y", "z"), w = 2,
+    chains = 1, cores = 1
+  )
+  data <- read_stan_data(capture$args$data)
+  expect_identical(capture$name, "3_2_vn_w")
+  expect_equal(unlist(data[c("b1", "bx2", "by2")]), c(b1 = -1, bx2 = 1, by2 = 1))
+  expect_true(all(unlist(data[c("bz", "bz2", "bxz", "byz")]) == 0))
+  expect_named(out, c("x", "y", "z"))
+  expect_equal(out$z, c(0.5, 0.6))
+
+  # other names map onto the template's, extra variables included
+  out <- rvnorm(
+    2, mp("a^2 + b^2 - 1"), sd = 0.05, vars = c("c", "b", "a"), w = 2,
+    output = "tibble", chains = 1, cores = 1
+  )
+  data <- read_stan_data(capture$args$data)
+  expect_identical(capture$name, "3_2_vn_w")
+  expect_equal(unlist(data[c("bx2", "by2", "bz2")]), c(bx2 = 1, by2 = 1, bz2 = 0))
+  expect_identical(names(out)[1:3], c("a", "b", "c"))
+  expect_equal(out$c, c(0.5, 0.6))
+})
+
+test_that("rvnorm() samples extra variables in `vars` with generated code", {
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), z = c(0.5, 0.6),
+    check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(poly, sd, n_eqs, w, homo, vars) {
+      capture$vars <- vars
+      "fake_stan_code"
+    },
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df),
+    .package = "vnorm"
+  )
+
+  out <- rvnorm(
+    2, mp(c("x^2 + y^2 - 1", "x - y")), sd = 0.05, vars = c("z", "x", "y"),
+    w = 2, chains = 1, cores = 1
+  )
+  expect_identical(capture$vars, c("x", "y", "z"))
+  expect_named(out, c("x", "y", "z"))
+
+  out <- rvnorm(
+    2, mp("x^2 + y^2 - 1"), sd = 0.05, vars = c("x", "y", "z"),
+    w = list(x = c(-2, 2), y = c(-2, 2), z = c(0, 1)), chains = 1, cores = 1
+  )
+  expect_named(out, c("x", "y", "z"))
+})
+
+test_that("rvnorm(rejection = TRUE) samples extra variables in `vars`", {
+  set.seed(1)
+  out <- rvnorm(
+    50, mp("x^2 + y^2 - 1"), sd = 0.1, rejection = TRUE,
+    vars = c("x", "y", "z"), w = 1.5
+  )
+  expect_named(out, c("x", "y", "z"))
+  expect_true(all(abs(out$z) <= 1.5))
+})
+
+test_that("rvnorm() ignores `user_compiled` for extra variables in `vars`", {
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), z = c(0.5, 0.6),
+    check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    get_compiled_stan_info = function() stop("the user cache should not be read"),
+    .package = "vnorm"
+  )
+  testthat::local_mocked_bindings(
+    stan_package_model = function(name, ...) {
+      capture$name <- name
+      fake_cmdstan_model(draws_df)
+    },
+    .package = "instantiate"
+  )
+
+  expect_message(
+    out <- rvnorm(
+      2, mp("x^2 + y^2 - 1"), sd = 0.05, vars = c("x", "y", "z"), w = 2,
+      user_compiled = TRUE, verbose = TRUE, chains = 1, cores = 1
+    ),
+    "ignoring `user_compiled`"
+  )
+  expect_identical(capture$name, "3_2_vn_w")
+  expect_named(out, c("x", "y", "z"))
+})
+
+test_that("rvnorm() validates `vars`", {
+  p <- mp("x^2 + y^2 - 1")
+  expect_error(
+    rvnorm(2, p, sd = 0.1, vars = "x", code_only = TRUE),
+    "`vars` must include every variable of `poly`; it lacks y"
+  )
+  expect_error(
+    rvnorm(2, p, sd = 0.1, rejection = TRUE, vars = "x"),
+    "`vars` must include every variable of `poly`"
+  )
+  expect_error(
+    rvnorm(2, p, sd = 0.1, vars = c("x", "x", "y"), code_only = TRUE),
+    "unique variable names"
+  )
+
+  # the distribution is flat along variables poly does not involve
+  expect_error(
+    rvnorm(2, p, sd = 0.1, vars = c("x", "y", "z"), code_only = TRUE),
+    "bound z with `w`"
+  )
+  expect_error(
+    rvnorm(
+      2, p, sd = 0.1, vars = c("x", "y", "z"), w = list(x = c(-2, 2)),
+      code_only = TRUE
+    ),
+    "bound z with `w`"
+  )
+})
+
+test_that("rvnorm() samples extra variables in `vars` with CmdStan", {
+  skip_if_no_cmdstan()
+  samps <- rvnorm(
+    200, mp("x^2 - 1"), sd = 0.05, vars = c("x", "z"), w = 2,
+    pre_compiled = FALSE, chains = 1, cores = 1, seed = 1
+  )
+  expect_named(samps, c("x", "z"))
+  expect_lt(max(abs(abs(samps$x) - 1)), 0.5)
+  expect_true(all(abs(samps$z) < 2))
+  expect_gt(diff(range(samps$z)), 1)
 })
 
 test_that("rvnorm() falls back when pre-compiled model is unavailable", {
@@ -738,7 +894,7 @@ test_that("rvnorm() emits stanfit rename warning in precompiled path", {
 
   testthat::local_mocked_bindings(
     make_coefficients_data = function(...) list(fake_coef = 1),
-    check_and_replace_vars = function(p) {
+    check_and_replace_vars = function(p, vars) {
       list(polynomial = mp("x^2 + y^2 - 1"), mapping = list(x = "a", y = "b"))
     },
     .package = "vnorm"

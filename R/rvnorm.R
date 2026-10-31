@@ -33,7 +33,10 @@
 #' @param homo If `TRUE`, sampling is from a homoskedastic variety normal
 #'   distribution.
 #' @param verbose If `TRUE`, print additional progress messages.
-#' @param vars Character vector of polynomial indeterminates.
+#' @param vars Character vector of the variables to sample. Defaults to the
+#'   variables of `poly`, and must include all of them. The distribution is
+#'   flat along variables that `poly` does not involve, so `w` must bound
+#'   those, and they are sampled uniformly within it.
 #' @param numerator,denominator Character scalars containing printed numerator
 #'   and denominator forms.
 #' @param w A named list of box constraints for vectors to be passed to Stan,
@@ -44,10 +47,10 @@
 #'   progress is reported.
 #' @param pre_compiled If `TRUE` (the default), sample with a Stan model
 #'   compiled when vnorm was installed whenever one covers the request: a
-#'   single polynomial in at most three variables of total degree at most
-#'   three, with no window or the same window `(-a, a)` on every variable.
-#'   Other requests, and installations without these models, compile a model
-#'   for `poly`.
+#'   single polynomial in at most three variables (counting `vars`) of total
+#'   degree at most three, with no window or the same window `(-a, a)` on
+#'   every variable. Other requests, and installations without these models,
+#'   compile a model for `poly`.
 #' @param code_only If `TRUE`, only formulate and return Stan code.
 #' @param ... Additional arguments passed to the CmdStan model's `$sample()`
 #'   method.
@@ -57,8 +60,8 @@
 #' @param seed Optional integer seed passed to CmdStan's sampler for
 #'   reproducibility. Note that R's `set.seed()` does not control Stan's RNG.
 #' @details Variable columns in `"simple"` and `"tibble"` output appear in
-#'   sorted variable order (`sort(mpoly::vars(poly))`), regardless of the
-#'   order in which variables appear in the polynomial's terms.
+#'   sorted variable order (`sort(vars)`), regardless of the order in which
+#'   variables appear in the polynomial's terms.
 #'
 #'   When the variety has several disconnected components, HMC chains cannot
 #'   cross the low-density regions between them, so the share of draws in
@@ -420,6 +423,7 @@ rvnorm <- function(
       call. = FALSE
     )
   }
+  vars_arg <- if (missing(vars)) NULL else vars
 
   if (rejection) {
     if (is.character(poly)) {
@@ -440,7 +444,7 @@ rvnorm <- function(
       n = n,
       poly = poly,
       sd = sd,
-      vars = sort(mpoly::vars(poly)),
+      vars = rvnorm_resolve_vars(vars_arg, poly),
       w = w,
       output = output,
       homo = homo,
@@ -471,15 +475,34 @@ rvnorm <- function(
   if (n_vars == 0L) {
     stop("`poly` must contain at least one variable.", call. = FALSE)
   }
-  # output variable names, fixed before any x/y/z remapping below
-  poly_vars <- sort(mpoly::vars(poly))
+  # variables to sample (output names, fixed before any x/y/z remapping
+  # below), which `vars` can extend past those of poly
+  sample_vars <- rvnorm_resolve_vars(vars_arg, poly)
+  extra_vars <- setdiff(sample_vars, mpoly::vars(poly))
+  # the model's names for sample_vars; the templates rename them
+  stan_vars <- sample_vars
   w_supplied <- !missing(w)
   if (w_supplied) {
-    w_info <- rvnorm_normalize_window(w, mpoly::vars(poly))
+    w_info <- rvnorm_normalize_window(w, sample_vars)
     w <- w_info$value
     w_is_scalar <- w_info$scalar
   } else {
     w_is_scalar <- FALSE
+  }
+  unbounded_vars <- if (!w_supplied) {
+    extra_vars
+  } else if (w_is_scalar) {
+    character()
+  } else {
+    setdiff(extra_vars, names(w))
+  }
+  if (length(unbounded_vars) > 0L) {
+    stop(
+      "The distribution is flat along variables in `vars` that `poly` does ",
+      "not involve; bound ", paste(unbounded_vars, collapse = ", "),
+      " with `w`.",
+      call. = FALSE
+    )
   }
   scale_info <- rvnorm_resolve_scale(
     poly = poly,
@@ -505,6 +528,12 @@ rvnorm <- function(
     pre_compiled <- FALSE
     user_compiled <- FALSE
   }
+  if (length(extra_vars) > 0L && user_compiled) {
+    if (isTRUE(verbose)) {
+      message("compile_stan_code() models sample only the variables of `poly`; ignoring `user_compiled`")
+    }
+    user_compiled <- FALSE
+  }
 
   if (isTRUE(verbose) && refresh == 0L) {
     refresh <- max(ceiling(n / 10), 1L)
@@ -512,7 +541,7 @@ rvnorm <- function(
 
   if (
     n_eqs > 1 ||
-      length(mpoly::vars(poly)) > 3 ||
+      length(sample_vars) > 3 ||
       base::max(mpoly::totaldeg(poly)) > 3
   ) {
     # precompiled binaries only cover a small catalog of low-degree templates
@@ -521,16 +550,16 @@ rvnorm <- function(
 
   if (code_only) {
     stan_code <- if (w_supplied) {
-      create_stan_code(poly, sigma_stan, n_eqs, w, homo)
+      create_stan_code(poly, sigma_stan, n_eqs, w, homo, sample_vars)
     } else {
-      create_stan_code(poly, sigma_stan, n_eqs, homo = homo)
+      create_stan_code(poly, sigma_stan, n_eqs, homo = homo, vars = sample_vars)
     }
     return(stan_code)
   }
 
   # the programs solve with J (J \ g, J*J', or J'*J), which fails everywhere
   # when the equations are dependent
-  if (homo && n_eqs > 1L && dependent_equations(poly, poly_vars)) {
+  if (homo && n_eqs > 1L && dependent_equations(poly, sort(mpoly::vars(poly)))) {
     stop(
       "With `homo = TRUE`, the Jacobian of `poly` must have full rank away ",
       "from its singular points, but it loses rank everywhere (the equations ",
@@ -572,7 +601,7 @@ rvnorm <- function(
     poly_original <- poly
     output_needs_rewriting_original <- output_needs_rewriting
     # remap variable names to x/y/z because shipped models are keyed that way
-    list_for_transformation <- check_and_replace_vars(poly_original)
+    list_for_transformation <- check_and_replace_vars(poly_original, sample_vars)
     if (!is.null(unlist(list_for_transformation$mapping))) {
       poly <- list_for_transformation$polynomial
       var_info <- list_for_transformation$mapping
@@ -580,7 +609,9 @@ rvnorm <- function(
     }
 
     deg <- mpoly::totaldeg(poly)
-    num_of_vars <- length(mpoly::vars(poly))
+    # the template for all sampled variables; the coefficients of terms in
+    # variables poly does not involve are 0
+    num_of_vars <- length(sample_vars)
     stan_file_name <- paste(
       num_of_vars,
       deg,
@@ -608,14 +639,15 @@ rvnorm <- function(
       poly <- poly_original
       output_needs_rewriting <- output_needs_rewriting_original
       stan_code <- if (w_supplied) {
-        create_stan_code(poly, sigma_stan, n_eqs, w, homo, vars)
+        create_stan_code(poly, sigma_stan, n_eqs, w, homo, sample_vars)
       } else {
-        create_stan_code(poly, sigma_stan, n_eqs, homo = homo, vars = vars)
+        create_stan_code(poly, sigma_stan, n_eqs, homo = homo, vars = sample_vars)
       }
       stan_file <- write_stan_file(stan_code)
       model <- cmdstan_model(stan_file)
       stan_data <- list("si" = sigma_stan)
     } else {
+      stan_vars <- c("x", "y", "z")[seq_len(num_of_vars)]
       stan_data <- make_coefficients_data(poly, num_of_vars, deg)
       stan_data <- if (!w_supplied) {
         c(stan_data, "si" = sigma_stan)
@@ -626,9 +658,9 @@ rvnorm <- function(
   } else {
     # fall back to generating and compiling a temporary Stan model
     stan_code <- if (w_supplied) {
-      create_stan_code(poly, sigma_stan, n_eqs, w, homo, vars)
+      create_stan_code(poly, sigma_stan, n_eqs, w, homo, sample_vars)
     } else {
-      create_stan_code(poly, sigma_stan, n_eqs, homo = homo, vars = vars)
+      create_stan_code(poly, sigma_stan, n_eqs, homo = homo, vars = sample_vars)
     }
     stan_file <- write_stan_file(stan_code)
     model <- cmdstan_model(stan_file)
@@ -657,7 +689,7 @@ rvnorm <- function(
   if (output == "simple") {
     df <- as.data.frame(samps$draws(format = "df", inc_warmup = inc_warmup))
     if (!inc_warmup) df <- tail(df, n)
-    df <- df[, mpoly::vars(poly), drop = FALSE]
+    df <- df[, stan_vars, drop = FALSE]
     row.names(df) <- NULL
     if (output_needs_rewriting) {
       df <- rename_output_df(df, replacement_list = var_info)
@@ -681,7 +713,7 @@ rvnorm <- function(
     # variable columns first in sorted order, then the model's other
     # quantities (g, ndg, ...) in Stan's order, then sampler diagnostics
     diag_cols <- intersect(names(df), c(".chain", ".iteration", ".draw", "lp__"))
-    var_cols <- intersect(poly_vars, names(df))
+    var_cols <- intersect(sample_vars, names(df))
     other_cols <- setdiff(names(df), c(var_cols, diag_cols))
     df <- df[, c(var_cols, other_cols, diag_cols), drop = FALSE]
     return(tibble::as_tibble(df))

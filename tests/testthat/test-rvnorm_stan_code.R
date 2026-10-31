@@ -159,6 +159,24 @@ test_that("create_stan_code writes integer coefficients beyond Stan int as reals
   expect_identical(stan_real_literals("b1x1234567890 + 2*x^2"), "b1x1234567890 + 2*x^2")
 })
 
+test_that("create_stan_code samples extra variables in `vars` outside J", {
+  # extra variables get parameters, but neither a Jacobian column nor a
+  # gradient term
+  p <- mp(c("x^2 + y^2 - 1", "x - y"))
+  code <- create_stan_code(
+    p, sd = 0.1, n_eqs = 2L, w = 2, homo = TRUE, vars = c("x", "y", "z")
+  )
+  expect_match(code, "real<lower=-2,upper=2> z;", fixed = TRUE)
+  expect_match(code, "matrix[2,2] J", fixed = TRUE)
+  expect_match(code, "J \\ g", fixed = TRUE)
+
+  code1 <- create_stan_code(
+    mp("x^2 - 1"), sd = 0.1, n_eqs = 1L, w = 2, homo = TRUE, vars = c("x", "z")
+  )
+  expect_match(code1, "real<lower=-2,upper=2> z;", fixed = TRUE)
+  expect_match(code1, "real ndg = sqrt(4*x^2);", fixed = TRUE)
+})
+
 test_that("create_stan_code w as named list for multivariate case", {
   p <- mp(c("x^2 + y^2 - 1", "y"))
   w <- list(x = c(-2, 2))

@@ -5,7 +5,9 @@ create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
   if (n_eqs == 1L) {
     if (!is.mpoly(poly)) poly <- mp(poly)
     if (missing(vars)) vars <- mpoly::vars(poly)
-    n_vars <- length(vars)
+    # the gradient runs over the variables poly involves; any others in
+    # `vars` add nothing to it
+    n_vars <- length(mpoly::vars(poly))
     poly <- reorder(poly, varorder = sort(vars))
 
     g_string <- stan_poly_expr(poly)
@@ -66,8 +68,11 @@ model {{
     # sorted order fixes the parameter vector and Jacobian columns, so a
     # vector sd / Sigma over variables (homo = TRUE) means what it does in
     # pdvnorm() regardless of the order variables appear in the terms
-    vars <- sort(mpoly::vars(poly))
-    n_vars <- length(vars)
+    poly_vars <- sort(mpoly::vars(poly))
+    n_vars <- length(poly_vars)
+    # parameters for every sampled variable; those the equations do not
+    # involve stay out of J
+    if (missing(vars)) vars <- poly_vars
     printed_polys <- paste(vapply(poly, stan_poly_expr, character(1)), collapse = ", ")
 
     target_dim <- if (homo) n_vars else n_eqs
@@ -93,7 +98,7 @@ model {{
       printed_jac <- array("", dim = c(n_eqs, n_vars))
       for (i in seq_len(n_eqs)) {
         for (j in seq_len(n_vars)) {
-          printed_jac[i, j] <- stan_poly_expr(deriv(poly[[i]], vars[j]))
+          printed_jac[i, j] <- stan_poly_expr(deriv(poly[[i]], poly_vars[j]))
         }
       }
 
