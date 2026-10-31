@@ -368,6 +368,14 @@ test_that("newton projection handles singular hessians of g^2", {
     project_onto_variety_newton(c(2, 3, -1), mp("x + 2 y - z - 1")),
     c(2, 3, -1) - 8 / 6 * c(1, 2, -1)
   )
+
+  # at the origin the hessian is matrix(c(2, 4, 4, 8), 2) and the gradient
+  # c(2, -4) leaves its column space: the least-squares step is c(.12, .24),
+  # but pdvnorm()'s row-scaled pseudoinverse gave 0, so projection stopped
+  # at the start with residual 1
+  p <- mp("1 + x - 2 y + 4 x y")
+  expect_no_warning(z <- project_onto_variety_newton(c(0, 0), p))
+  expect_lt(abs(as.function(p, silent = TRUE)(z)), 1e-8)
 })
 
 test_that("project_onto_variety runs no corrector steps when n_correct = 0", {

@@ -571,21 +571,32 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
   if (log) out_log else base::exp(out_log)
 }
 
-pdvnorm_pseudoinverse <- function(J) {
-  # SVD pseudoinverse with a tolerance cutoff, taken with J's rows scaled by
-  # pdvnorm_row_scale() and scaled back. At full rank this is J^-1,
-  # J'(JJ')^-1 or (J'J)^-1 J', but forming JJ' or J'J squares J's condition
-  # number, and solve() refused them for full-rank J past about 1e8
-  s <- pdvnorm_row_scale(J)
-  sv <- svd(J / s)
+svd_pseudoinverse <- function(J) {
+  # Moore-Penrose pseudoinverse from the SVD, with a tolerance cutoff. At
+  # full rank this is J^-1, J'(JJ')^-1 or (J'J)^-1 J', but forming JJ' or
+  # J'J squares J's condition number, and solve() refused them for full-rank
+  # J past about 1e8
+  sv <- svd(J)
   tol <- max(dim(J)) *
     .Machine$double.eps *
     ifelse(length(sv$d) > 0, sv$d[1], 0)
   dplus <- ifelse(sv$d > tol, 1 / sv$d, 0)
   Jp <- sv$v %*% (dplus * t(sv$u))
-  Jp <- Jp / rep(s, each = nrow(Jp))
   # callers check rank deficiency without a second decomposition
   attr(Jp, "rank") <- sum(sv$d > tol)
+  Jp
+}
+
+pdvnorm_pseudoinverse <- function(J) {
+  # the pseudoinverse in the residual J^+ g: svd_pseudoinverse() of J with
+  # its rows scaled by pdvnorm_row_scale(), scaled back. That changes the
+  # least-squares solution where g leaves J's column space, so it suits only
+  # residuals, whose density is then 0 (m <= n; m > n is not scaled)
+  s <- pdvnorm_row_scale(J)
+  Jp <- svd_pseudoinverse(J / s)
+  rank <- attr(Jp, "rank")
+  Jp <- Jp / rep(s, each = nrow(Jp))
+  attr(Jp, "rank") <- rank
   Jp
 }
 

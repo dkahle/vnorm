@@ -717,9 +717,11 @@ project_onto_variety_newton <- function(
   ddp2f <- hessian_function(poly^2, varorder)
 
   # the hessian of g^2 is singular where g = 0 has flat directions (for a
-  # linear g, everywhere), so take the minimum-norm newton step there
+  # linear g, everywhere), so take the minimum-norm least-squares newton step
+  # there. Its gradient can leave the hessian's column space, where scaling
+  # rows (as pdvnorm_pseudoinverse() does) would change the step
   newton_direction <- function(v) {
-    as.numeric(pdvnorm_pseudoinverse(ddp2f(v)) %*% -dp2f(v))
+    as.numeric(svd_pseudoinverse(ddp2f(v)) %*% -dp2f(v))
   }
 
   # iterative Newton updates
