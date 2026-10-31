@@ -59,7 +59,8 @@
 #'   [compile_stan_code()]. Defaults to `FALSE`.
 #' @param show_messages If `TRUE`, Stan sampler messages are shown.
 #' @param seed Optional integer seed passed to CmdStan's sampler for
-#'   reproducibility. Note that R's `set.seed()` does not control Stan's RNG.
+#'   reproducibility. When `seed` is `NULL`, cmdstanr draws one from R's
+#'   random number generator, so `set.seed()` also makes runs reproducible.
 #' @details Variable columns in `"simple"` and `"tibble"` output appear in
 #'   sorted variable order (`sort(vars)`), regardless of the order in which
 #'   variables appear in the polynomial's terms.

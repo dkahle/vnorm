@@ -109,7 +109,8 @@ compile a model for \code{poly}.}
 \item{show_messages}{If \code{TRUE}, Stan sampler messages are shown.}
 
 \item{seed}{Optional integer seed passed to CmdStan's sampler for
-reproducibility. Note that R's \code{set.seed()} does not control Stan's RNG.}
+reproducibility. When \code{seed} is \code{NULL}, cmdstanr draws one from R's
+random number generator, so \code{set.seed()} also makes runs reproducible.}
 
 \item{...}{Additional arguments passed to the CmdStan model's \verb{$sample()}
 method.}
