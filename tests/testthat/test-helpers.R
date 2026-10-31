@@ -114,6 +114,17 @@ test_that("check_and_replace_vars with 3-variable polynomial", {
   expect_equal(length(remapped$mapping), 3)
 })
 
+test_that("check_and_replace_vars handles variables named like its temporary names", {
+  # it renamed through tmp1, tmp2, ..., which clashed with a variable tmp2
+  remapped <- check_and_replace_vars(mp("tmp2 + 2 a - 1"), c("a", "tmp2"))
+  expect_equal(remapped$mapping, list(x = "a", y = "tmp2"))
+  expect_equal(poly_function(remapped$polynomial, c("x", "y"))(c(0.3, 0.7)), 0.3)
+
+  remapped <- check_and_replace_vars(mp("tmp1 + 3 tmp2 + ttmp1"))
+  expect_equal(unlist(remapped$mapping), c(x = "tmp1", y = "tmp2", z = "ttmp1"))
+  expect_equal(poly_function(remapped$polynomial, c("x", "y", "z"))(c(1, 2, 3)), 10)
+})
+
 test_that("check_and_replace_vars when variables are already x/y", {
   p <- mp("x^2 + y^2 - 1")
   remapped <- check_and_replace_vars(p)

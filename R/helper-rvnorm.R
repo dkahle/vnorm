@@ -72,8 +72,12 @@ check_and_replace_vars <- function(p, vars = mpoly::vars(p)) {
   }
 
   # two-pass swap via temporary names to avoid collisions (e.g. x->y, y->x);
-  # swap() only renames variables p involves
+  # swap() only renames variables p involves. The temporary names must not
+  # be variables of p (a variable tmp2 broke tmp1, tmp2, ...)
   temp_vars <- paste0("tmp", seq_along(current_vars))
+  while (any(temp_vars %in% c(current_vars, mpoly::vars(p)))) {
+    temp_vars <- paste0("t", temp_vars)
+  }
   in_p <- which(current_vars %in% mpoly::vars(p))
 
   for (i in in_p) {

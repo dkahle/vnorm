@@ -1001,6 +1001,19 @@ test_that("rvnorm() accepts mpolyList Sigma shapes in code_only mode", {
   )
 })
 
+test_that("rvnorm() maps variables named like the remapping's temporary names", {
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
+  )
+  testthat::local_mocked_bindings(
+    stan_package_model = function(...) fake_cmdstan_model(draws_df),
+    .package = "instantiate"
+  )
+  out <- rvnorm(2, mp("tmp2 + 2 a - 1"), sd = 0.1, w = 2, chains = 1, cores = 1)
+  expect_named(out, c("a", "tmp2"))
+  expect_equal(out$a, c(0.1, 0.2))
+})
+
 test_that("rvnorm() emits stanfit rename warning in precompiled path", {
   draws_df <- data.frame(
     lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
