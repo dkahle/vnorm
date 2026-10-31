@@ -94,7 +94,7 @@ rvnorm_domain_latent <- function(
       if (!is.null(seed)) seed + round - 1L, pilot_args
     ))
     x0 <- as.matrix(pilot[, vars, drop = FALSE])
-    proj <- project_rows_closest(x0, poly, vars, max_dist = 10 * pilot_sd)
+    proj <- project_rows_closest(x0, poly, vars)
     # the pilot's residual |J^+ g| is the distance to the variety to first
     # order where poly is square-free, and about the distance / k on a
     # component where it has a factor of multiplicity k, like (x - 1)^2.
@@ -105,18 +105,23 @@ rvnorm_domain_latent <- function(
     multiplicity <- ifelse(
       proj$ok & proj$residual > 0, distance / proj$residual, 1
     )
-    keep <- proj$ok & rvnorm_in_window(proj$points, window)
     if (is.mpoly(poly)) {
-      # keep a draw on a component of multiplicity k with probability 1 / k,
-      # which restores each component's share
       k <- pmax(1, round(multiplicity))
-      if (any(keep & k > 1)) keep <- keep & stats::runif(length(k)) < 1 / k
+      # a projection more than 10 pilot_sd times k from its draw, or with a
+      # ratio past 4.5, jumped to another branch
+      ok <- proj$ok & k <= 4 & distance <= 10 * pilot_sd * k
     } else {
       # a system's correction is a product over the normal directions,
       # which one draw cannot estimate
-      n_stretched <- n_stretched + sum(proj$ok & multiplicity > 1.5)
+      k <- rep(1, nrow(x0))
+      ok <- proj$ok & distance <= 10 * pilot_sd
+      n_stretched <- n_stretched + sum(ok & multiplicity > 1.5)
     }
-    n_failed <- n_failed + sum(!proj$ok)
+    keep <- ok & rvnorm_in_window(proj$points, window)
+    # keep a draw on a component of multiplicity k with probability 1 / k,
+    # which restores each component's share
+    if (any(keep & k > 1)) keep <- keep & stats::runif(length(k)) < 1 / k
+    n_failed <- n_failed + sum(!ok)
     n_projected <- n_projected + nrow(x0)
     points <- rbind(points, proj$points[keep, , drop = FALSE])
     if (all(c(".chain", ".iteration") %in% names(pilot))) {
@@ -154,8 +159,8 @@ rvnorm_domain_latent <- function(
   if (n_failed > 0.01 * n_projected) {
     warning(
       n_failed, " of ", n_projected, " projections onto the variety failed ",
-      "(near singular points, or more than 10 `pilot_sd` from their pilot ",
-      "draw) and were dropped.",
+      "(near singular points, or far from their pilot draw) and were ",
+      "dropped.",
       call. = FALSE
     )
   }

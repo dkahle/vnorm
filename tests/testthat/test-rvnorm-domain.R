@@ -186,11 +186,23 @@ test_that("rvnorm(noise = \"domain\") corrects for repeated factors", {
   expect_equal(share("x^2 - x"), 0.5, tolerance = 0.06)
   expect_equal(share("x^3 - 2 x^2 + x"), 0.5, tolerance = 0.06)
 
-  # a squared circle is still uniform in angle
-  z <- rvnorm(
+  # a squared circle is still uniform in angle. Its gradient vanishes on
+  # the circle, which rejected the projections that landed on it exactly
+  expect_true(project_rows_closest(matrix(c(1, 0), 1), mp("x^2 + y^2 - 1")^2, c("x", "y"))$ok)
+  expect_no_warning(z <- rvnorm(
     1000, mp("x^2 + y^2 - 1")^2, sd = 0.1, noise = "domain", rejection = TRUE,
     output = "tibble", w = 1.5, seed = 54
-  )
+  ))
+  angle <- atan2(z$y_proj, z$x_proj) %% (2 * pi) / (2 * pi)
+  expect_gt(stats::ks.test(angle, "punif")$p.value, 0.01)
+
+  # on a cube, Gauss-Newton steps of rounding error over a vanishing
+  # gradient threw points across the circle
+  expect_no_warning(z <- rvnorm(
+    1000, mp("x^2 + y^2 - 1")^3, sd = 0.1, noise = "domain", rejection = TRUE,
+    output = "tibble", w = 1.5, seed = 55
+  ))
+  expect_lt(max(abs(sqrt(z$x_proj^2 + z$y_proj^2) - 1)), 1e-4)
   angle <- atan2(z$y_proj, z$x_proj) %% (2 * pi) / (2 * pi)
   expect_gt(stats::ks.test(angle, "punif")$p.value, 0.01)
 

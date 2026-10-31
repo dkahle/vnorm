@@ -795,25 +795,45 @@ project_rows_closest <- function(
   # converges only linearly onto a repeated factor, hence the iterations.
   # Variables in varorder that poly does not involve have zero Jacobian
   # columns, so their coordinates stay put
+  # g within the rounding error of its terms is on the variety as far as can
+  # be told, even where the gradient vanishes too, as everywhere on a
+  # repeated factor. Closer in, a step of rounding error over a vanishing
+  # gradient would throw u off: on (x^2 + y^2 - 1)^3, across the circle
+  rounding <- function(g_abs) 64 * .Machine$double.eps * g_abs
   if (is.mpoly(poly)) {
     # one equation, all rows at once: J^+ g = g grad(g) / |grad(g)|^2
     g_fn <- poly_function(poly, varorder = varorder)
+    g_abs_fn <- poly_function(abs_coefficients(poly), varorder = varorder)
     dg_fn <- gradient_function(poly, varorder)
     step_fn <- function(u) {
       g <- g_fn(u)
       dg <- matrix(dg_fn(u), nrow = nrow(u))
       dg2 <- rowSums(dg^2)
-      stalled <- !is.finite(g) | !(dg2 > 0)
+      on_variety <- is.finite(g) & abs(g) <= rounding(g_abs_fn(abs(u)))
+      stalled <- !is.finite(g) | (!(dg2 > 0) & !on_variety)
       step <- g / dg2 * dg
-      step[stalled, ] <- 0
+      step[stalled | on_variety, ] <- 0
       list(step = step, stalled = stalled)
     }
+    dg_abs_fn <- gradient_function(abs_coefficients(poly), varorder)
     tangent_fn <- function(u, r) {
+      # the gradient is known only above the rounding error of its terms;
+      # where it is not (on the variety of a cube such as (x^2 + y^2 - 1)^3,
+      # about 6e-18) the tangent space is unknown, so u stays
       dg <- matrix(dg_fn(u), nrow = nrow(u))
-      r - rowSums(r * dg) / rowSums(dg^2) * dg
+      dg2 <- rowSums(dg^2)
+      dg_abs <- matrix(dg_abs_fn(abs(u)), nrow = nrow(u))
+      known <- sqrt(dg2) > 1e3 * .Machine$double.eps * sqrt(rowSums(dg_abs^2))
+      tangent <- r - rowSums(r * dg) / dg2 * dg
+      tangent[!known, ] <- 0
+      tangent
     }
   } else {
     g_fn <- poly_function(poly, varorder = varorder)
+    g_abs_fn <- poly_function(
+      structure(lapply(poly, abs_coefficients), class = "mpolyList"),
+      varorder = varorder
+    )
     J_fn <- jacobian_function(poly, varorder)
     # variables poly does not involve add zero columns, which cannot raise
     # J's rank
@@ -822,8 +842,11 @@ project_rows_closest <- function(
       step <- matrix(0, nrow(u), ncol(u))
       stalled <- logical(nrow(u))
       for (i in seq_len(nrow(u))) {
+        g <- g_fn(u[i, ])
+        # on the variety as far as can be told, whatever J's rank there
+        if (all(is.finite(g)) && all(abs(g) <= rounding(g_abs_fn(abs(u[i, ]))))) next
         Jp <- pdvnorm_pseudoinverse(J_fn(u[i, ]))
-        s <- as.numeric(Jp %*% g_fn(u[i, ]))
+        s <- as.numeric(Jp %*% g)
         if (attr(Jp, "rank") < full_rank || any(!is.finite(s))) {
           stalled[i] <- TRUE
         } else {
@@ -833,10 +856,15 @@ project_rows_closest <- function(
       list(step = step, stalled = stalled)
     }
     tangent_fn <- function(u, r) {
-      # remove the component of r in J's row space, the normal space
+      # remove the component of r in J's row space, the normal space; where
+      # J vanishes the tangent space is unknown, so u stays
       for (i in seq_len(nrow(u))) {
         J <- J_fn(u[i, ])
-        r[i, ] <- r[i, ] - as.numeric(pdvnorm_pseudoinverse(J) %*% (J %*% r[i, ]))
+        r[i, ] <- if (all(J == 0)) {
+          0
+        } else {
+          r[i, ] - as.numeric(pdvnorm_pseudoinverse(J) %*% (J %*% r[i, ]))
+        }
       }
       r
     }
@@ -862,8 +890,15 @@ project_rows_closest <- function(
   first <- newton(x)
   u <- first$u
   ok <- first$ok
-  converged <- rep(FALSE, nrow(x))
-  active <- which(ok)
+  # the closest-point refinement needs the tangent space, which a repeated
+  # factor's gradient cannot give: it vanishes on the variety and comes from
+  # cancelling terms near it. There the residual is about the distance / k
+  # for k > 1 (see rvnorm_domain_latent()), and Gauss-Newton's point
+  # stands. Its steps follow the reduced factor's gradient, so it lands
+  # within O(d^2) of the closest point
+  simple <- sqrt(rowSums((u - x)^2)) <= 1.5 * residual
+  converged <- ok & !simple
+  active <- which(ok & simple)
   for (. in seq_len(maxit)) {
     if (length(active) == 0L) break
     ua <- u[active, , drop = FALSE]
