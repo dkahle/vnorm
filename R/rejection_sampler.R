@@ -146,13 +146,25 @@ rejection_sampler <- function(n,
       }
       as.numeric(J_inv %*% g)
     }
-    if (homo && n_polys <= n_vars && generic_jacobian_check(poly, vars)$density_vanishes) {
-      stop(
-        "The density is 0 off the variety: the Jacobian of `poly` loses rank ",
-        "everywhere (its equations are dependent) and the residual leaves its ",
-        "column space. Remove the dependent equations.",
-        call. = FALSE
+    # for dependent equations, whether g stays in J's column space is the
+    # same at generic points, so the kernel's own rule at a few points of the
+    # window shows whether any draw could be accepted
+    if (homo && n_polys <= n_vars && dependent_equations(poly, vars)) {
+      u <- matrix((seq_len(3L * n_vars) * 0.6180339887498949) %% 1, nrow = 3L)
+      probes <- vapply(
+        seq_len(n_vars), function(j) w[[j]][1] + u[, j] * diff(w[[j]]), numeric(3L)
       )
+      vanishes <- vapply(seq_len(3L), function(i) {
+        is.infinite(newton_residual(probes[i, ])[1L])
+      }, logical(1))
+      if (all(vanishes)) {
+        stop(
+          "The density is 0 off the variety: the Jacobian of `poly` loses rank ",
+          "everywhere (its equations are dependent) and the residual leaves its ",
+          "column space. Remove the dependent equations.",
+          call. = FALSE
+        )
+      }
     }
 
     # build the acceptance kernel based on sd shape and homo setting

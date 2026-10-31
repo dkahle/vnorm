@@ -527,7 +527,7 @@ rvnorm <- function(
 
   # the programs solve with J (J \ g, J*J', or J'*J), which fails everywhere
   # when the equations are dependent
-  if (homo && n_eqs > 1L && !generic_jacobian_check(poly, poly_vars)$full_rank) {
+  if (homo && n_eqs > 1L && dependent_equations(poly, poly_vars)) {
     stop(
       "With `homo = TRUE`, the Jacobian of `poly` must have full rank away ",
       "from its singular points, but it loses rank everywhere (the equations ",

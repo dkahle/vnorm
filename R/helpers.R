@@ -206,30 +206,64 @@ jacobian_function <- function(poly, varorder) {
   }
 }
 
-generic_jacobian_check <- function(poly, varorder) {
-  # rank of a polynomial system's jacobian at a few fixed points with
-  # irrational-looking coordinates, which miss the proper algebraic subsets
-  # (singular loci) where an ordinary system's J loses rank, so rank
-  # deficiency at all of them means dependent equations. Also whether g
-  # leaves J's column space at all of them, where (for m <= n) pdvnorm()'s
-  # density is 0
+dependent_equations <- function(poly, varorder) {
+  # whether a polynomial system's jacobian has rank below min(m, n) at every
+  # point. Clear full rank at one of a few fixed points settles that it does
+  # not, once each row is scaled to unit size (x^100 - 1 has gradient
+  # 100 x^99, about 1e-20 at x = 0.6). Rank deficiency there proves nothing,
+  # since badly scaled or nearly dependent equations show it too, so the rank
+  # is then found exactly from the derivative polynomials; when that would
+  # take too long the check is inconclusive and reports independence
   m <- length(poly)
   n <- length(varorder)
+  k <- min(m, n)
   J_fn <- jacobian_function(poly, varorder)
-  g_fn <- poly_function(poly, varorder)
   pts <- matrix(2 * ((seq_len(3L * n) * 0.6180339887498949) %% 1) - 1, nrow = 3L)
-  checks <- lapply(seq_len(nrow(pts)), function(i) {
+  for (i in seq_len(nrow(pts))) {
     J <- J_fn(pts[i, ])
-    rank <- attr(pdvnorm_pseudoinverse(J), "rank")
-    outside <- rank < m &&
-      pdvnorm_outside_column_space(J, matrix(g_fn(pts[i, ]), nrow = 1))
-    c(rank = rank, outside = outside)
-  })
-  checks <- do.call(rbind, checks)
-  list(
-    full_rank = max(checks[, "rank"]) == min(m, n),
-    density_vanishes = m <= n && all(checks[, "outside"] == 1)
-  )
+    if (!all(is.finite(J))) next
+    J <- J / pmax(apply(abs(J), 1L, max), .Machine$double.xmin)
+    d <- svd(J, nu = 0L, nv = 0L)$d
+    if (d[k] > sqrt(.Machine$double.eps) * d[1L]) return(FALSE)
+  }
+  rows <- lapply(poly, function(p) unclass(gradient_mpolylist(p, varorder)))
+  isTRUE(polynomial_matrix_rank(rows, max_work = 1e5) < k)
+}
+
+polynomial_matrix_rank <- function(rows, max_work = Inf) {
+  # rank of a matrix of polynomials (a list of rows of mpoly entries) at
+  # generic points, i.e. over the rational functions, by fraction-free
+  # elimination with exact zero tests on the coefficients. Entries grow with
+  # each step, so this gives NA once the term products it would multiply out
+  # pass max_work (about 30 microseconds each)
+  is_zero <- function(p) all(vapply(unclass(p), function(term) term[["coef"]] == 0, logical(1)))
+  rank <- 0L
+  work <- 0
+  repeat {
+    if (length(rows) == 0L || length(rows[[1L]]) == 0L) return(rank)
+    size <- do.call(rbind, lapply(rows, function(row) {
+      vapply(row, function(p) if (is_zero(p)) Inf else length(p), numeric(1))
+    }))
+    if (all(is.infinite(size))) return(rank)
+    # the sparsest pivot keeps the entries small
+    pivot <- arrayInd(which.min(size), dim(size))
+    pivot_row <- rows[[pivot[1L]]]
+    j <- pivot[2L]
+    p <- pivot_row[[j]]
+    rows <- rows[-pivot[1L]]
+    to_clear <- !vapply(rows, function(row) is_zero(row[[j]]), logical(1))
+    work <- work + sum(vapply(rows[to_clear], function(row) {
+      length(p) * sum(lengths(row[-j])) + length(row[[j]]) * sum(lengths(pivot_row[-j]))
+    }, numeric(1)))
+    if (work > max_work) return(NA_integer_)
+    rows <- lapply(seq_along(rows), function(i) {
+      row <- rows[[i]]
+      if (!to_clear[i]) return(row[-j])
+      f <- row[[j]]
+      Map(function(a, b) p * a - f * b, row[-j], pivot_row[-j])
+    })
+    rank <- rank + 1L
+  }
 }
 
 mpoly_to_stan <- function(mpoly) {

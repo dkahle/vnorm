@@ -326,25 +326,59 @@ test_that("rejection_sampler evaluates full-rank jacobians with large condition 
   expect_lt(max(abs(samps)), 0.6)
 })
 
-test_that("generic_jacobian_check detects dependent equations", {
-  check <- function(p) unlist(generic_jacobian_check(p, sort(mpoly::vars(p))))
+test_that("rejection_sampler samples badly scaled independent equations", {
+  # J = diag(100 x^99, 100 y^99) is about diag(1e-20, 1e-60) at points of
+  # [-1, 1]^2, where the old check's numerical rank (1) passed for proof of
+  # dependent equations
+  p <- mp(c("x^100 - 1", "y^100 - 1"))
+  set.seed(1)
+  samps <- rejection_sampler(10, p, sd = 0.01, w = c(0.99, 1.01))
+  expect_equal(nrow(samps), 10)
+  expect_true(all(pdvnorm(samps, p, sd = 0.01) > 0))
+})
+
+test_that("rejection_sampler decides the support of dependent equations by its kernel", {
+  # J has rank 1, and exactly g leaves its column space (0.1 * 0.9 is not
+  # 0.3 * 0.3 in doubles), but only by rounding: pdvnorm()'s tolerance keeps
+  # the density positive, and so does the kernel
+  p <- mp(c("0.1 x + 0.2 y - 0.3", "0.3 x + 0.6 y - 0.9"))
+  expect_true(dependent_equations(p, c("x", "y")))
+  set.seed(1)
+  samps <- rejection_sampler(20, p, sd = 0.1, w = 2)
+  expect_equal(nrow(samps), 20)
+  expect_true(all(pdvnorm(samps, p, sd = 0.1) > 0))
+})
+
+test_that("dependent_equations decides dependence exactly", {
+  dep <- function(p) dependent_equations(p, sort(mpoly::vars(p)))
+  # J has rank 1 everywhere
+  expect_true(dep(mp(c("x + y + z", "(x + y + z)^2"))))
+  expect_true(dep(mp(c("x + y", "2 x + 2 y"))))
+  expect_true(dep(mp(c("x + y", "2 x + 2 y", "x + y + 1"))))
+  # singular only on proper subsets (the axes here), or overdetermined
+  expect_false(dep(mp(c("x^2 - 1", "y^2 - 1"))))
+  expect_false(dep(mp(c("x", "y", "x + y"))))
+  # badly scaled at the fixed points: diag(1e-20, 1e-60), and a J whose J'J
+  # solve() refused there
+  expect_false(dep(mp(c("x^100 - 1", "y^100 - 1"))))
+  expect_false(dep(mp(c(
+    "0.000000001 x^2 - 1", "y^2 - 1", "0.000000001 x^2 + y^2 - 2"
+  ))))
+  # numerically rank 1 at every point (condition number 2e12), which only the
+  # exact rank settles
+  expect_false(dep(mpolyList(mp("x") + 1e-12 * mp("y"), mp("x") + 2e-12 * mp("y"))))
+})
+
+test_that("polynomial_matrix_rank finds generic ranks within its budget", {
+  rows <- function(p) {
+    lapply(p, function(q) unclass(gradient_mpolylist(q, c("x", "y", "z"))))
+  }
+  p <- mp(c("x^2 + y^2 + z^2 - 1", "x y - z", "x + y^2 z - 2"))
+  expect_identical(polynomial_matrix_rank(rows(p)), 3L)
   expect_identical(
-    check(mp(c("x + y + z", "(x + y + z)^2"))),
-    c(full_rank = FALSE, density_vanishes = TRUE)
+    polynomial_matrix_rank(rows(mp(c("x + y + z", "(x + y + z)^2")))), 1L
   )
-  expect_identical(
-    check(mp(c("x + y", "2 x + 2 y"))),
-    c(full_rank = FALSE, density_vanishes = FALSE)
-  )
-  # singular only at points (the origin here) or overdetermined: full rank
-  expect_identical(
-    check(mp(c("x^2 - 1", "y^2 - 1"))),
-    c(full_rank = TRUE, density_vanishes = FALSE)
-  )
-  expect_identical(
-    check(mp(c("x", "y", "x + y"))),
-    c(full_rank = TRUE, density_vanishes = FALSE)
-  )
+  expect_identical(polynomial_matrix_rank(rows(p), max_work = 10), NA_integer_)
 })
 
 test_that("rejection_sampler handles one-variable systems and 1 x 1 scales", {

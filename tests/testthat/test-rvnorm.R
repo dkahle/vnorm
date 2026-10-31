@@ -1027,6 +1027,16 @@ test_that("rvnorm() rejects dependent equations before building Stan models", {
     chains = 1, cores = 1
   )
   expect_equal(nrow(out), 2)
+
+  # badly scaled but independent: J = diag(100 x^99, 100 y^99) is tiny at the
+  # old check's fixed points, and solve() refused the second one's J'J there
+  for (p in list(
+    mp(c("x^100 - 1", "y^100 - 1")),
+    mp(c("0.000000001 x^2 - 1", "y^2 - 1", "0.000000001 x^2 + y^2 - 2"))
+  )) {
+    out <- rvnorm(2, p, sd = 0.1, chains = 1, cores = 1)
+    expect_equal(nrow(out), 2)
+  }
 })
 
 test_that("rvnorm() full non-diagonal Sigma passed to Stan data", {
