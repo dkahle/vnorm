@@ -20,6 +20,8 @@ rvnorm(
   verbose = FALSE,
   cores = min(chains, getOption("mc.cores", 1L)),
   homo = TRUE,
+  noise = c("codomain", "domain"),
+  pilot_sd = NULL,
   w,
   vars,
   numerator,
@@ -44,14 +46,20 @@ that polynomial.}
 \item{sd}{Scale parameter for the normal kernel. If \code{Sigma} is supplied,
 \code{sd} is replaced by \code{Sigma}. For single-polynomial sampling, \code{sd} must be
 a positive scalar. For polynomial-list sampling, \code{sd} may be a positive
-scalar or a positive vector matching the Stan target dimension.}
+scalar or a positive vector matching the Stan target dimension. With
+\code{noise = "domain"}, \code{sd} gives the standard deviations of the noise in the
+space of the variables: a scalar, or one per variable in \code{vars}.}
 
 \item{output}{One of \code{"simple"}, \code{"tibble"}, or \code{"stanfit"}.}
 
 \item{Sigma}{Covariance parameter. For single-polynomial sampling, only a
 positive scalar variance is supported. For polynomial-list sampling,
 \code{Sigma} may be a positive scalar variance, a positive diagonal vector, or a
-positive-definite covariance matrix matching the Stan target dimension.}
+positive-definite covariance matrix matching the Stan target dimension.
+With \code{noise = "domain"}, \code{Sigma} is the covariance of the noise in the
+space of the variables: a scalar variance, a vector of variances, or a
+covariance matrix over the variables in \code{vars}, in sorted order unless
+its entries are named.}
 
 \item{rejection}{If \code{TRUE}, rejection sampling is used.}
 
@@ -77,6 +85,19 @@ diagnostics.}
 
 \item{homo}{If \code{TRUE}, sampling is from a homoskedastic variety normal
 distribution.}
+
+\item{noise}{Where the noise lives. \code{"codomain"} (the default) gives the
+variety normal distribution, a normal kernel on the polynomial's values
+(see \code{homo}). \code{"domain"} gives points nearly uniform on the variety plus
+multivariate normal noise in the space of the variables, with covariance
+from \code{sd} or \code{Sigma}; see Details.}
+
+\item{pilot_sd}{With \code{noise = "domain"}, the scale of the homogeneous
+variety normal whose draws are projected onto the variety to give its
+uniform points. Their distribution differs from uniform by terms of order
+\code{pilot_sd^2} times the variety's squared curvature, and the cost of
+sampling grows roughly like \code{1 / pilot_sd}. Defaults to a tenth of the
+noise scale, \code{sqrt(mean(diag(Sigma))) / 10}.}
 
 \item{w}{A named list of box constraints for vectors to be passed to Stan,
 see examples. If a single number, a box window \verb{(-w, w)} is applied to all
@@ -118,7 +139,9 @@ method.}
 \value{
 Either (1) a data frame whose rows are the individual draws from the
 distribution, (2) a \link[tibble:tbl_df-class]{tbl_df} object with the draws along with
-additional information, or (3) an object of class \code{CmdStanMCMC}.
+additional information (with \code{noise = "domain"}, the points on the
+variety as \verb{<var>_proj} columns), or (3) an object of class
+\code{CmdStanMCMC}.
 }
 \description{
 Random generation for the variety normal distribution with mean defined by
@@ -143,6 +166,19 @@ system's singular points, so systems with dependent equations are
 rejected; drop the redundant equations or use \code{homo = FALSE}. With
 \code{rejection = TRUE}, draws follow the density \code{\link[=pdvnorm]{pdvnorm()}} defines, and
 only systems where it is 0 everywhere off the variety are rejected.
+
+With \code{noise = "domain"}, each draw is \code{x = u + e}, where \code{u} is nearly
+uniform on the variety (by arclength, area, and so on, and within the
+window \code{w} when one is given) and \code{e} is normal with mean 0 and
+covariance from \code{sd} or \code{Sigma}. The points \code{u} are draws of the
+homogeneous variety normal with scale \code{pilot_sd}, each moved to the
+closest point on the variety; draws whose projection fails, as near
+singular points, are replaced. The window bounds \code{u}, not \code{x}. As with
+codomain noise, chains do not cross between disconnected components, so
+\code{rejection = TRUE} suits such varieties better. \code{"tibble"} output adds
+the points \code{u} as \verb{<var>_proj} columns; \code{"stanfit"} output and
+\code{inc_warmup = TRUE} are not available. A given \code{seed} also seeds the
+noise, without changing R's random number stream.
 }
 \examples{
 
@@ -421,5 +457,19 @@ bind_rows(
 
 ggplot(samps_normd, aes(x, y)) +
   geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
+
+
+
+# noise in the domain: points uniform on an ellipse (red) plus correlated
+# normal noise
+p <- mp("0.25 x^2 + y^2 - 1")
+samps <- rvnorm(
+  2000, p, noise = "domain", Sigma = matrix(c(.02, .015, .015, .02), 2),
+  output = "tibble"
+)
+ggplot(samps, aes(x, y)) +
+  geom_point(size = .5) +
+  geom_point(aes(x_proj, y_proj), size = .5, color = "red") +
+  coord_equal()
 }
 }

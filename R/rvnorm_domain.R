@@ -1,0 +1,240 @@
+# domain-noise draws for rvnorm(noise = "domain"): points approximately
+# uniform on the variety, plus multivariate normal noise in the space of the
+# variables. Split out from rvnorm.R, which dispatches here
+
+rvnorm_domain <- function(
+    n, poly, sd, Sigma, pilot_sd, output, rejection, seed, vars, w,
+    code_only, pilot_args
+  ) {
+  if (!(is.mpoly(poly) || is.mpolyList(poly))) {
+    stop(
+      "`poly` should be either a character vector, mpoly, or mpolyList.",
+      call. = FALSE
+    )
+  }
+  if (length(mpoly::vars(poly)) == 0L) {
+    stop("`poly` must contain at least one variable.", call. = FALSE)
+  }
+  sample_vars <- rvnorm_resolve_vars(vars, poly)
+  n_vars <- length(sample_vars)
+  noise_cov <- rvnorm_domain_covariance(sd, Sigma, sample_vars)
+  if (is.null(pilot_sd)) {
+    # the projected pilot draws are uniform on the variety up to terms of
+    # order pilot_sd^2; a tenth of the noise scale makes those negligible
+    pilot_sd <- sqrt(mean(diag(noise_cov))) / 10
+  }
+  proj_vars <- paste0(sample_vars, "_proj")
+  if (output == "tibble" && any(proj_vars %in% sample_vars)) {
+    stop(
+      "Variable names clash with the `<var>_proj` columns of the points on ",
+      "the variety: ", paste(intersect(proj_vars, sample_vars), collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  # the window W bounds the points on the variety. The pilot runs on W
+  # widened by 6 pilot_sd, so that the normal lines of points near W's edge
+  # are not cut short, which would thin them out; points that land outside W
+  # are dropped. rvnorm(rejection = TRUE) uses w = 1.25 when none is given
+  if (is.null(w) && rejection) w <- 1.25
+  window <- if (!is.null(w)) rvnorm_normalize_window(w, sample_vars)
+  if (!is.null(window)) {
+    pilot_args$w <- rvnorm_widen_window(window, mpoly::vars(poly), 6 * pilot_sd)
+  }
+
+  if (code_only && !rejection) {
+    return(rvnorm_domain_pilot(n, poly, pilot_sd, rejection, seed, pilot_args))
+  }
+
+  draws <- rvnorm_with_seed(seed, {
+    latent <- matrix(numeric(0), nrow = 0, ncol = n_vars)
+    index <- NULL
+    n_failed <- 0L
+    n_projected <- 0L
+    # spare draws for projections that fail or leave the window
+    n_draw <- n + ceiling(if (is.null(window)) 0.02 * n else 0.1 * n) + 10L
+    for (round in seq_len(5L)) {
+      pilot <- as.data.frame(rvnorm_domain_pilot(
+        n_draw, poly, pilot_sd, rejection,
+        if (!is.null(seed)) seed + round - 1L, pilot_args
+      ))
+      x0 <- as.matrix(pilot[, sample_vars, drop = FALSE])
+      proj <- project_rows_closest(x0, poly, sample_vars, max_dist = 10 * pilot_sd)
+      keep <- proj$ok & rvnorm_in_window(proj$points, window)
+      n_failed <- n_failed + sum(!proj$ok)
+      n_projected <- n_projected + nrow(x0)
+      latent <- rbind(latent, proj$points[keep, , drop = FALSE])
+      if (all(c(".chain", ".iteration") %in% names(pilot))) {
+        index <- rbind(index, as.matrix(pilot[keep, c(".chain", ".iteration")]))
+      }
+      if (nrow(latent) >= n) break
+      rate <- max(mean(keep), 0.05)
+      n_draw <- ceiling(1.5 * (n - nrow(latent)) / rate) + 10L
+    }
+    if (nrow(latent) < n) {
+      stop(
+        "Only ", nrow(latent), " of ", n, " pilot draws projected onto the ",
+        "variety", if (!is.null(window)) " inside the window `w`", ". Check ",
+        "that the variety has points there, or lower `pilot_sd`.",
+        call. = FALSE
+      )
+    }
+    if (n_failed > 0.01 * n_projected) {
+      warning(
+        n_failed, " of ", n_projected, " projections onto the variety failed ",
+        "(near singular points, or more than 10 `pilot_sd` from their pilot ",
+        "draw) and were dropped.",
+        call. = FALSE
+      )
+    }
+    # an evenly spaced subset keeps each chain's share of the draws
+    rows <- ceiling(seq_len(n) * nrow(latent) / n)
+    latent <- latent[rows, , drop = FALSE]
+    if (!is.null(index)) index <- index[rows, , drop = FALSE]
+
+    # rows of z %*% chol(Sigma) have covariance t(chol(Sigma)) %*% chol(Sigma)
+    noise <- matrix(stats::rnorm(n * n_vars), n, n_vars) %*% chol(noise_cov)
+    list(x = latent + noise, latent = latent, index = index)
+  })
+
+  x <- draws$x
+  colnames(x) <- sample_vars
+  if (output == "simple") {
+    return(as.data.frame(x))
+  }
+  latent <- draws$latent
+  colnames(latent) <- proj_vars
+  out <- cbind(as.data.frame(x), as.data.frame(latent))
+  if (!is.null(draws$index)) {
+    out$.chain <- as.integer(draws$index[, ".chain"])
+    out$.iteration <- as.integer(draws$index[, ".iteration"])
+    out$.draw <- seq_len(n)
+  }
+  tibble::as_tibble(out)
+}
+
+rvnorm_domain_pilot <- function(n, poly, pilot_sd, rejection, seed, pilot_args) {
+  # draws of the homogeneous variety normal with scale pilot_sd, whose
+  # projections onto the variety are its nearly uniform points
+  do.call(rvnorm, c(
+    list(
+      n = n, poly = poly, sd = pilot_sd, output = "tibble",
+      rejection = rejection, homo = TRUE, noise = "codomain", seed = seed
+    ),
+    pilot_args
+  ))
+}
+
+rvnorm_domain_covariance <- function(sd, Sigma, vars) {
+  # the covariance of the noise in the space of the sampled variables, in the
+  # order of vars; named entries are matched to variables by name
+  n_vars <- length(vars)
+  by_name <- function(v, label) {
+    if (is.null(names(v))) return(v)
+    if (anyDuplicated(names(v)) || !setequal(names(v), vars)) {
+      stop(
+        "Names of `", label, "` must match the variables: ",
+        paste(vars, collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
+    v[vars]
+  }
+  if (!is.null(Sigma)) {
+    if (!is.numeric(Sigma) || any(!is.finite(Sigma))) {
+      stop("`Sigma` must be finite numeric.", call. = FALSE)
+    }
+    if (is.null(dim(Sigma))) {
+      rvnorm_check_positive_numeric(Sigma, "Sigma")
+      if (length(Sigma) == 1L) Sigma <- rep(as.numeric(Sigma), n_vars)
+      if (length(Sigma) != n_vars) {
+        stop("Length of `Sigma` must match the number of variables.", call. = FALSE)
+      }
+      return(diag(as.numeric(by_name(Sigma, "Sigma")), nrow = n_vars))
+    }
+    Sigma <- as.matrix(Sigma)
+    if (!all(dim(Sigma) == c(n_vars, n_vars))) {
+      stop(
+        "`Sigma` matrix dimensions must match the number of variables.",
+        call. = FALSE
+      )
+    }
+    rn <- rownames(Sigma)
+    cn <- colnames(Sigma)
+    if (!is.null(rn) || !is.null(cn)) {
+      if (is.null(rn) || is.null(cn) || !setequal(rn, vars) || !setequal(cn, vars)) {
+        stop(
+          "Row and column names of `Sigma` must both match the variables: ",
+          paste(vars, collapse = ", "), ".",
+          call. = FALSE
+        )
+      }
+      Sigma <- Sigma[vars, vars]
+    }
+    Sigma <- unname(Sigma)
+    # chol() reads only the upper triangle
+    if (!isSymmetric(Sigma)) {
+      stop("`Sigma` must be symmetric.", call. = FALSE)
+    }
+    rvnorm_check_positive_definite(Sigma, "Sigma")
+    return(Sigma)
+  }
+  if (is.null(sd)) {
+    stop("`sd` must be supplied unless `Sigma` is supplied.", call. = FALSE)
+  }
+  if (is.matrix(sd)) {
+    stop("Use `Sigma` to supply a covariance matrix.", call. = FALSE)
+  }
+  rvnorm_check_positive_numeric(sd, "sd")
+  if (length(sd) == 1L) sd <- rep(as.numeric(sd), n_vars)
+  if (length(sd) != n_vars) {
+    stop("Length of `sd` must match the number of variables.", call. = FALSE)
+  }
+  diag(as.numeric(by_name(sd, "sd"))^2, nrow = n_vars)
+}
+
+rvnorm_widen_window <- function(window, poly_vars, margin) {
+  # a window from rvnorm_normalize_window(), widened by margin in the
+  # variables poly involves; a scalar window stays scalar for the templates
+  if (window$scalar) return(window$value + margin)
+  out <- lapply(names(window$value), function(var) {
+    bounds <- window$value[[var]]
+    if (var %in% poly_vars) bounds + c(-margin, margin) else bounds
+  })
+  names(out) <- names(window$value)
+  out
+}
+
+rvnorm_in_window <- function(x, window) {
+  # whether each row of x lies in the box rvnorm_normalize_window() describes
+  if (is.null(window)) return(rep(TRUE, nrow(x)))
+  if (window$scalar) {
+    return(rowSums(abs(x) > window$value) == 0)
+  }
+  inside <- rep(TRUE, nrow(x))
+  for (var in names(window$value)) {
+    bounds <- window$value[[var]]
+    inside <- inside & x[, var] >= bounds[1] & x[, var] <= bounds[2]
+  }
+  inside
+}
+
+rvnorm_with_seed <- function(seed, code) {
+  # evaluate code with R's RNG seeded by seed, then restore the caller's RNG
+  # state; without a seed, evaluate it as is
+  if (is.null(seed)) return(code)
+  env <- globalenv()
+  had_state <- exists(".Random.seed", envir = env, inherits = FALSE)
+  if (had_state) old_state <- get(".Random.seed", envir = env, inherits = FALSE)
+  on.exit(
+    if (had_state) {
+      assign(".Random.seed", old_state, envir = env)
+    } else if (exists(".Random.seed", envir = env, inherits = FALSE)) {
+      rm(".Random.seed", envir = env)
+    },
+    add = TRUE
+  )
+  set.seed(as.integer(seed %% .Machine$integer.max))
+  code
+}

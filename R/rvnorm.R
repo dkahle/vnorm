@@ -12,11 +12,17 @@
 #' @param sd Scale parameter for the normal kernel. If `Sigma` is supplied,
 #'   `sd` is replaced by `Sigma`. For single-polynomial sampling, `sd` must be
 #'   a positive scalar. For polynomial-list sampling, `sd` may be a positive
-#'   scalar or a positive vector matching the Stan target dimension.
+#'   scalar or a positive vector matching the Stan target dimension. With
+#'   `noise = "domain"`, `sd` gives the standard deviations of the noise in the
+#'   space of the variables: a scalar, or one per variable in `vars`.
 #' @param Sigma Covariance parameter. For single-polynomial sampling, only a
 #'   positive scalar variance is supported. For polynomial-list sampling,
 #'   `Sigma` may be a positive scalar variance, a positive diagonal vector, or a
 #'   positive-definite covariance matrix matching the Stan target dimension.
+#'   With `noise = "domain"`, `Sigma` is the covariance of the noise in the
+#'   space of the variables: a scalar variance, a vector of variances, or a
+#'   covariance matrix over the variables in `vars`, in sorted order unless
+#'   its entries are named.
 #' @param output One of `"simple"`, `"tibble"`, or `"stanfit"`.
 #' @param rejection If `TRUE`, rejection sampling is used.
 #' @param chains The number of Markov chains to run.
@@ -33,6 +39,17 @@
 #'   diagnostics.
 #' @param homo If `TRUE`, sampling is from a homoskedastic variety normal
 #'   distribution.
+#' @param noise Where the noise lives. `"codomain"` (the default) gives the
+#'   variety normal distribution, a normal kernel on the polynomial's values
+#'   (see `homo`). `"domain"` gives points nearly uniform on the variety plus
+#'   multivariate normal noise in the space of the variables, with covariance
+#'   from `sd` or `Sigma`; see Details.
+#' @param pilot_sd With `noise = "domain"`, the scale of the homogeneous
+#'   variety normal whose draws are projected onto the variety to give its
+#'   uniform points. Their distribution differs from uniform by terms of order
+#'   `pilot_sd^2` times the variety's squared curvature, and the cost of
+#'   sampling grows roughly like `1 / pilot_sd`. Defaults to a tenth of the
+#'   noise scale, `sqrt(mean(diag(Sigma))) / 10`.
 #' @param verbose If `TRUE`, print additional progress messages.
 #' @param vars Character vector of the variables to sample. Defaults to the
 #'   variables of `poly`, and must include all of them. The distribution is
@@ -79,10 +96,25 @@
 #'   `rejection = TRUE`, draws follow the density [pdvnorm()] defines, and
 #'   only systems where it is 0 everywhere off the variety are rejected.
 #'
+#'   With `noise = "domain"`, each draw is `x = u + e`, where `u` is nearly
+#'   uniform on the variety (by arclength, area, and so on, and within the
+#'   window `w` when one is given) and `e` is normal with mean 0 and
+#'   covariance from `sd` or `Sigma`. The points `u` are draws of the
+#'   homogeneous variety normal with scale `pilot_sd`, each moved to the
+#'   closest point on the variety; draws whose projection fails, as near
+#'   singular points, are replaced. The window bounds `u`, not `x`. As with
+#'   codomain noise, chains do not cross between disconnected components, so
+#'   `rejection = TRUE` suits such varieties better. `"tibble"` output adds
+#'   the points `u` as `<var>_proj` columns; `"stanfit"` output and
+#'   `inc_warmup = TRUE` are not available. A given `seed` also seeds the
+#'   noise, without changing R's random number stream.
+#'
 #' @name rvnorm
 #' @return Either (1) a data frame whose rows are the individual draws from the
 #'   distribution, (2) a [tbl_df-class] object with the draws along with
-#'   additional information, or (3) an object of class `CmdStanMCMC`.
+#'   additional information (with `noise = "domain"`, the points on the
+#'   variety as `<var>_proj` columns), or (3) an object of class
+#'   `CmdStanMCMC`.
 #' @examples
 #'
 #'
@@ -360,6 +392,20 @@
 #'
 #' ggplot(samps_normd, aes(x, y)) +
 #'   geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
+#'
+#'
+#'
+#' # noise in the domain: points uniform on an ellipse (red) plus correlated
+#' # normal noise
+#' p <- mp("0.25 x^2 + y^2 - 1")
+#' samps <- rvnorm(
+#'   2000, p, noise = "domain", Sigma = matrix(c(.02, .015, .015, .02), 2),
+#'   output = "tibble"
+#' )
+#' ggplot(samps, aes(x, y)) +
+#'   geom_point(size = .5) +
+#'   geom_point(aes(x_proj, y_proj), size = .5, color = "red") +
+#'   coord_equal()
 #' }
 #' @rdname rvnorm
 #' @export
@@ -368,7 +414,8 @@ rvnorm <- function(
   chains = 4L, warmup = max(500, ceiling(n / chains / 2)), inc_warmup = FALSE,
   thin = 1L, adapt_delta = .999, max_treedepth = 20L,
   verbose = FALSE, cores = min(chains, getOption("mc.cores", 1L)),
-  homo = TRUE, w, vars, numerator, denominator, refresh = 0L,
+  homo = TRUE, noise = c("codomain", "domain"), pilot_sd = NULL,
+  w, vars, numerator, denominator, refresh = 0L,
   code_only = FALSE, pre_compiled = TRUE, user_compiled = FALSE,
   show_messages = FALSE, seed = NULL, ...
 ) {
@@ -419,6 +466,15 @@ rvnorm <- function(
   if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed))) {
     stop("`seed` must be NULL or a finite numeric scalar.", call. = FALSE)
   }
+  noise <- match.arg(noise)
+  if (
+    !is.null(pilot_sd) && (
+      !is.numeric(pilot_sd) || length(pilot_sd) != 1L ||
+        !is.finite(pilot_sd) || pilot_sd <= 0
+    )
+  ) {
+    stop("`pilot_sd` must be NULL or a positive finite numeric scalar.", call. = FALSE)
+  }
   if (!missing(numerator) || !missing(denominator)) {
     warning(
       "`numerator` and `denominator` are deprecated and ignored.",
@@ -434,6 +490,50 @@ rvnorm <- function(
   # the single-polynomial programs and templates serve it
   if (is.mpolyList(poly) && length(poly) == 1L) {
     poly <- poly[[1]]
+  }
+
+  if (noise == "domain") {
+    if (!homo) {
+      stop(
+        "`homo` describes codomain noise; `noise = \"domain\"` takes its ",
+        "points on the variety from the homogeneous variety normal.",
+        call. = FALSE
+      )
+    }
+    if (inc_warmup) {
+      stop(
+        "`inc_warmup = TRUE` is not available with `noise = \"domain\"`: ",
+        "warmup draws do not follow the pilot distribution, so their ",
+        "projections are not uniform on the variety.",
+        call. = FALSE
+      )
+    }
+    if (output == "stanfit") {
+      stop(
+        "`output = \"stanfit\"` is not available with `noise = \"domain\"`; ",
+        "\"tibble\" output includes the points on the variety.",
+        call. = FALSE
+      )
+    }
+    # sampler settings for the pilot draws; rvnorm_domain() sets their
+    # scale, window, and seed
+    pilot_args <- c(
+      list(
+        chains = chains, warmup = warmup, thin = thin,
+        adapt_delta = adapt_delta, max_treedepth = max_treedepth,
+        verbose = verbose, cores = cores, refresh = refresh,
+        code_only = code_only, pre_compiled = pre_compiled,
+        user_compiled = user_compiled, show_messages = show_messages
+      ),
+      if (!is.null(vars_arg)) list(vars = vars_arg),
+      list(...)
+    )
+    return(rvnorm_domain(
+      n = n, poly = poly, sd = if (missing(sd)) NULL else sd, Sigma = Sigma,
+      pilot_sd = pilot_sd, output = output, rejection = rejection,
+      seed = seed, vars = vars_arg, w = if (missing(w)) NULL else w,
+      code_only = code_only, pilot_args = pilot_args
+    ))
   }
 
   if (rejection) {

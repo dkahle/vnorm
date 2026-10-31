@@ -778,3 +778,102 @@ projected_rows <- function(out, x0) {
     dimnames = dimnames(x0)
   )
 }
+
+project_rows_closest <- function(
+    x, poly, varorder, tol = 1e-10, maxit = 50L, max_dist = Inf
+  ) {
+  # the closest point on the variety of poly (an mpoly or mpolyList) to each
+  # row of x, for points near it: Gauss-Newton steps u <- u - J^+ g(u) onto
+  # the variety, then steps along its tangent space toward the row, each
+  # followed by Gauss-Newton again, until x - u is normal to the variety.
+  # Gauss-Newton alone lands a distance O(d^2) along the variety from the
+  # closest point, d the distance to it, by an amount that depends on how
+  # poly is written. Returns the points and whether each converged: a row
+  # fails if J loses rank on the way (as at a singular point), it does not
+  # converge, or it ends more than max_dist from its start. Variables in
+  # varorder that poly does not involve have zero Jacobian columns, so their
+  # coordinates stay put
+  if (is.mpoly(poly)) {
+    # one equation, all rows at once: J^+ g = g grad(g) / |grad(g)|^2
+    g_fn <- poly_function(poly, varorder = varorder)
+    dg_fn <- gradient_function(poly, varorder)
+    step_fn <- function(u) {
+      g <- g_fn(u)
+      dg <- matrix(dg_fn(u), nrow = nrow(u))
+      dg2 <- rowSums(dg^2)
+      stalled <- !is.finite(g) | !(dg2 > 0)
+      step <- g / dg2 * dg
+      step[stalled, ] <- 0
+      list(step = step, stalled = stalled)
+    }
+    tangent_fn <- function(u, r) {
+      dg <- matrix(dg_fn(u), nrow = nrow(u))
+      r - rowSums(r * dg) / rowSums(dg^2) * dg
+    }
+  } else {
+    g_fn <- poly_function(poly, varorder = varorder)
+    J_fn <- jacobian_function(poly, varorder)
+    full_rank <- min(length(poly), length(varorder))
+    step_fn <- function(u) {
+      step <- matrix(0, nrow(u), ncol(u))
+      stalled <- logical(nrow(u))
+      for (i in seq_len(nrow(u))) {
+        Jp <- pdvnorm_pseudoinverse(J_fn(u[i, ]))
+        s <- as.numeric(Jp %*% g_fn(u[i, ]))
+        if (attr(Jp, "rank") < full_rank || any(!is.finite(s))) {
+          stalled[i] <- TRUE
+        } else {
+          step[i, ] <- s
+        }
+      }
+      list(step = step, stalled = stalled)
+    }
+    tangent_fn <- function(u, r) {
+      # remove the component of r in J's row space, the normal space
+      for (i in seq_len(nrow(u))) {
+        J <- J_fn(u[i, ])
+        r[i, ] <- r[i, ] - as.numeric(pdvnorm_pseudoinverse(J) %*% (J %*% r[i, ]))
+      }
+      r
+    }
+  }
+  small <- function(v, u) sqrt(rowSums(v^2)) <= tol * (1 + sqrt(rowSums(u^2)))
+
+  newton <- function(u) {
+    ok <- rep(FALSE, nrow(u))
+    active <- seq_len(nrow(u))
+    for (. in seq_len(maxit)) {
+      ua <- u[active, , drop = FALSE]
+      s <- step_fn(ua)
+      u[active, ] <- ua - s$step
+      done <- !s$stalled & small(s$step, ua)
+      ok[active[done]] <- TRUE
+      active <- active[!done & !s$stalled]
+      if (length(active) == 0L) break
+    }
+    list(u = u, ok = ok)
+  }
+
+  first <- newton(x)
+  u <- first$u
+  ok <- first$ok
+  converged <- rep(FALSE, nrow(x))
+  active <- which(ok)
+  for (. in seq_len(maxit)) {
+    if (length(active) == 0L) break
+    ua <- u[active, , drop = FALSE]
+    tangent <- tangent_fn(ua, x[active, , drop = FALSE] - ua)
+    at_closest <- small(tangent, ua)
+    converged[active[at_closest]] <- TRUE
+    moving <- active[!at_closest]
+    if (length(moving) == 0L) break
+    again <- newton(u[moving, , drop = FALSE] + tangent[!at_closest, , drop = FALSE])
+    u[moving, ] <- again$u
+    ok[moving] <- again$ok
+    active <- moving[again$ok]
+  }
+
+  ok <- ok & converged & rowSums(!is.finite(u)) == 0 &
+    sqrt(rowSums((u - x)^2)) <= max_dist
+  list(points = u, ok = ok)
+}
