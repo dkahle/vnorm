@@ -38,7 +38,7 @@ imported function hit the wrong binding and logged template runs as compiles.
 | 1 | `w = c(-a, a)`, or a list giving every variable `c(-a, a)`, compiled (4.8 s), though it is the box of `w = a`, which the `_w` templates take | `9a454aa` |
 | 2 | The templates ignored `vars`: with `vars = c("x", "y", "z"), w = 2`, the default sampled x and y, and `pre_compiled = FALSE` sampled z too | `5fab350` |
 | 3 | When a template binary was missing, `rvnorm()` compiled without saying so | `2a82502` |
-| 4 | `mpoly::totaldeg()` errors on an `mpolyList` of length 1 (its list branch needs `length(x) > 1`), so `rvnorm(n, mpolyList(p), sd)` fails on every path | mpoly; David is fixing it |
+| 4 | `mpoly::totaldeg()` errors on an `mpolyList` of length 1 (its list branch needs `length(x) > 1`), so `rvnorm(n, mpolyList(p), sd)` fails on every path | mpoly (David); then vnorm's side, `03a0bde` (§6) |
 
 ### 2.1 Equal symmetric boxes — `9a454aa`
 
@@ -95,7 +95,7 @@ says which requests the templates cover.
 - **README.** Its example `rvnorm(2000, mp("x^2 + y^2 + z^2 - 1"), sd = 0.1,
   pre_compiled = TRUE)` reads as if the templates must be switched on. I left it
   to David, who has `README.Rmd` open with uncommitted edits.
-- **Length-1 `mpolyList`.** Finding 4 is mpoly's.
+- **Length-1 `mpolyList`.** Finding 4 was mpoly's first; §6 covers the rest.
 - **Model quantities in tibble output.** Template draws carry `g`, `dgx`, `dgy`,
   `ndg`; generated draws carry `g`, `ndg`. As before.
 
@@ -133,3 +133,52 @@ Stan's three box transforms.
     `README_cache` but not `README_files`.
   - testthat summary: `[ FAIL 0 | WARN 2 | SKIP 3 | PASS 761 ]`. The 2 warnings
     and 3 skips are the same as in the third Codex follow-up.
+
+## 6. Follow-up: an `mpolyList` of one polynomial — `03a0bde`
+
+- **mpoly's fix.** The installed mpoly (1.1.2.900, rebuilt 2026-10-31 14:58 UTC)
+  takes the list branch of `totaldeg()` for any list that is not an mpoly, so
+  `totaldeg(mpolyList(p))` is 2.
+- **vnorm still failed.** With that mpoly, `rvnorm()` failed on
+  `mpolyList(mp("x^2 + y^2 - 1"))` on every Stan path:
+  - the templates' helpers take an mpoly ("`poly` must be an mpoly object"), and
+    `swap()` failed when variables needed renaming;
+  - the generated single-polynomial program, and `code_only`, called `mp()` on the
+    list.
+  The rejection path worked. `pdvnorm()` already treats such a list as its
+  polynomial (`R/pdvnorm.R:316`).
+- **Why that is right.** For one equation, the systems program's normalized
+  residual J⁺g = g ∇g / |∇g|² has norm |g| / |∇g|, the single-polynomial residual.
+- **Fix.** `rvnorm()` unwraps the list before it chooses a path, and
+  `compile_stan_code()` does too.
+  - The templates now serve such lists.
+  - A vector `sd` gets the single-polynomial error, as in `pdvnorm()`.
+  - `compile_stan_code()` caches a model for the list under the name that
+    `rvnorm(user_compiled = TRUE)` looks up. For shapes the templates cover, it
+    now asks for `custom_stan_code = TRUE`, as for the polynomial.
+- **Other functions.** `variety_solve()`, `geom_variety()` and
+  `rejection_sampler()` gave the same results for `p` and `mpolyList(p)`.
+  `project_onto_variety()` and `project_onto_variety_newton()` are documented for
+  an mpoly. They fail on every `mpolyList`, systems included, with "argument
+  "namevec" is missing", so I did not change them.
+
+Validation on an installed copy of `03a0bde` with the new mpoly, in a fresh R
+process:
+
+| Check | Result |
+|---|---|
+| `mpolyList(p)`, defaults; `w = 1.5`; `homo = FALSE`; variables `a, b` | `2_2_vn`; `2_2_vn_w`; `2_2_hvn`; `2_2_vn` |
+| `lp__` − `pdvnorm(log = TRUE)` of the list, 2,000 draws, template and generated code | within ±7.5e-15 |
+| `rejection = TRUE`, same seed | draws identical to the polynomial's |
+| `compile_stan_code(mpolyList(mp("x^4 + y^4 - 1")))`, then `user_compiled = TRUE` | runs the cached model's executable |
+| `compile_stan_code(mpolyList(p))`; `sd = c(0.1, 0.2)` | the polynomial's errors |
+
+Verification:
+
+- `devtools::test()` with the new mpoly: **771 passed, 0 failed, 0 warnings, 1
+  skipped**.
+- Both new tests failed against the pre-fix copies of `R/rvnorm.R` and
+  `R/compile_stan_code.R`.
+- CRAN-style `R CMD check` on `03a0bde`: **0 errors, 0 warnings, 1 NOTE**, the
+  same `README_files` NOTE as in §5. testthat summary:
+  `[ FAIL 0 | WARN 2 | SKIP 3 | PASS 769 ]`.
