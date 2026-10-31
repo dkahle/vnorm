@@ -250,6 +250,28 @@ test_that("rvnorm(noise = \"domain\") widens the pilot's window and keeps points
   expect_equal(args_z$w$x, c(-2.06, 2.06))
   expect_equal(args_z$vars, c("x", "y", "z"))
   expect_named(out_z, c("x", "y", "z", "x_proj", "y_proj", "z_proj", ".chain", ".iteration", ".draw"))
+
+  # a scalar window too: it becomes per-variable bounds
+  rvnorm(
+    100, circle, sd = 0.1, noise = "domain", chains = 2,
+    vars = c("x", "y", "z"), w = 1.5
+  )
+  expect_equal(
+    calls_z$args[[2]]$pilot_args$w,
+    list(x = c(-1.56, 1.56), y = c(-1.56, 1.56), z = c(-1.5, 1.5))
+  )
+})
+
+test_that("rvnorm(noise = \"domain\") keeps a narrow window on free variables", {
+  # widening y and z with x made the pilot draw them from (-0.61, 0.61),
+  # and all but about 1 in 3721 latent points left the window
+  z <- rvnorm(
+    20, "x", sd = 1, noise = "domain", rejection = TRUE,
+    vars = c("x", "y", "z"), w = 0.01, seed = 1, output = "tibble"
+  )
+  expect_equal(nrow(z), 20)
+  expect_true(all(abs(z$x_proj) < 1e-8))
+  expect_true(all(abs(as.matrix(z[, c("y_proj", "z_proj")])) <= 0.01))
 })
 
 test_that("rvnorm(noise = \"domain\") replaces failed projections from new pilot runs", {

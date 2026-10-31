@@ -39,7 +39,9 @@ rvnorm_domain <- function(
   if (is.null(w) && rejection) w <- 1.25
   window <- if (!is.null(w)) rvnorm_normalize_window(w, sample_vars)
   if (!is.null(window)) {
-    pilot_args$w <- rvnorm_widen_window(window, mpoly::vars(poly), 6 * pilot_sd)
+    pilot_args$w <- rvnorm_widen_window(
+      window, sample_vars, mpoly::vars(poly), 6 * pilot_sd
+    )
   }
 
   if (code_only && !rejection) {
@@ -214,10 +216,16 @@ rvnorm_domain_covariance <- function(sd, Sigma, vars) {
   diag(as.numeric(by_name(sd, "sd"))^2, nrow = n_vars)
 }
 
-rvnorm_widen_window <- function(window, poly_vars, margin) {
+rvnorm_widen_window <- function(window, vars, poly_vars, margin) {
   # a window from rvnorm_normalize_window(), widened by margin in the
-  # variables poly involves; a scalar window stays scalar for the templates
-  if (window$scalar) return(window$value + margin)
+  # variables poly involves. Projection does not move the others, so they
+  # keep their bounds, which turns a scalar window into per-variable bounds;
+  # without such variables it stays scalar, for the templates
+  if (window$scalar) {
+    if (all(vars %in% poly_vars)) return(window$value + margin)
+    bounds <- rep(list(c(-window$value, window$value)), length(vars))
+    window <- list(value = stats::setNames(bounds, vars), scalar = FALSE)
+  }
   out <- lapply(names(window$value), function(var) {
     bounds <- window$value[[var]]
     if (var %in% poly_vars) bounds + c(-margin, margin) else bounds
