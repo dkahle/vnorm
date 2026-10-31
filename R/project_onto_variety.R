@@ -813,7 +813,9 @@ project_rows_closest <- function(
   } else {
     g_fn <- poly_function(poly, varorder = varorder)
     J_fn <- jacobian_function(poly, varorder)
-    full_rank <- min(length(poly), length(varorder))
+    # variables poly does not involve add zero columns, which cannot raise
+    # J's rank
+    full_rank <- min(length(poly), length(mpoly::vars(poly)))
     step_fn <- function(u) {
       step <- matrix(0, nrow(u), ncol(u))
       stalled <- logical(nrow(u))

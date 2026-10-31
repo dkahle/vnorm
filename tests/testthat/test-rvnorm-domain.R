@@ -142,6 +142,36 @@ test_that("rvnorm(noise = \"domain\") places no points off the variety", {
   )
 })
 
+test_that("free variables leave a system's geometry alone", {
+  # x and x^2 cut out the line x = 0, and z is free. Counting z, the system
+  # looked square, so its Jacobian's rank of 1 read as dependence
+  p <- mp(c("x", "x^2"))
+  proj <- project_rows_closest(rbind(c(0.05, 0.3), c(-0.02, -0.7)), p, c("x", "z"))
+  expect_true(all(proj$ok))
+  expect_equal(proj$points, rbind(c(0, 0.3), c(0, -0.7)))
+
+  z <- rvnorm(
+    50, p, sd = 0.1, vars = c("x", "z"), w = 1, noise = "domain",
+    rejection = TRUE, output = "tibble", seed = 1
+  )
+  expect_true(all(abs(z$x_proj) < 1e-8))
+  expect_true(all(abs(z$z_proj) <= 1))
+
+  # the codomain rejection sampler too
+  withr::local_seed(2)
+  expect_equal(nrow(rvnorm(20, p, sd = 0.1, vars = c("x", "z"), w = 1, rejection = TRUE)), 20)
+})
+
+test_that("free variables leave a system's geometry alone with CmdStan", {
+  skip_if_no_cmdstan()
+  z <- rvnorm(
+    200, mp(c("x", "x^2")), sd = 0.1, vars = c("x", "z"), w = 1,
+    noise = "domain", output = "tibble", chains = 2, cores = 1, seed = 3
+  )
+  expect_true(all(abs(z$x_proj) < 1e-8))
+  expect_true(all(abs(z$z_proj) <= 1))
+})
+
 test_that("project_rows_closest() flags rows it cannot project", {
   # the gradient vanishes at the center
   expect_false(project_rows_closest(matrix(0, 1, 2), circle, c("x", "y"))$ok)
