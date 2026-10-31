@@ -572,30 +572,17 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
 }
 
 pdvnorm_pseudoinverse <- function(J) {
-  m <- nrow(J)
-  n <- ncol(J)
+  # SVD pseudoinverse with a tolerance cutoff. At full rank this is J^-1,
+  # J'(JJ')^-1 or (J'J)^-1 J', but forming JJ' or J'J squares J's condition
+  # number, and solve() refused them for full-rank J past about 1e8
   sv <- svd(J)
   tol <- max(dim(J)) *
     .Machine$double.eps *
     ifelse(length(sv$d) > 0, sv$d[1], 0)
-  r <- sum(sv$d > tol)
-
-  Jp <- if (n > m && r == m) {
-    # full row rank (underdetermined): right pseudoinverse
-    t(J) %*% solve(J %*% t(J))
-  } else if (m > n && r == n) {
-    # full column rank (overdetermined): left pseudoinverse
-    solve(t(J) %*% J) %*% t(J)
-  } else if (m == n && r == n) {
-    # square and full rank: exact inverse
-    solve(J)
-  } else {
-    # rank-deficient fallback: SVD pseudoinverse with tolerance cutoff
-    dplus <- ifelse(sv$d > tol, 1 / sv$d, 0)
-    sv$v %*% (dplus * t(sv$u))
-  }
+  dplus <- ifelse(sv$d > tol, 1 / sv$d, 0)
+  Jp <- sv$v %*% (dplus * t(sv$u))
   # callers check rank deficiency without a second decomposition
-  attr(Jp, "rank") <- r
+  attr(Jp, "rank") <- sum(sv$d > tol)
   Jp
 }
 

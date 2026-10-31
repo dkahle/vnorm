@@ -316,6 +316,16 @@ test_that("rejection_sampler follows pdvnorm()'s support for dependent systems",
   expect_true(all(pdvnorm(samps, p_lin, sd = 0.1) > 0))
 })
 
+test_that("rejection_sampler evaluates full-rank jacobians with large condition numbers", {
+  # the kernel took (J'J)^-1 J' g, and solve() refused J'J at every point
+  # (condition number about 1e18); g = J (x, y), so draws are N(0, 0.1^2 I)
+  p <- mpolyList(1e-9 * mp("x"), mp("y"), 1e-9 * mp("x") + mp("y"))
+  set.seed(1)
+  samps <- rejection_sampler(100, p, sd = 0.1, w = 1)
+  expect_equal(nrow(samps), 100)
+  expect_lt(max(abs(samps)), 0.6)
+})
+
 test_that("generic_jacobian_check detects dependent equations", {
   check <- function(p) unlist(generic_jacobian_check(p, sort(mpoly::vars(p))))
   expect_identical(

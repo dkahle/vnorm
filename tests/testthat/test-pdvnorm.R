@@ -451,6 +451,30 @@ test_that("pdvnorm mpolyList homo density is 0 off the variety where J loses ran
   ))
 })
 
+test_that("pdvnorm evaluates full-rank jacobians with large condition numbers", {
+  # J has full column rank, but J'J squares its condition number (about 1e9
+  # here), and solve() refused it. g = J (x, y), so the residual is (x, y),
+  # to within about that condition number times eps
+  p <- mpolyList(1e-9 * mp("x"), mp("y"), 1e-9 * mp("x") + mp("y"))
+  x <- rbind(c(0.5, 0.25), c(-1, 2))
+  expect_equal(
+    pdvnorm(x, p, sd = 0.1, log = TRUE),
+    rowSums(stats::dnorm(x, sd = 0.1, log = TRUE)),
+    tolerance = 1e-6
+  )
+
+  # the pointwise path, at a point far from the variety x = +-sqrt(1e9),
+  # y = +-1
+  q <- mp(c("0.000000001 x^2 - 1", "y^2 - 1", "0.000000001 x^2 + y^2 - 2"))
+  J <- rbind(c(1e-9, 0), c(0, 1), c(1e-9, 1))
+  v <- qr.coef(qr(J), c(0.25e-9 - 1, -0.75, 0.25e-9 - 1.75))
+  expect_equal(
+    pdvnorm(c(0.5, 0.5), q, sd = 0.1, log = TRUE),
+    sum(stats::dnorm(v, sd = 0.1, log = TRUE)),
+    tolerance = 1e-6
+  )
+})
+
 test_that("pdvnorm evaluates single points of one-variable systems", {
   # mpoly returns a bare vector (not a 1 x m matrix) for one point of a
   # one-variable system, which failed with "incorrect number of dimensions"
