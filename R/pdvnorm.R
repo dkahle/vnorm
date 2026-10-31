@@ -572,15 +572,18 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
 }
 
 pdvnorm_pseudoinverse <- function(J) {
-  # SVD pseudoinverse with a tolerance cutoff. At full rank this is J^-1,
+  # SVD pseudoinverse with a tolerance cutoff, taken with J's rows scaled by
+  # pdvnorm_row_scale() and scaled back. At full rank this is J^-1,
   # J'(JJ')^-1 or (J'J)^-1 J', but forming JJ' or J'J squares J's condition
   # number, and solve() refused them for full-rank J past about 1e8
-  sv <- svd(J)
+  s <- pdvnorm_row_scale(J)
+  sv <- svd(J / s)
   tol <- max(dim(J)) *
     .Machine$double.eps *
     ifelse(length(sv$d) > 0, sv$d[1], 0)
   dplus <- ifelse(sv$d > tol, 1 / sv$d, 0)
   Jp <- sv$v %*% (dplus * t(sv$u))
+  Jp <- Jp / rep(s, each = nrow(Jp))
   # callers check rank deficiency without a second decomposition
   attr(Jp, "rank") <- sum(sv$d > tol)
   Jp
@@ -588,15 +591,35 @@ pdvnorm_pseudoinverse <- function(J) {
 
 pdvnorm_outside_column_space <- function(J, G) {
   # which rows of G (one residual vector g per point) have a component
-  # outside the column space of J, with pdvnorm_pseudoinverse()'s rank cutoff;
-  # projecting onto the retained left singular vectors keeps this stable
-  sv <- svd(J)
+  # outside the column space of J, with pdvnorm_pseudoinverse()'s row
+  # scaling and rank cutoff; projecting onto the retained left singular
+  # vectors keeps this stable
+  s <- pdvnorm_row_scale(J)
+  sv <- svd(J / s)
   tol <- max(dim(J)) *
     .Machine$double.eps *
     ifelse(length(sv$d) > 0, sv$d[1], 0)
   U <- sv$u[, sv$d > tol, drop = FALSE]
+  G <- G / rep(s, each = nrow(G))
   resid <- G - (G %*% U) %*% t(U)
   sqrt(rowSums(resid^2)) > sqrt(.Machine$double.eps) * sqrt(rowSums(G^2))
+}
+
+pdvnorm_row_scale <- function(J) {
+  # for m <= n, the largest entry of each row of J: rescaling an equation
+  # changes neither J's rank nor J^+ g for g in its column space, but a
+  # cutoff relative to the largest singular value dropped small rows (for
+  # x^100 - 1, y^100 - 1 at (1.59, 2.78), J = diag(8.7e21, 9.1e45) had
+  # rank 1).
+  # Overdetermined rows stay as they are: their scale weights the least
+  # squares
+  s <- rep(1, nrow(J))
+  if (nrow(J) <= ncol(J)) {
+    row_max <- apply(abs(J), 1L, max)
+    ok <- is.finite(row_max) & row_max > 0
+    s[ok] <- row_max[ok]
+  }
+  s
 }
 
 pdvnorm_align_x <- function(x, vs) {

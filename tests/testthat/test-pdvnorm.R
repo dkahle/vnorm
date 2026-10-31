@@ -475,6 +475,28 @@ test_that("pdvnorm evaluates full-rank jacobians with large condition numbers", 
   )
 })
 
+test_that("pdvnorm's rank cutoff ignores the scale of the equations", {
+  # J = diag(100 x^99, 100 y^99) = diag(8.7e21, 9.1e45) here: full rank, but
+  # a cutoff relative to the larger singular value dropped the smaller, and
+  # with it the x component of J^-1 g (log density 3.51, not 2.24)
+  p <- mp(c("x^100 - 1", "y^100 - 1"))
+  x <- c(1.59, 2.78)
+  v <- (x^100 - 1) / (100 * x^99)
+  expect_equal(
+    pdvnorm(x, p, sd = 0.01, log = TRUE),
+    sum(stats::dnorm(v, sd = 0.01, log = TRUE))
+  )
+  # rescaling an equation changes neither the variety nor the density
+  expect_equal(
+    pdvnorm(x, mpolyList(1e-30 * p[[1]], p[[2]]), sd = 0.01, log = TRUE),
+    pdvnorm(x, p, sd = 0.01, log = TRUE)
+  )
+  expect_equal(
+    pdvnorm(c(0.5, 0.25), mpolyList(1e-30 * mp("x"), mp("y")), sd = 0.1, log = TRUE),
+    sum(stats::dnorm(c(0.5, 0.25), sd = 0.1, log = TRUE))
+  )
+})
+
 test_that("pdvnorm evaluates single points of one-variable systems", {
   # mpoly returns a bare vector (not a 1 x m matrix) for one point of a
   # one-variable system, which failed with "incorrect number of dimensions"
