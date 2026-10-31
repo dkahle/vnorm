@@ -109,7 +109,7 @@ rvnorm_normalize_window <- function(w, vars) {
     bounds <- check_bounds(w, "`w`")
     out <- replicate(length(vars), bounds, simplify = FALSE)
     names(out) <- vars
-    return(list(value = out, scalar = FALSE))
+    return(rvnorm_collapse_window(out, vars))
   }
 
   if (!is.list(w) || is.null(names(w)) || any(!nzchar(names(w)))) {
@@ -127,7 +127,16 @@ rvnorm_normalize_window <- function(w, vars) {
 
   out <- lapply(names(w), function(var) check_bounds(w[[var]], paste0("`w$", var, "`")))
   names(out) <- names(w)
-  list(value = out, scalar = FALSE)
+  rvnorm_collapse_window(out, vars)
+}
+
+rvnorm_collapse_window <- function(w, vars) {
+  # the same box (-a, a) on every variable is the scalar window a, which the
+  # pre-compiled templates take
+  b <- w[[1]]
+  same_box <- setequal(names(w), vars) &&
+    all(vapply(w, identical, logical(1), b)) && b[1] == -b[2]
+  if (same_box) list(value = b[2], scalar = TRUE) else list(value = w, scalar = FALSE)
 }
 
 rename_output_df <- function(df, replacement_list) {

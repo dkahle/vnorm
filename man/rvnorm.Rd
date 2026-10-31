@@ -92,9 +92,12 @@ progress is reported.}
 
 \item{code_only}{If \code{TRUE}, only formulate and return Stan code.}
 
-\item{pre_compiled}{Whether to use precompiled Stan models. Available
-for polynomials with three indeterminates and three degrees. Defaults to
-\code{TRUE}.}
+\item{pre_compiled}{If \code{TRUE} (the default), sample with a Stan model
+compiled when vnorm was installed whenever one covers the request: a
+single polynomial in at most three variables of total degree at most
+three, with no window or the same window \verb{(-a, a)} on every variable.
+Other requests, and installations without these models, compile a model
+for \code{poly}.}
 
 \item{user_compiled}{If \code{TRUE}, use a user-compiled Stan program produced by
 \code{\link[=compile_stan_code]{compile_stan_code()}}. Defaults to \code{FALSE}.}

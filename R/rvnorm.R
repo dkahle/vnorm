@@ -42,9 +42,12 @@
 #'   [rejection_sampler()] default.
 #' @param refresh CmdStan's `refresh`, which governs how often sampling
 #'   progress is reported.
-#' @param pre_compiled Whether to use precompiled Stan models. Available
-#'   for polynomials with three indeterminates and three degrees. Defaults to
-#'   `TRUE`.
+#' @param pre_compiled If `TRUE` (the default), sample with a Stan model
+#'   compiled when vnorm was installed whenever one covers the request: a
+#'   single polynomial in at most three variables of total degree at most
+#'   three, with no window or the same window `(-a, a)` on every variable.
+#'   Other requests, and installations without these models, compile a model
+#'   for `poly`.
 #' @param code_only If `TRUE`, only formulate and return Stan code.
 #' @param ... Additional arguments passed to the CmdStan model's `$sample()`
 #'   method.

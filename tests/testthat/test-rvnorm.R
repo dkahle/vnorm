@@ -429,6 +429,53 @@ test_that("rvnorm() uses generated Stan for non-scalar w", {
   expect_false("w" %in% names(read_stan_data(capture$args$data)))
 })
 
+test_that("rvnorm() runs pre-compiled templates for the same symmetric box", {
+  # w = c(-a, a), or a list giving every variable (-a, a), is the box of
+  # w = a, which the `_w` templates take
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    cmdstan_model = function(...) stop("cmdstan_model should not be called"),
+    .package = "vnorm"
+  )
+  testthat::local_mocked_bindings(
+    stan_package_model = function(name, ...) {
+      capture$name <- name
+      fake_cmdstan_model(draws_df, capture = capture)
+    },
+    .package = "instantiate"
+  )
+
+  for (w in list(c(-1.5, 1.5), list(y = c(-1.5, 1.5), x = c(-1.5, 1.5)))) {
+    capture$name <- NULL
+    out <- rvnorm(2, mp("x^2 + y^2 - 1"), sd = 0.05, w = w, chains = 1, cores = 1)
+    expect_identical(capture$name, "2_2_vn_w")
+    expect_equal(read_stan_data(capture$args$data)$w, 1.5)
+    expect_named(out, c("x", "y"))
+  }
+})
+
+test_that("rvnorm_normalize_window() collapses the same symmetric box to a scalar", {
+  expect_equal(
+    rvnorm_normalize_window(c(-2, 2), c("x", "y")),
+    list(value = 2, scalar = TRUE)
+  )
+  expect_equal(
+    rvnorm_normalize_window(list(y = c(-2, 2), x = c(-2, 2)), c("x", "y")),
+    list(value = 2, scalar = TRUE)
+  )
+
+  # boxes that differ, are asymmetric, or leave a variable unbounded do not
+  expect_false(rvnorm_normalize_window(c(-1, 2), c("x", "y"))$scalar)
+  expect_false(
+    rvnorm_normalize_window(list(x = c(-2, 2), y = c(-1, 1)), c("x", "y"))$scalar
+  )
+  expect_false(rvnorm_normalize_window(list(x = c(-2, 2)), c("x", "y"))$scalar)
+})
+
 test_that("rvnorm() falls back when pre-compiled model is unavailable", {
   draws_df <- data.frame(
     lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
