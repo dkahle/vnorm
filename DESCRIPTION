@@ -10,7 +10,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 URL: https://www.kahle.io/vnorm/, https://github.com/dkahle/vnorm
 BugReports: https://github.com/dkahle/vnorm/issues
-Additional_repositories: https://mc-stan.org/r-packages/
+Additional_repositories: https://stan-dev.r-universe.dev/
 Roxygen: list(markdown = TRUE)
 Depends:
     R (>= 4.1.0)
